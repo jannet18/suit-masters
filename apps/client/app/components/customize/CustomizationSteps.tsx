@@ -1,6 +1,7 @@
 "use client";
+import { Step } from "@/app/lib/types";
 import React, { Fragment } from "react";
-import type { Step } from "@/lib/types";
+// import type { Step } from "@/lib/types";
 
 interface Props {
   steps: Step[];
@@ -52,8 +53,8 @@ const CustomizationSteps: React.FC<Props> = ({
                       index < currentStep
                         ? "100%"
                         : index === currentStep
-                        ? "50%"
-                        : "0%",
+                          ? "50%"
+                          : "0%",
                   }}
                 />
               </div>

@@ -1,6 +1,6 @@
 import React from "react";
 import ProductCard from "./ProductCard";
-import type { Product } from "@/app/libs/types";
+import type { Product } from "@/app/lib/types";
 interface ProductGridProps {
   products: Product[] | null;
 }

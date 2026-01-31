@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Calendar, HeartIcon, ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { Product } from "@/app/libs/types";
+import { Product } from "@/app/lib/types";
+import useCartStore from "@/app/stores/cartStore";
+import { toast } from "react-toastify/unstyled";
 interface ProductCardProps {
   product: Product;
 }
@@ -12,6 +14,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     size: product?.sizes?.[0] || "",
     color: product?.colors?.[0] || "",
   });
+  const { addToCart } = useCartStore();
   const toggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsWishlisted(!isWishlisted);
@@ -29,6 +32,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     value: string;
   }) => {
     setProductTypes((prev) => ({ ...prev, [type]: value }));
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    addToCart({
+      ...product,
+      quantity: 1,
+      selectedSize: productTypes.size,
+      selectedColor: productTypes.color,
+    });
+    toast.success("Product added to cart");
   };
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 hover:shadow-md transition-shadow group">
@@ -193,7 +207,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               </div>
               <div className="md:w-1/2 md:pl-6 mt-4 md:mt-0">
                 <h3 className="text-xl font-medium mb-2">{product.name}</h3>
-                <div className="text-sm text-gray-500 mb-4">{product.sku}</div>
+                <div className="text-sm text-gray-500 mb-4">{product.id}</div>
                 <div className="flex items-center space-x-1 mb-4">
                   {[...Array(5)].map((_, i) => (
                     <svg
@@ -248,21 +262,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <button className="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-3 rounded-md transition-colors flex items-center justify-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 mr-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
+                  <button
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-3 rounded-md transition-colors flex items-center justify-center"
+                    onClick={handleAddToCart}
+                  >
+                    <ShoppingCart className="mr-2" />
                     Add to Cart
                   </button>
                   <button

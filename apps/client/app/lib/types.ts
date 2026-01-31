@@ -19,6 +19,8 @@
 //   monogram?: string;
 // };
 
+import z from "zod";
+
 // type SuitVisualizerProps = {
 //   selectedOptions: SelectedOptions;
 // };
@@ -110,3 +112,61 @@ export interface Product {
   delivery: string;
   category: string;
 }
+export type CartItemType = Product & {
+  id: number;
+  quantity: number;
+  selectedSize: string;
+  selectedColor: string;
+};
+export type cartItemsType = CartItemType[];
+
+export const shippingFormSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  email: z.string().email("Email address is required"),
+  phone: z
+    .string()
+    .min(7, "Phone number must be between 7 and 10 digits ")
+    .max(10, "Phone number must be between 7 and 10 digits ")
+    .regex(/^\d+$/, "Phone number must contain only digits"),
+  address: z.string().min(1, "Address is required"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  zip: z.string().min(1, "ZIP code is required"),
+});
+
+export type ShippingFormData = z.infer<typeof shippingFormSchema>;
+
+export const paymentFormSchema = z.object({
+  cardName: z.string().min(2, "Name on card is required"),
+  cardNumber: z
+    .string()
+    .length(16, "Card number must be 16 digits")
+    .regex(/^\d+$/, "Card number must contain only digits"),
+  expiryDate: z
+    .string()
+    .regex(
+      /^(0[1-9]|1[0-2])\/?([0-9]{2})$/,
+      "Expiry date must be in MM/YY format",
+    ),
+  cvv: z
+    .string()
+    .length(3, "CVV must be 3 digits")
+    .regex(/^\d+$/, "CVV must contain only digits"),
+});
+
+export type PaymentFormData = z.infer<typeof paymentFormSchema>;
+
+export type CartStoreStateType = {
+  cart: CartItemType[];
+  hasHydrated: boolean;
+};
+
+export type CartStoreActionType = {
+  addToCart: (product: CartItemType) => void;
+  removeFromCart: (product: CartItemType) => void;
+  updateCartItem: (
+    productId: number,
+    updatedItem: Partial<CartItemType>,
+  ) => void;
+  clearCart: () => void;
+};

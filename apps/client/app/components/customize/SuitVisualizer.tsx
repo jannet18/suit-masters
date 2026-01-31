@@ -1,5 +1,5 @@
 "use client";
-import { SelectedOptions } from "@/app/libs/types";
+import { SelectedOptions } from "@/app/lib/types";
 import React from "react";
 
 interface Props {

@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { OptionChangeHandler, SelectedOptions, Step } from "../libs/types";
+import { OptionChangeHandler, SelectedOptions, Step } from "../lib/types";
 import {
   buttonOptions,
   fabricOpts,
@@ -9,7 +9,7 @@ import {
   pocketOptions,
   styleOptions,
   ventOptions,
-} from "../libs/optionsData";
+} from "../lib/optionsData";
 
 interface Props {
   step: Step;
