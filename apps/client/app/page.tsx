@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Hero from "./components/Hero";
 import FeaturedCollections from "./components/FeaturedCollections";
-// import Hero from ".././components/Hero";
+import CustomizationSection from "./components/CustomizationSection";
 export default function Home() {
   return (
     // <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -66,6 +66,7 @@ export default function Home() {
     <div className="">
       <Hero />
       <FeaturedCollections />
+      <CustomizationSection />
     </div>
   );
 }

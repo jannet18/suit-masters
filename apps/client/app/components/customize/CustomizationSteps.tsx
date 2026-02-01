@@ -1,7 +1,6 @@
 "use client";
 import { Step } from "@/app/lib/types";
 import React, { Fragment } from "react";
-// import type { Step } from "@/lib/types";
 
 interface Props {
   steps: Step[];

@@ -26,7 +26,7 @@
 //           src="https://plus.unsplash.com/premium_photo-1661425828618-f48a8beb4f6c?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
 //           loading="lazy"
 //           alt="hero background"
-//           className="w-full h-full object-cover -z-0"
+//           className="w-full h-full object-cover z-0"
 //         />
 //       </div>
 //       <div className="absolute inset-0 bg-gray-900 opacity-30"></div>

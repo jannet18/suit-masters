@@ -24,6 +24,21 @@ const product: Product = {
   category: "suits",
 };
 
+export const generateMetadata = async ({
+  params,
+}: {
+  params: { id: string };
+}) => {
+  // // In a real application, you might fetch product details from a database
+  // const productId = params.id;
+  // // For demonstration, we'll use static data
+  // const productTitle = product.name;
+  // const productDescription = product.description;
+  return {
+    title: product.name,
+    description: product.description,
+  };
+};
 const SingleProduct = async ({
   params,
   searchParams,

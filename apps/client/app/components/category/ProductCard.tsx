@@ -1,13 +1,5 @@
 import React, { useState } from "react";
-import {
-  Calendar,
-  Calendar1,
-  CalendarIcon,
-  HeartIcon,
-  ShoppingCart,
-  Star,
-  X,
-} from "lucide-react";
+import { CalendarIcon, HeartIcon, ShoppingCart, Star, X } from "lucide-react";
 import Link from "next/link";
 import { Product } from "@/app/lib/types";
 import useCartStore from "@/app/stores/cartStore";
@@ -50,7 +42,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       selectedSize: productTypes.size,
       selectedColor: productTypes.color,
     });
-    toast.success("Product added to cart");
+    toast.success("Added to cart!");
   };
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 hover:shadow-md transition-shadow group">
@@ -168,7 +160,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
       </div>
       <div className="px-4 pb-4">
-        <button className="w-full bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 rounded-md transition-colors flex items-center justify-center cursor-pointer">
+        <button
+          onClick={handleAddToCart}
+          className="w-full bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 rounded-md transition-colors flex items-center justify-center cursor-pointer"
+        >
           <ShoppingCart className="mr-2" />
           Add to Cart
         </button>
