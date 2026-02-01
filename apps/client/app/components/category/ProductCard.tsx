@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Calendar, HeartIcon, ShoppingCart } from "lucide-react";
+import {
+  Calendar,
+  Calendar1,
+  CalendarIcon,
+  HeartIcon,
+  ShoppingCart,
+  Star,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { Product } from "@/app/lib/types";
 import useCartStore from "@/app/stores/cartStore";
@@ -130,17 +138,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
         <div className="flex items-center space-x-1 m-3">
           {[...Array(5)].map((_, i) => (
-            <svg
+            <Star
               key={i}
               className={`h-4 w-4 ${
                 i < product.rating ? "text-yellow-400" : "text-gray-300"
               }`}
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
+            />
           ))}
 
           <span className="text-xs text-gray-500">({product.rating || 0})</span>
@@ -179,20 +182,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 onClick={toggleQuickView}
                 className="text-gray-500 hover:text-gray-700"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <X className="h-6 w-6" />
               </button>
             </div>
             <div className="p-4 flex flex-col md:flex-row">
@@ -210,17 +200,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 <div className="text-sm text-gray-500 mb-4">{product.id}</div>
                 <div className="flex items-center space-x-1 mb-4">
                   {[...Array(5)].map((_, i) => (
-                    <svg
+                    <Star
                       key={i}
                       className={`h-5 w-5 ${
                         i < product.rating ? "text-yellow-400" : "text-gray-300"
                       }`}
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
+                    />
                   ))}
                   <span className="text-sm text-gray-500">
                     ({product.rating || 0} reviews)
@@ -244,20 +229,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 <div className="mb-4">
                   <div className="font-medium mb-2">Delivery</div>
                   <div className="flex items-center text-gray-700">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 mr-1 text-amber-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
+                    <CalendarIcon className="h-5 w-5 mr-1 text-amber-600" />
                     {product.delivery}
                   </div>
                 </div>

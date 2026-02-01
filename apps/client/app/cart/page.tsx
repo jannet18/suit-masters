@@ -131,7 +131,7 @@ const Cart = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
       <h1 className="text-3xl font-semibold mb-6">Your Shopping Cart</h1>
-      <p className="text-gray-600">Your cart is currently empty.</p>
+      {/* <p className="text-gray-600">Your cart is currently empty.</p> */}
       {/* STEPS */}
       <div className="w-full flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
         {steps.map((step) => (
@@ -285,9 +285,9 @@ const Cart = () => {
             </div>
             {activeStep === 1 && (
               <button
-                className="w-full bg-gray-800 text-white p-2 rounded-lg cursor-pointer gap-2 hover:bg-gray-900 transition-all duration-300"
+                className="w-full flex  justify-center items-center bg-gray-800 text-white p-2 rounded-lg cursor-pointer  gap-2 hover:bg-gray-900 transition-all duration-300"
                 onClick={() =>
-                  router.push(`/cart?step=${activeStep + 1} { scroll: false }`)
+                  router.push(`/cart?step=${activeStep + 1}&scroll=false`)
                 }
               >
                 Continue <ArrowRight className="w-3 h-3" />
