@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack --port 3003",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -24,8 +24,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typesript-config": "workspace:*",
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

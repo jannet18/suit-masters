@@ -42,8 +42,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typesript-config": "workspace:*",
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-day-picker": "^5.2.1",
