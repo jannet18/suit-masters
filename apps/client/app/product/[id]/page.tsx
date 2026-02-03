@@ -54,7 +54,7 @@ const SingleProduct = async ({
       {/* IMAGE */}
       <div className="w-full lg:w-5/12">
         <Image
-          src={product.image[selectedColor]}
+          src={(product.image as Record<string, string>)?.[selectedColor] || ""}
           alt={product.name}
           // fill
           className="object-contain rounded-md"

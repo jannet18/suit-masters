@@ -168,7 +168,8 @@ const Cart = () => {
                   {/* IMAGE */}
                   <div className="relative w-32 h-32 bg-gray-50 rounded-lg overflow-hidden">
                     <Image
-                      src={item.image[item.selectedColor]}
+                      // src={item.image[item.selectedColor]}
+                      src={(item.image as Record<string, string>)?.[0] || ""}
                       alt={item.name}
                       fill
                       className="object-contain"

@@ -13,17 +13,16 @@ const useCartStore = create<CartStoreStateType & CartStoreActionType>()(
       hasHydrated: false,
       addToCart: (product: CartItemType) =>
         set((state) => {
-          const existingProduct = state.cart.find(
+          const existingProduct = state.cart.findIndex(
             (p) =>
               p.id === product.id &&
               p.selectedSize === product.selectedSize &&
               p.selectedColor === product.selectedColor,
           );
 
-          if (existingProduct) {
+          if (existingProduct !== -1) {
             const updatedCart = [...state.cart];
-            const index = updatedCart.indexOf(existingProduct);
-            updatedCart[index].quantity += product.quantity || 1;
+            updatedCart[existingProduct]!.quantity += product.quantity || 1;
             return { cart: updatedCart };
           }
 

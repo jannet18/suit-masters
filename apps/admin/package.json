@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack --port 3002",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
@@ -40,14 +41,13 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typesript-config": "workspace:*",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-day-picker": "^5.2.1",
     "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.0",
     "react-day-picker": "^9.13.0",
     "tailwindcss": "^4",
     "typescript": "^5"
