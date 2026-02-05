@@ -4,6 +4,7 @@ import Image from "next/image";
 import SearchBar from "./SearchBar";
 import { Bell, Home } from "lucide-react";
 import ShoppingCartIcon from "./ShoppingCart";
+import { LoginLink } from "@kinde-oss/kinde-auth-nextjs";
 
 function Navbar() {
   return (
@@ -29,7 +30,8 @@ function Navbar() {
         </Link>
         <Bell className="w-4 h-4 text-gray-600" />
         <ShoppingCartIcon />
-        <Link href="/sign-in">Sign In</Link>
+        {/* <Link href="/sign-in">Sign In</Link> */}
+        <LoginLink>Sign In</LoginLink>
       </div>
     </nav>
   );

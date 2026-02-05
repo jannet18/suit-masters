@@ -13,9 +13,18 @@
     "check-types": {
       "dependsOn": ["^check-types"]
     },
-    "dev": {
-      "cache": false,
-      "persistent": true
+    "pipeline": {
+      "db:generate": {
+        "cache": false
+      },
+      "db:push": {
+        "cache": false,
+        "dependsOn": ["db:generate"]
+      },
+      "dev": {
+        "cache": false,
+        "persistent": true
+      }
     }
   }
 }

@@ -2,6 +2,8 @@
   "name": "suit-masters",
   "private": true,
   "scripts": {
+    "db:generate": "turbo run db:generate",
+    "db:push": "turbo run db:push",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
@@ -9,6 +11,7 @@
     "check-types": "turbo run check-types"
   },
   "devDependencies": {
+    "dotenv": "^17.2.3",
     "prettier": "^3.7.4",
     "turbo": "^2.7.5",
     "typescript": "5.9.2"
