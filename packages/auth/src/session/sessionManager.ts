@@ -6,6 +6,7 @@ import {
 import { type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 // Client for authorization code flow
+
 export const kindeClient = createKindeServerClient(
   GrantType.AUTHORIZATION_CODE,
   {

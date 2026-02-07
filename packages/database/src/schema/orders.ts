@@ -6,36 +6,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { userMeasurements, usersTable } from "./user";
-import { productConfiguration, productItem } from "./products";
-// import { userMeasurements, usersTable } from "./user";
-// import { productConfiguration, productItem } from "./products";
-// import { paymentMethodTable } from "./payments";
-// import { addressTable } from "./address";
-
-export const shoppingCartTable = pgTable("shopping_cart", {
-  id: serial("id").primaryKey(),
-  user_id: uuid("user_id")
-    .notNull()
-    .references(() => usersTable.id),
-});
-
-export const shoppingCartItem = pgTable("shopping_cart_item", {
-  id: serial("id").primaryKey(),
-  cart_id: integer("cart_id")
-    .notNull()
-    .references(() => shoppingCartTable.id),
-  // Link to a Standard Item OR a Custom Configuration
-  product_item_id: integer("product_item_id")
-    .notNull()
-
-    .references(() => productItem.id),
-  configurationId: uuid("configuration_id").references(
-    () => productConfiguration.id,
-  ),
-  measurement_id: uuid("measurement_id").references(() => userMeasurements.id),
-  qty: integer("qty").notNull().default(1),
-});
+import { usersTable } from "./user";
 
 export const shopOrder = pgTable("shop_order", {
   id: serial("id").primaryKey(),
