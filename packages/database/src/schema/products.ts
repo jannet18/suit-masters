@@ -3,7 +3,6 @@ import {
   integer,
   jsonb,
   numeric,
-  pgSchema,
   pgTable,
   serial,
   uuid,
@@ -60,7 +59,7 @@ export const customizationGroup = pgTable("customization_group", {
 
 export const customizationOption = pgTable("customization_option", {
   id: serial("id").primaryKey(),
-
+  product_id: integer("product_id"),
   group_id: integer("group_id")
     .notNull()
     .references(() => customizationGroup.id),
@@ -104,6 +103,7 @@ export const customizationOption = pgTable("customization_option", {
 
 export const productConfiguration = pgTable("product_configuration", {
   id: uuid("id").primaryKey().defaultRandom(),
+  kinde_user_id: varchar("user_id").notNull(),
   product_id: integer("product_id").notNull(),
   // Snapshot of selections
   selected_options: jsonb("selected_options").notNull(),

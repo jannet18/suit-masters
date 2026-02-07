@@ -5,12 +5,13 @@ import {
   serial,
   timestamp,
   uuid,
-  varchar,
 } from "drizzle-orm/pg-core";
 import { userMeasurements, usersTable } from "./user";
 import { productConfiguration, productItem } from "./products";
-import { paymentMethodTable } from "./payments";
-import { addressTable } from "./address";
+// import { userMeasurements, usersTable } from "./user";
+// import { productConfiguration, productItem } from "./products";
+// import { paymentMethodTable } from "./payments";
+// import { addressTable } from "./address";
 
 export const shoppingCartTable = pgTable("shopping_cart", {
   id: serial("id").primaryKey(),
