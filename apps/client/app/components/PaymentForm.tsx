@@ -7,7 +7,6 @@ import {
 } from "../lib/types";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { ArrowRight, ShoppingCart } from "lucide-react";
-import { use } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
 
@@ -47,9 +46,9 @@ const PaymentForm = ({
           placeholder="John Doe"
           {...register("cardName")}
         />
-        {errors.cardName && (
+        {/* {errors.cardName && (
           <p className="text-xs text-red-600">{errors.cardName.message}</p>
-        )}
+        )} */}
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="email" className="text-xs text-gray-500 font-medium">

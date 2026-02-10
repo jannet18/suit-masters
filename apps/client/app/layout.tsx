@@ -31,15 +31,16 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
-        <AuthProvider>
-          <div className="mx-auto p-4 sm:px-0 sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-7xl">
-            <Navbar />
-            {children}
-            <Footer />
-          </div>
+        {/* <AuthProvider> */}
+        <div className="mx-auto px-2 sm:px-0 sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-7xl">
+          <Navbar />
+          <main className="min-h-[80vh]">{children}</main>
+          <Footer />
           <ToastContainer position="bottom-right" />
-        </AuthProvider>
+        </div>
+        {/* </AuthProvider> */}
       </body>
     </html>
   );

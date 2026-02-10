@@ -99,7 +99,7 @@ export type OptionChangeHandler = (
 ) => void;
 
 export interface Product {
-  id: number;
+  id: number | string;
   name: string;
   image: { default: string } & Record<string, string>;
   price: number;
@@ -113,12 +113,24 @@ export interface Product {
   category: string;
   description?: string;
 }
-export type CartItemType = Product & {
-  id: number;
+// export type CartItemType = Product & {
+//   id: number | string; // Changed to string to support unique temporary IDs
+//   quantity: number;
+//   selectedSize: string;
+//   selectedColor: string;
+// };
+// @/app/lib/types.ts
+export type CartItemType = {
+  id: number | string; // Changed to string to support unique temporary IDs
+  productId: number; // The base suit product ID
+  name: string;
+  price: number;
   quantity: number;
-  selectedSize: string;
-  selectedColor: string;
+  image: string;
+  // This holds all the bespoke details
+  customization: SelectedOptions;
 };
+
 export type cartItemsType = CartItemType[];
 
 export const shippingFormSchema = z.object({

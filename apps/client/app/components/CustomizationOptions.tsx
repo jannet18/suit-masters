@@ -1,6 +1,11 @@
 "use client";
 import React from "react";
-import { OptionChangeHandler, SelectedOptions, Step } from "../lib/types";
+import {
+  CartItemType,
+  OptionChangeHandler,
+  SelectedOptions,
+  Step,
+} from "../lib/types";
 import {
   buttonOptions,
   fabricOpts,
@@ -10,6 +15,7 @@ import {
   styleOptions,
   ventOptions,
 } from "../lib/optionsData";
+import useCartStore from "../stores/cartStore";
 
 interface Props {
   step: Step;
@@ -23,6 +29,23 @@ const CustomizationOptions: React.FC<Props> = ({
   onOptionChange,
 }) => {
   const renderOptions = () => {
+    const addToCart = useCartStore((state) => state.addToCart);
+
+    // const handleFinalSubmit = () => {
+    //   const customSuitItem: CartItemType = {
+    //     // Generate a unique ID so different suit configs don't overwrite each other
+    //     id: `custom-suit-${Date.now()}`,
+    //     productId: 101, // ID of your "Bespoke Suit" base product
+    //     name: "Bespoke Custom Suit",
+    //     price: calculateTotalPrice(selectedOptions), // Base price + any premium add-ons
+    //     quantity: 1,
+    //     image: getSuitPreviewImage(selectedOptions),
+    //     customization: selectedOptions, // Crucial: saves all user choices
+    //   };
+
+    //   addToCart(customSuitItem);
+    // };
+
     switch (step.id) {
       case "fabric":
         return (
@@ -537,6 +560,22 @@ const CustomizationOptions: React.FC<Props> = ({
                 </p>
               </div>
             </div>
+            <button
+              onClick={() => {
+                addToCart({
+                  id: `custom-suit-${Date.now()}`,
+                  productId: 101,
+                  name: "Custom Bespoke Suit",
+                  price: 499, // Base price, you can enhance this by adding premiums
+                  quantity: 1,
+                  image: "/images/custom-suit-preview.png", // Placeholder image
+                  customization: selectedOptions,
+                });
+              }}
+              className="w-full mt-8 bg-amber-600 hover:bg-amber-700 text-white font-medium py-4 rounded-lg transition"
+            >
+              Add Custom Suit to Cart
+            </button>
           </div>
         );
       default:

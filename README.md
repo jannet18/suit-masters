@@ -1,136 +1,297 @@
-# Turborepo starter
+# Custom Suit Shop – Backend (MVP)
 
-This Turborepo starter is maintained by the Turborepo core team.
+This backend supports a **custom suit e‑commerce flow** where users can:
 
-## Using this example
+1. View a customizable suit
+2. Select customization options (fabric, fit, lapel, etc.)
+3. Add the customized suit to a cart (with quantity support for events/weddings)
+4. Checkout to create an order
+5. View their order history
 
-Run the following command:
+This is an **MVP focused on correctness and clarity**, not full production features like payments or fulfillment.
 
-```sh
-npx create-turbo@latest
-```
+---
 
-## What's inside?
+## 🧱 Tech Stack
 
-This Turborepo includes the following packages/apps:
+- **Runtime:** Node.js
+- **Framework:** Hono
+- **Database:** PostgreSQL (Neon)
+- **ORM:** Drizzle
+- **Auth:** Kinde (JWT-based)
+- **Architecture:** Microservices (Turborepo)
 
-### Apps and Packages
+---
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+## 🧠 Core Concepts
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+### Products vs Configurations
 
-### Utilities
+- **Product**: A base item (e.g. _Classic Navy Suit_)
+- **Customization**: User-selected options (fabric, fit, lapel, etc.)
+- **Product Configuration**: A saved snapshot of customization choices + final price
 
-This Turborepo has some additional tools already setup for you:
+Configurations are **immutable** and safe to add to carts and orders.
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+### Cart Model
 
-### Build
+- One cart per user
+- Cart items reference a configuration
+- Quantity can be greater than 1 (e.g. weddings/events)
 
-To build all apps and packages, run the following command:
+---
 
-```
-cd my-turborepo
+## 🔐 Authentication
 
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
+- Users authenticate via **Kinde**
+- Frontend sends a JWT access token
+- Backend verifies JWT using Kinde JWKS
+- Users are synced into the `site_users` table automatically
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
-
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
+All protected endpoints require:
 
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+Authorization: Bearer <access_token>
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+---
 
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+## 📡 API Endpoints
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+### 1️⃣ Who Am I
 
-### Remote Caching
+**GET /me**
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+Returns the authenticated user.
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+Response:
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+```json
+{
+  "id": "uuid",
+  "email": "user@email.com",
+  "roles": "CUSTOMER"
+}
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+---
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+### 2️⃣ Create Product Configuration
 
+**POST /product-configurations**
+
+Creates a saved customization snapshot.
+
+Request:
+
+```json
+{
+  "product_id": 12,
+  "selected_options": {
+    "fabric": 5,
+    "fit": 2,
+    "lapel": 7
+  }
+}
 ```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+Response:
+
+```json
+{
+  "configuration_id": "uuid",
+  "final_price": 45000
+}
 ```
 
-## Useful Links
+---
 
-Learn more about the power of Turborepo:
+### 3️⃣ Add Item to Cart
 
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
-# suit-masters
+**POST /cart/items**
+
+Adds a configuration to the user’s cart.
+
+Request:
+
+```json
+{
+  "product_item_id": 42,
+  "configuration_id": "uuid",
+  "qty": 5
+}
+```
+
+---
+
+### 4️⃣ Get Cart
+
+**GET /cart**
+
+Returns the current user’s cart.
+
+Response:
+
+```json
+{
+  "cart_id": 3,
+  "items": [
+    {
+      "product": { "name": "Classic Navy Suit" },
+      "configuration": { "fabric": "Italian Wool" },
+      "qty": 5,
+      "unit_price": 45000,
+      "total_price": 225000
+    }
+  ],
+  "cart_total": 225000
+}
+```
+
+---
+
+### 5️⃣ Checkout (Placeholder)
+
+**POST /checkout**
+
+Creates an order from the cart.
+
+Response:
+
+```json
+{
+  "order_id": 21,
+  "total": 225000,
+  "message": "Order created (payment pending)"
+}
+```
+
+---
+
+### 6️⃣ List Orders
+
+**GET /orders**
+
+Returns the user’s orders.
+
+Response:
+
+```json
+[
+  {
+    "id": 21,
+    "total": 225000,
+    "order_date": "2026-02-07T14:22:10.123Z",
+    "status": "PENDING_PAYMENT"
+  }
+]
+```
+
+---
+
+## 🧪 API Testing (Before Frontend Wiring)
+
+You can test all endpoints using **curl**, **Postman**, or **Hoppscotch**.
+
+### 1️⃣ Set token
+
+```bash
+export TOKEN="<KINDE_ACCESS_TOKEN>"
+```
+
+---
+
+### 2️⃣ Test auth
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+http://localhost:4000/whoami
+```
+
+---
+
+### 3️⃣ Create configuration
+
+```bash
+curl -X POST http://localhost:4000/product-configurations \
+-H "Authorization: Bearer $TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "product_id": 12,
+  "selected_options": { "fabric": 5, "fit": 2 }
+}'
+```
+
+---
+
+### 4️⃣ Add to cart
+
+```bash
+curl -X POST http://localhost:4000/cart/items \
+-H "Authorization: Bearer $TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "product_item_id": 42,
+  "configuration_id": "<UUID>",
+  "qty": 3
+}'
+```
+
+---
+
+### 5️⃣ View cart
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+http://localhost:4000/cart
+```
+
+---
+
+### 6️⃣ Checkout
+
+```bash
+curl -X POST http://localhost:4000/checkout \
+-H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+### 7️⃣ List orders
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+http://localhost:4000/orders
+```
+
+---
+
+## 🚧 Known Limitations (Intentional)
+
+- No payment processing yet
+- No order item breakdown
+- No inventory deduction
+
+These are **deliberate MVP decisions**.
+
+---
+
+## ✅ What This MVP Demonstrates
+
+- Customizable product architecture
+- Cart with group quantities
+- Backend‑controlled pricing
+- Stateless JWT authentication
+- Clean separation of concerns
+
+---
+
+## 🔜 Next Step
+
+After API testing is complete, proceed to **frontend wiring**:
+
+- Call APIs in the correct order
+- Display configuration summaries
+- Show cart & orders
+
+This backend is ready to be consumed by the frontend.

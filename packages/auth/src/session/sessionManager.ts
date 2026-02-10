@@ -11,7 +11,7 @@ export const kindeClient = createKindeServerClient(
   GrantType.AUTHORIZATION_CODE,
   {
     authDomain: process.env.KINDE_DOMAIN!,
-    clientId: process.env.KINDE_CLIENT!,
+    clientId: process.env.KINDE_CLIENT_ID!,
     clientSecret: process.env.KINDE_CLIENT_SECRET!,
     redirectURL: process.env.KINDE_REDIRECT_URI!,
     logoutRedirectURL: process.env.KINDE_LOGOUT_URI!,
@@ -30,6 +30,8 @@ export const sessionManager = (c: Context): SessionManager => ({
       httpOnly: true,
       secure: true,
       sameSite: "Lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
     } as const;
     if (typeof value === "string") {
       setCookie(c, key, value, cookieOptions);

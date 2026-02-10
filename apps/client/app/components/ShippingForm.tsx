@@ -61,7 +61,7 @@ const ShippingForm = ({
           <p className="text-xs text-red-600">{errors.email.message}</p>
         )}
       </div>
-      <div className="flex flex-col gap-1">
+      {/* <div className="flex flex-col gap-1">
         <label htmlFor="name" className="text-xs text-gray-500 font-medium">
           Name
         </label>
@@ -75,23 +75,23 @@ const ShippingForm = ({
         {errors.name && (
           <p className="text-xs text-red-600">{errors.name.message}</p>
         )}
-      </div>
+      </div> */}
       <div className="flex flex-col gap-1">
         <label htmlFor="phone" className="text-xs text-gray-500 font-medium">
           Phone
         </label>
         <input
           className="border-b border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-          type="text"
+          type="number"
           id="phone"
-          placeholder=""
+          placeholder="07220000"
           {...register("phone")}
         />
         {errors.phone && (
           <p className="text-xs text-red-600">{errors.phone.message}</p>
         )}
       </div>
-      <div className="flex flex-col gap-1">
+      {/* <div className="flex flex-col gap-1">
         <label htmlFor="name" className="text-xs text-gray-500 font-medium">
           Name
         </label>
@@ -105,7 +105,7 @@ const ShippingForm = ({
         {errors.name && (
           <p className="text-xs text-red-600">{errors.name.message}</p>
         )}
-      </div>{" "}
+      </div>{" "} */}
       <div className="flex flex-col gap-1">
         <label htmlFor="address" className="text-xs text-gray-500 font-medium">
           Address
@@ -136,7 +136,7 @@ const ShippingForm = ({
           <p className="text-xs text-red-600">{errors.city.message}</p>
         )}
       </div>
-      <div className="flex flex-col gap-1">
+      {/* <div className="flex flex-col gap-1">
         <label htmlFor="name" className="text-xs text-gray-500 font-medium">
           Name
         </label>
@@ -150,7 +150,7 @@ const ShippingForm = ({
         {errors.name && (
           <p className="text-xs text-red-600">{errors.name.message}</p>
         )}
-      </div>
+      </div> */}
       <div className="flex flex-col gap-1">
         <label htmlFor="state" className="text-xs text-gray-500 font-medium">
           State

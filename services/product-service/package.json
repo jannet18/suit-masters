@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "dev": "npm tsx --env-file=.env --watch src/index.ts",
+    "dev": "tsx watch --env-file=.env src/index.ts",
     "check-types": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
@@ -14,15 +14,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.0.3",
-    "cors": "^2.8.5"
+    "@repo/db": "*",
+    "@repo/types": "*",
+    "cors": "^2.8.5",
+    "drizzle-orm": "^0.45.1",
+    "express": "^5.0.3"
   },
   "devDependencies": {
-    "@repo/typescript-config": "*",
     "@repo/db": "*",
-    "@repo/auth": "*",
     "@repo/types": "*",
-    "@types/express": "^5.0.3",
-    "@types/cors": "^2.8.19"
+    "@repo/typescript-config": "*",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3"
   }
 }
