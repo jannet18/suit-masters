@@ -10,7 +10,7 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "dev": "tsx --env-file=.env --watch src/index.ts"
+    "dev": "tsx --env-file=.env --watch src/index.ts --port 4002"
   },
   "keywords": [],
   "author": "",

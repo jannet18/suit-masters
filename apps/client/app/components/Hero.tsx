@@ -1,5 +1,5 @@
-// "use client";
-// import React, { useEffect, useRef } from "react";
+"use client";
+// import { useEffect, useRef } from "react";
 
 // const Hero = () => {
 //   const heroRef = useRef<HTMLDivElement>(null);
@@ -73,7 +73,6 @@
 // };
 // export default Hero;
 
-"use client";
 import { ArrowRightIcon, ChevronRightIcon, Image } from "lucide-react";
 import React from "react";
 import CategoriesMarquee from "./customize/CategoriesMarquee";

@@ -1,21 +1,12 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import "dotenv/config";
 import * as schema from "./schema/schema.js";
+import { Client } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 
-// // Export the client so apps can use it
-// export const createDb = (connectionString: string) => {
-//   const client = neon(connectionString);
-//   return drizzle(client, { schema });
-// };
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL missing");
+}
 
-// // Export types for your frontend/backend use
-// export * from "drizzle-orm";
-// export * from "./schema/schema";
-// packages/database/src/index.ts
-const connectionString = process.env.DATABASE_URL!;
-const client = neon(connectionString);
-
-// Export a ready-to-use instance
+const client = new Client({ connectionString: process.env.DATABASE_URL! });
+client.connect();
 export const db = drizzle(client, { schema });
-
-export * from "./schema/schema.ts";

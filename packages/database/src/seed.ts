@@ -1,18 +1,11 @@
+import { db } from ".";
 import {
   customizationGroup,
   customizationOption,
-  db,
   product,
   productCategory,
   productItem,
-} from "./index";
-// import {
-//   productCategory,
-//   product,
-//   productItem,
-//   customizationGroup,
-//   customizationOption,
-// } from "./schema";
+} from "./schema/products";
 
 async function seed() {
   console.log("🌱 Seeding database...");

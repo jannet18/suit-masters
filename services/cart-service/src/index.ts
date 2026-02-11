@@ -1,15 +1,14 @@
 import { Hono } from "hono";
 import { and, eq, isNull } from "drizzle-orm";
+import { getUser } from "../../../packages/auth/src/middleware/authMiddleware";
+import { db } from "@repo/db";
+import { shoppingCart, shoppingCartItem } from "@repo/db/src/schema/cart";
 import {
-  db,
   product,
   productConfiguration,
   productItem,
-  shopOrder,
-  shoppingCart,
-  shoppingCartItem,
-} from "@repo/db";
-import { getUser } from "../../../packages/auth/src/middleware/authMiddleware";
+} from "@repo/db/src/schema/products";
+import { shopOrder } from "@repo/db/src/schema/orders";
 
 const app = new Hono();
 

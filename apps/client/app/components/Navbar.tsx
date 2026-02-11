@@ -12,8 +12,8 @@ async function Navbar() {
   // const user = await getUser();
 
   return (
-    <nav className="bg-neutral-primary w-full border-b border-gray-200">
-      <div className="max-w-7xl flex items-center justify-between mx-auto p-6">
+    <nav className="w-full border-b border-gray-200">
+      <div className="max-w-7xl flex items-center justify-between mx-auto pt-6">
         <Link href="/" className="flex flex-col items-center space-x-3">
           <span className="self-center text-lg text-heading font-semibold whitespace-nowrap">
             Suit Masters
@@ -25,15 +25,14 @@ async function Navbar() {
             height={50}
             className="w-6 h-6 md:w-9 md:h-9"
           />
-          {/* <img src="/logo.png" className="" alt="Logo" /> */}
         </Link>
         {/* LEFT */}
 
-        <div>
+        {/* <div>
           <Link href="/">
             <Home className="w-5 h-5 text-gray-600" />
           </Link>
-        </div>
+        </div> */}
         {/* RIGHT */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">

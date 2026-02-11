@@ -10,7 +10,7 @@
     "@repo/typescript-config": "*"
   },
   "scripts": {
-    "dev": "tsx watch --env-file=.env src/index.ts",
+    "dev": "tsx watch --env-file=.env src/index.ts --port 4003",
     "build": "tsc",
     "check-types": "tsc --noEmit"
   },

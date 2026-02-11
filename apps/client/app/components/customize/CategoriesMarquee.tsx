@@ -1,5 +1,4 @@
-import React from "react";
-
+"use client";
 export default function CategoriesMarquee() {
   const secondaryLinks = [
     { name: "New Arrivals", href: "/shop?filter=new" },

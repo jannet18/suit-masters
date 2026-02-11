@@ -1,39 +1,10 @@
-import { Hono } from "hono";
-import { logger } from "hono/logger";
-import { cors } from "hono/cors";
-import { productsHandler } from "./routes/productsRoute.js";
-import { getUser } from "../../../packages/auth/src/middleware/authMiddleware.js";
-import { configHandler } from "./routes/configRoute.js";
+import { serve } from "@hono/node-server";
+import app from "./app.js";
 
-type Bindings = {
-  DATABASE_URL: string;
-  KINDE_DOMAIN: string;
-  KINDE_CLIENT_ID: string;
-};
+const port = Number(process.env.PORT) || 4000;
+serve({
+  fetch: app.fetch,
+  port,
+});
 
-type Variables = {
-  user: {
-    id: string;
-    email: string;
-  };
-};
-
-const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
-
-// --- 1. Global Middleware ---
-app.use("*", logger());
-app.use("*", cors());
-
-// --- 2. Public Routes ---
-// Everyone can see the catalog and product details
-app.route("/products", productsHandler);
-
-// --- 3. Protected Routes ---
-// Only logged-in users can save custom configurations or see private prices
-app.use("/config/*", getUser);
-app.route("/config", configHandler);
-
-// --- 4. Health Check ---
-app.get("/health", (c) => c.json({ status: "ok", service: "product-service" }));
-
-export default app;
+console.log(`Product Service is running on port ${port}`);

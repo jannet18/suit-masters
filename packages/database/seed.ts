@@ -11,6 +11,9 @@
 // // } from "./src";
 // // import db from "../database/src/index"
 
+import { db } from "./src";
+import { usersTable } from "./src/schema/user";
+
 // import { product } from "./src";
 
 // // const seed = async () => {
@@ -118,3 +121,16 @@
 //     { productId: customSuit.id, name: "Premium Silk Lining", extraCost: 50 },
 //   ]);
 // }
+// import { db } from "./index";
+// import { usersTable } from "./schema/user";
+
+async function main() {
+  await db.insert(usersTable).values({
+    email: "test@example.com",
+    name: "Test User",
+    kinde_user_id: "1234",
+  });
+  console.log("Seeded users table");
+}
+
+main();

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
-import { customizationOption, db, product } from "@repo/db";
 import { eq } from "drizzle-orm";
+import { db } from "@repo/db";
+import { customizationOption, product } from "@repo/db/src/schema/products";
 
 interface CustomizationItem {
   id: number;
@@ -24,17 +25,22 @@ export const productsHandler = new Hono()
   })
   .get("/:id", async (c) => {
     const id = Number(c.req.param("id"));
+    if (Number.isNaN(id)) {
+      return c.json({ error: "Invalid product ID" }, 400);
+    }
     // 1.Fetch product details
-    const productData = await db.query.product.findFirst({
-      where: eq(product.id, id),
-    });
+    const productData = await db
+      .select()
+      .from(product)
+      .where(eq(product.id, id))
+      .limit(1)
+      .then((res) => res[0]);
     if (!productData) {
       return c.json({ error: "Product not found" }, 404);
     }
     // 2. Fetch customization groups/options if it's a CUSTOM product
     let customizationGroups: CustomizationGroup[] = [];
     if (productData.product_type === "CUSTOM") {
-      // Assuming customizationOption table has a productId column
       customizationGroups = await db
         .select()
         .from(customizationOption)
@@ -43,6 +49,6 @@ export const productsHandler = new Hono()
 
     return c.json({
       ...productData,
-      options: customizationGroups, // This feeds your frontend configuration UI
+      options: customizationGroups,
     });
   });
