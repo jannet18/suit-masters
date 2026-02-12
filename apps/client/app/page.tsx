@@ -1,13 +1,10 @@
-import Hero from "./components/Hero";
-import FeaturedCollections from "./components/FeaturedCollections";
-import CustomizationSection from "./components/CustomizationSection";
+import ProductGrid from "./components/category/ProductGrid";
 
-export default async function Home() {
+export default function HomePage() {
   return (
-    <div className="mx-auto p-4 sm:px-0 sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-7xl">
-      <Hero />
-      <FeaturedCollections />
-      <CustomizationSection />
-    </div>
+    <main className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Featured Products</h1>
+      <ProductGrid />
+    </main>
   );
 }

@@ -12,10 +12,10 @@ export const authRoute = new Hono()
     const registerUrl = await kindeClient.register(sessionManager(c));
     return c.redirect(registerUrl.toString());
   })
-  .get("/callback", async (c) => {
+  .get("/kinde_callback", async (c) => {
     const url = new URL(c.req.url);
     await kindeClient.handleRedirectToApp(sessionManager(c), url);
-    return c.redirect("http://localhost:3000/dashboard");
+    return c.redirect("http://localhost:3000");
   })
   .get("/logout", async (c) => {
     const logoutUrl = await kindeClient.logout(sessionManager(c));

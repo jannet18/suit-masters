@@ -10,7 +10,8 @@
     "@repo/typescript-config": "*"
   },
   "scripts": {
-    "dev": "tsx watch --env-file=.env src/index.ts --port 4003",
+    "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
+    "start": "dotenv -e ../../.env -- node dist/index.js",
     "build": "tsc",
     "check-types": "tsc --noEmit"
   },

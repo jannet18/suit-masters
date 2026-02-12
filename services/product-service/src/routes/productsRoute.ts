@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+// import { customizationOption, db, product } from "@repo/db";
 import { eq } from "drizzle-orm";
 import { db } from "@repo/db";
 import { customizationOption, product } from "@repo/db/src/schema/products";
@@ -20,35 +21,122 @@ interface CustomizationGroup {
 }
 export const productsHandler = new Hono()
   .get("/", async (c) => {
-    const allProducts = await db.select().from(product);
-    return c.json(allProducts);
+    try {
+      const allProducts = await db.select().from(product);
+      return c.json(allProducts);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      return c.json({ error: "Failed to fetch products" }, 500);
+    }
   })
   .get("/:id", async (c) => {
     const id = Number(c.req.param("id"));
     if (Number.isNaN(id)) {
       return c.json({ error: "Invalid product ID" }, 400);
     }
-    // 1.Fetch product details
-    const productData = await db
-      .select()
-      .from(product)
-      .where(eq(product.id, id))
-      .limit(1)
-      .then((res) => res[0]);
-    if (!productData) {
-      return c.json({ error: "Product not found" }, 404);
-    }
-    // 2. Fetch customization groups/options if it's a CUSTOM product
-    let customizationGroups: CustomizationGroup[] = [];
-    if (productData.product_type === "CUSTOM") {
-      customizationGroups = await db
+    try {
+      // 1.Fetch product details
+      const productData = await db
         .select()
-        .from(customizationOption)
-        .where(eq(customizationOption.product_id, id));
-    }
+        .from(product)
+        .where(eq(product.id, id))
+        .limit(1)
+        .then((res) => res[0]);
+      if (!productData) {
+        return c.json({ error: "Product not found" }, 404);
+      }
+      // 2. Fetch customization groups/options if it's a CUSTOM product
+      let customizationGroups: CustomizationGroup[] = [];
+      if (productData.product_type === "CUSTOM") {
+        const options = await db
+          .select()
+          .from(customizationOption)
+          .where(eq(customizationOption.product_id, id));
 
-    return c.json({
-      ...productData,
-      options: customizationGroups,
-    });
+        // Group options by group_id
+        const groupMap = new Map<number, CustomizationGroup>();
+        options.forEach((option) => {
+          if (!groupMap.has(option.group_id)) {
+            groupMap.set(option.group_id, {
+              id: option.group_id,
+              name: "", // You can fetch group name if needed
+              items: [],
+            });
+          }
+          groupMap.get(option.group_id)?.items?.push(option);
+        });
+
+        // Convert map to array
+        customizationGroups = Array.from(groupMap.values());
+      }
+
+      return c.json({
+        ...productData,
+        options: customizationGroups,
+      });
+    } catch (error) {
+      console.error("Error fetching product details:", error);
+      return c.json({ error: "Failed to fetch product details" }, 500);
+    }
   });
+
+// Example of a product details response structure
+/*
+{
+  "id": 1,
+  "name": "The Executive Italian Suit",
+  "description": "A luxurious suit made from the finest Italian wool.",
+  "image_url": "https://example.com/images/italian-suit.jpg",
+  "product_type": "CUSTOM",
+  "base_price": "799.00",
+  "options": [
+    {
+      "id": 1,
+      "name": "Lapel Style",
+      "items": [
+        {
+          "id": 1,
+          "group_id": 1,
+          "value": "Notch Lapel",
+          "price_delta": "0",
+          "is_default": true
+        },
+        {
+          "id": 2,
+          "group_id": 1,
+          "value": "Peak Lapel",
+          "price_delta": "50.00",
+          "is_default": false
+        },
+        {
+          "id": 3,
+          "group_id": 1,
+          "value": "Shawl Lapel",
+          "price_delta": "75.00",
+          "is_default": false
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Fabric",
+      "items": [
+        {
+          "id": 4,
+          "group_id": 2,
+          "value": "Italian Wool",
+          "price_delta": "0",
+          "is_default": true
+        },
+        {
+          "id": 5,
+          "group_id": 2,
+          "value": "British Wool",
+          "price_delta": "100.00",
+          "is_default": false
+        }
+      ]
+    }
+  ]
+}
+*/

@@ -9,8 +9,9 @@
     "@repo/typescript-config": "*"
   },
   "scripts": {
-    "check-types": "tsc --noEmit",
-    "dev": "tsx --env-file=.env --watch src/index.ts --port 4002"
+    "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
+    "start": "dotenv -e ../../.env -- node dist/index.js",
+    "check-types": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",

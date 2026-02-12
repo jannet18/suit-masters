@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import { getUser } from "../../../../packages/auth/src/middleware/authMiddleware";
+import { desc, eq, inArray } from "drizzle-orm";
 import {
   customizationOption,
-  db,
   product,
   productConfiguration,
-} from "@repo/db";
-import { desc, eq, inArray } from "drizzle-orm";
+} from "@repo/db/src/schema/products";
+import { db } from "@repo/db";
 
 export const configHandler = new Hono().post("/save", getUser, async (c) => {
   const user = c.get("user");
