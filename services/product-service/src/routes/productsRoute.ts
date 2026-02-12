@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 // import { customizationOption, db, product } from "@repo/db";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "@repo/db";
 import { customizationOption, product } from "@repo/db/src/schema/products";
 
@@ -22,8 +22,19 @@ interface CustomizationGroup {
 export const productsHandler = new Hono()
   .get("/", async (c) => {
     try {
-      const allProducts = await db.select().from(product);
-      return c.json(allProducts);
+      const allProducts = await db
+        .select()
+        .from(product)
+        .orderBy(asc(product.createdAt))
+        .limit(20);
+
+      const latestProducts = await db
+        .select()
+        .from(product)
+        .where(eq(product.product_type, "LATEST"))
+        .orderBy(asc(product.createdAt))
+        .limit(20);
+      return c.json({ all: allProducts, latest: latestProducts });
     } catch (error) {
       console.error("Error fetching products:", error);
       return c.json({ error: "Failed to fetch products" }, 500);

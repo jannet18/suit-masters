@@ -1,20 +1,16 @@
 import Link from "next/link";
-import { Heart, SearchIcon, ShoppingBagIcon, User } from "lucide-react";
-import { LoginLink, LogoutLink } from "@kinde-oss/kinde-auth-nextjs";
-import {
-  getKindeServerSession,
-  RegisterLink,
-} from "@kinde-oss/kinde-auth-nextjs/server";
-import ShoppingCartIcon from "../components/common/ShoppingCart";
+import SearchBar from "../components/common/SearchBar";
+import { Suspense } from "react";
+import Action from "./Action";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 async function Navbar() {
   const { getUser } = getKindeServerSession();
   const user = await getUser();
-  // const { isAuthenticated, getUser } = getKindeServerSession();
-  // const user = await getUser();
 
+  // const isAdmin = user?.role  === "admin";
   return (
-    <nav className="w-full border-b border-gray-200">
+    <nav className="w-full border-b border-gray-200 p-4">
       <div className="max-w-7xl flex items-center justify-between mx-auto pt-6">
         <Link href="/" className="flex flex-col items-center space-x-3">
           <span className="self-center text-lg text-heading font-semibold whitespace-nowrap">
@@ -29,31 +25,15 @@ async function Navbar() {
           /> */}
         </Link>
         {/* LEFT */}
-
+        <Suspense
+          fallback={
+            <div className="w-48 h-8 bg-gray-200 rounded-md animate-pulse"></div>
+          }
+        >
+          <SearchBar />
+        </Suspense>
         {/* RIGHT */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <SearchIcon className="w-5 h-5 text-gray-600" />{" "}
-            <span className="verical-line"></span>
-            {user ? (
-              <LogoutLink>
-                <button>Log out</button>
-              </LogoutLink>
-            ) : (
-              <div className="flex items-center gap-4">
-                <LoginLink>
-                  <button>
-                    <User className="w-5 h-5 text-gray-600" />
-                  </button>
-                </LoginLink>
-                <RegisterLink className="">Register</RegisterLink>
-              </div>
-            )}
-          </div>
-          <Heart className="w-5 h-5 text-gray-600 cursor-pointer" />
-          <ShoppingCartIcon />
-          {/* <Bell className="w-5 h-5 text-gray-600 cursor-pointer" /> */}
-        </div>
+        <Action />
       </div>
     </nav>
   );

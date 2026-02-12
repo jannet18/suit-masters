@@ -5,6 +5,7 @@ import {
   serial,
   timestamp,
   uuid,
+  varchar,
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./user";
 
@@ -12,7 +13,9 @@ export const shopOrder = pgTable("shop_order", {
   id: serial("id").primaryKey(),
   userId: uuid("user_id").references(() => usersTable.id),
   total: numeric("total", { precision: 12, scale: 2 }).notNull(),
+  orderedItems: integer("ordered_items").notNull(),
   orderDate: timestamp("order_date").defaultNow(),
+  status: varchar("status", { length: 64 }).notNull(),
 });
 
 // export const orderStatusTable = pgTable("order_status", {

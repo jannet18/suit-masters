@@ -1,17 +1,72 @@
-import { Search } from "lucide-react";
+"use client";
+import { Button } from "@/components/ui/button";
+import { Search, X } from "lucide-react";
+import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const SearchBar = () => {
+  const [value, setValue] = useState("");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { replace } = useRouter();
+  const router = useRouter();
+  const params = new URLSearchParams(searchParams);
+  const query = searchParams.get("query") || "";
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!value) return;
+    const isShop = pathname.includes("/shop");
+    if (isShop) {
+      params.set("query", value);
+      replace(`${pathname}?${params.toString()}`);
+    } else {
+      router.push(`/shop?query=${value}`);
+    }
+
+    console.log("Search for:", value);
+  };
+  const onClear = () => {
+    setValue("");
+    const isShop = pathname.includes("/shop");
+    if (isShop) {
+      params.delete("query");
+      replace(`${pathname}?${params.toString()}`);
+    }
+  };
   return (
-    <div className="hidden sm:flex items-center gap-2 rounded-md ring-1 ring-gray-200 px-2 py-1 shadow-md">
-      <Search className="w-4 h-4 text-gray-500" />
+    <form
+      onSubmit={onSubmit}
+      className="relative w-full lg:w-100 flex items-center gap-0"
+    >
       <input
         type="text"
-        name=""
+        value={value}
         id="search"
-        placeholder="Search.."
-        className="text-sm outline-0"
+        placeholder="Search..."
+        className="rounded-md focus-visible:ring-0 focus-visible:ring-transparent focus-visible:ring-offset-0 bg-transparent dark:bg-transparent border border-gray-300 dark:border-gray-700 focus:border-gray-500 dark:focus:border-gray-500 w-full pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-700"
+        onChange={(e) => setValue(e.target.value)}
       />
-    </div>
+      {value && (
+        <Button
+          variant="ghost"
+          size="icon"
+          type="button"
+          className="absolute right-8"
+          onClick={() => setValue("")}
+        >
+          <X className="w-4 h-4 text-muted-foreground cursor-pointer hover:opacity-75 transition ease-in-out duration-150" />
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size="icon"
+        type="submit"
+        className="rounded-r-md focus-visible:ring-0 focus-visible:ring-transparent focus-visible:ring-offset-0 bg-transparent border p-0 ml-1"
+      >
+        <Search className="size-4" />
+      </Button>
+    </form>
   );
 };
 

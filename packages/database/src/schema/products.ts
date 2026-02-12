@@ -25,7 +25,7 @@ export const product = pgTable("product", {
   description: varchar("description", { length: 128 }).notNull(),
   product_image: varchar("product_image", { length: 255 }).notNull(),
   product_type: varchar("product_type", { length: 32 })
-    .$type<"STANDARD" | "CUSTOM">()
+    .$type<"STANDARD" | "CUSTOM" | "LATEST" | "COLLECTION">()
     .notNull(),
 
   base_price: numeric("base_price", { precision: 12, scale: 2 }).notNull(),
