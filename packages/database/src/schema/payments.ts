@@ -4,11 +4,9 @@ import {
   pgTable,
   serial,
   varchar,
-  uuid,
 } from "drizzle-orm/pg-core";
-// import { usersTable } from "./user";
-import { timestamps } from "./shared";
 import { relations } from "drizzle-orm";
+import { timestamps } from "./shared";
 
 export const paymentsTypeTable = pgTable("payments_type", {
   id: serial("id").primaryKey(),

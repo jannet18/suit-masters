@@ -1,7 +1,13 @@
-import { authRoute } from "./routes/verify";
+import { authRoute } from "./routes/verify.js";
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
+export type { AuthContext } from "./types.js";
+// export interface AuthContext {
+//   userId: string;
+//   email: string;
+//   roles: string[];
+// }
 
 const app = new Hono();
 

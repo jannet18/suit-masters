@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
-import { db } from "./src";
-
+import { db } from "@repo/db";
 async function main() {
   try {
     if (process.env.NODE_ENV === "production") {

@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
-  "main": "./src/index.ts",
-  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -12,7 +12,8 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/seed.ts",
     "db:reset": "tsx reset.ts drizzle-kit push --force",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "build": "tsc"
   },
   "dependencies": {
     "@kinde-oss/kinde-typescript-sdk": "^2.13.1",
@@ -29,5 +30,9 @@
     "tsx": "^4.21.0",
     "dotenv": "^17.2.4",
     "dotenv-cli": "^11.0.0"
+  },
+  "exports": {
+    ".": "./src/db.ts",
+    "./schema": "./src/schema/index.ts"
   }
 }

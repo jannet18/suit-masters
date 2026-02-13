@@ -9,6 +9,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "./shared";
+
 // DESIGNER LOGIC
 export const productCategory = pgTable("product_category", {
   id: serial("id").primaryKey(),

@@ -1,8 +1,7 @@
 import { Hono } from "hono";
-// import { customizationOption, db, product } from "@repo/db";
 import { asc, eq } from "drizzle-orm";
-import { db } from "@repo/db";
-import { customizationOption, product } from "@repo/db/src/schema/products";
+import { customizationOption, db, product } from "@repo/db";
+// import { customizationOption, product } from "@repo/db/src/schema/products";
 
 interface CustomizationItem {
   id: number;

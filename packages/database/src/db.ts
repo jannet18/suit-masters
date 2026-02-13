@@ -1,5 +1,5 @@
 import "dotenv/config";
-import * as schema from "./schema/schema.js";
+import * as schema from "./schema/index";
 import { Client } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 
@@ -9,4 +9,6 @@ if (!process.env.DATABASE_URL) {
 
 const client = new Client({ connectionString: process.env.DATABASE_URL! });
 client.connect();
+
 export const db = drizzle(client, { schema });
+export * from "./schema/index.js";

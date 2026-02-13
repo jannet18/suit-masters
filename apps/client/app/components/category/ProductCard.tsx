@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCartStore, CustomOption } from "@/app/stores/cartStore";
 import { useState } from "react";
 import CustomizationGroup from "@/app/components/customization/CustomizationGroup";
+
 export default function ProductCard({ product }: { product: Product }) {
   const addToCart = useCartStore((state: any) => state.addToCart);
   const [selectedOptions, setSelectedOptions] = useState<CustomOption[]>([]);
@@ -18,8 +19,8 @@ export default function ProductCard({ product }: { product: Product }) {
       id: product.id,
       name: product.name,
       quantity: 1,
-      base_price: Number(product.price?.toString()),
-      image_url: product.image?.default,
+      base_price: Number(product.base_price?.toString()),
+      image_url: product.product_image?.default,
       product_type: product.product_type,
       selected_options: selectedOptions.length ? selectedOptions : undefined,
     });
@@ -33,7 +34,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="relative overflow-hidden rounded-lg group">
           <img
             src={
-              product.image?.default ||
+              product.product_image?.default ||
               "https://images.unsplash.com/photo-1598808503746-f34c53b9323e?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YmxhY2slMjBzdWl0fGVufDB8fDB8fHww "
             }
             alt={product.name}
@@ -46,7 +47,7 @@ export default function ProductCard({ product }: { product: Product }) {
         </h3>
       </Link>
       <p className="text-amber-600 font-semibold mt-1">
-        KES {Number(product.price?.toFixed(2))}
+        KES {Number(product.base_price).toLocaleString()}
       </p>
       {/* Show customization options */}
       {product.product_type === "CUSTOM" &&

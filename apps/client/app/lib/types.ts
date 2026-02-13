@@ -1,8 +1,8 @@
 export interface Product {
   id: number;
   name: string;
-  price: number;
-  image: { default: string; [key: string]: string };
+  base_price: number;
+  product_image: { default: string; [key: string]: string };
   product_type: "STANDARD" | "CUSTOM";
   options?: CustomizationGroup[];
   discount?: number;
