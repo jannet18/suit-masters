@@ -12,6 +12,15 @@ export async function createOrder(shippingInfo: any) {
   return data.orderId;
 }
 
+export async function getOrder(orderId: number) {
+  const res = await fetch(`http://localhost:4001/orders/${orderId}`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch order");
+  return res.json();
+}
+
 export async function createPaymentIntent(orderId: number) {
   const res = await fetch("http://localhost:4002/payments/create-intent", {
     method: "POST",

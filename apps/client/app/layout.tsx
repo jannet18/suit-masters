@@ -41,6 +41,14 @@ export default function RootLayout({
             <ToastContainer position="bottom-right" />
           </div>
         </AuthProvider>
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar
+          newestOnTop
+          closeOnClick
+          pauseOnHover
+        />
       </body>
     </html>
   );

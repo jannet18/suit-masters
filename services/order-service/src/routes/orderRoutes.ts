@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import type { AuthContext } from "@repo/auth";
 import { db, orderItems, shopOrder } from "@repo/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+
 export const orderRoutes = new Hono<AuthContext>();
 
 /**
@@ -71,16 +72,40 @@ orderRoutes.post("/", async (c) => {
   }
 });
 
-orderRoutes.post("/:orderId/complete", async (c) => {
-  const { orderId } = c.req.param();
-  try {
-    await db
-      .update(shopOrder)
-      .set({ status: "PAID" })
-      .where(eq(shopOrder.id, Number(orderId)));
-    return c.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return c.json({ error: "Failed to update order" }, 500);
+// orderRoutes.post("/:orderId/complete", async (c) => {
+//   const { orderId } = c.req.param();
+//   try {
+//     await db
+//       .update(shopOrder)
+//       .set({ status: "PAID" })
+//       .where(eq(shopOrder.id, Number(orderId)));
+//     return c.json({ success: true });
+//   } catch (err) {
+//     console.error(err);
+//     return c.json({ error: "Failed to update order" }, 500);
+//   }
+// });
+orderRoutes.get("/", async (c) => {
+  const user = c.get("user");
+  const userId = user.id;
+
+  const orders = await db.query.shopOrder.findMany({
+    where: (orders, { eq }) => eq(orders.userId, userId),
+    orderBy: (orders, { desc }) => [desc(orders.orderDate)],
+  });
+  return c.json({ orders });
+});
+orderRoutes.get("/:orderId", async (c) => {
+  const user = c.get("user");
+  const userId = user.id;
+  const orderId = Number(c.req.param("orderId"));
+
+  const order = await db.query.shopOrder.findFirst({
+    where: (orders, { and, eq }) =>
+      and(eq(orders.id, orderId), eq(orders.userId, userId)),
+  });
+  if (!order) {
+    return c.json({ error: "Order not found" }, 404);
   }
+  return c.json(order);
 });

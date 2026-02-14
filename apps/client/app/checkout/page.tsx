@@ -138,7 +138,6 @@ import { Elements } from "@stripe/react-stripe-js";
 import ShippingForm from "../components/ShippingForm";
 import PaymentForm from "../components/PaymentForm";
 import { stripePromise } from "../lib/stripe";
-// import { getStripe } from "../lib/stripe";
 
 export default function CheckoutPage() {
   const [orderId, setOrderId] = useState<number | null>(null);

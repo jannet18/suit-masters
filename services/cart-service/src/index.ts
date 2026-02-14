@@ -6,7 +6,6 @@ import {
   product,
   productConfiguration,
   productItem,
-  shopOrder,
   shoppingCart,
   shoppingCartItem,
 } from "@repo/db";

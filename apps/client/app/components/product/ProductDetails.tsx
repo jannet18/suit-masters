@@ -6,12 +6,14 @@ import { Product } from "@/app/lib/types";
 import CustomizationGroup from "@/app/product/CustomizationGroup";
 import { CustomizationGroup as CustomizationGroupType } from "@/app/lib/types";
 import { CustomOption } from "@/app/stores/cartStore";
+import { toast } from "react-toastify";
 
 export default function ProductDetails({ product }: { product: Product }) {
   const addToCart = useCartStore((state) => state.addToCart);
   const [selectedOptions, setSelectedOptions] = useState<
     Record<number, number>
   >({});
+  const { getTotal } = useCartStore();
 
   const handleAddToCart = () => {
     if (
@@ -26,8 +28,8 @@ export default function ProductDetails({ product }: { product: Product }) {
       id: product.id,
       name: product.name,
       quantity: 1,
-      base_price: product.price?.toString(),
-      image_url: product.image?.default,
+      base_price: product.base_price?.toString(),
+      image_url: product.product_image?.default,
       product_type: product.product_type,
       selected_options: Object.entries(selectedOptions)
         .map(([groupId, optionId]) => {
@@ -42,7 +44,8 @@ export default function ProductDetails({ product }: { product: Product }) {
         .filter((opt): opt is NonNullable<typeof opt> => opt !== null),
     });
 
-    alert("Added to cart!");
+    // alert("Added to cart!");
+    toast.success("Added to cart successful ! 🎉");
   };
 
   return (
@@ -50,7 +53,7 @@ export default function ProductDetails({ product }: { product: Product }) {
       {/* IMAGE */}
       <div className="overflow-hidden rounded-xl">
         <img
-          src={product.image?.default}
+          src={product.product_image?.default}
           alt={product.name}
           className="w-full object-cover"
         />
@@ -61,7 +64,7 @@ export default function ProductDetails({ product }: { product: Product }) {
         <h1 className="text-2xl font-bold mb-2">{product.name}</h1>
 
         <p className="text-amber-600 text-xl font-semibold mb-4">
-          KES {product.price}
+          USD {getTotal()}
         </p>
 
         {product.product_type === "CUSTOM" &&

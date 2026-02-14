@@ -4,14 +4,16 @@ import Link from "next/link";
 import { useCartStore, CustomOption } from "@/app/stores/cartStore";
 import { useState } from "react";
 import CustomizationGroup from "@/app/components/customization/CustomizationGroup";
+import { toast } from "react-toastify";
 
 export default function ProductCard({ product }: { product: Product }) {
   const addToCart = useCartStore((state: any) => state.addToCart);
+  const { getTotal } = useCartStore();
   const [selectedOptions, setSelectedOptions] = useState<CustomOption[]>([]);
 
   const handleAddToCart = () => {
     if (product.product_type === "CUSTOM" && selectedOptions.length === 0) {
-      alert("Please select options!");
+      toast("Please select options!");
       return;
     }
 
@@ -25,7 +27,8 @@ export default function ProductCard({ product }: { product: Product }) {
       selected_options: selectedOptions.length ? selectedOptions : undefined,
     });
 
-    alert("Added to cart!");
+    // console.log("Added to cart!");
+    toast("Added to cart successfully!");
   };
 
   return (
@@ -46,9 +49,7 @@ export default function ProductCard({ product }: { product: Product }) {
           {product.name}
         </h3>
       </Link>
-      <p className="text-amber-600 font-semibold mt-1">
-        KES {Number(product.base_price).toLocaleString()}
-      </p>
+      <p className="text-amber-600 font-semibold mt-1">USD {getTotal()}</p>
       {/* Show customization options */}
       {product.product_type === "CUSTOM" &&
         product.options?.map((group) => (

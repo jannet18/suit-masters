@@ -111,6 +111,8 @@
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useState } from "react";
 import { createPaymentIntent } from "../lib/api/orders";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 interface PaymentFormProps {
   orderId: number;
@@ -121,6 +123,7 @@ const PaymentForm = ({ orderId }: PaymentFormProps) => {
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,9 +146,12 @@ const PaymentForm = ({ orderId }: PaymentFormProps) => {
 
       if (result.error) {
         setError(result.error.message || "Payment failed");
+        toast.error("Payment failed");
       } else if (result.paymentIntent?.status === "succeeded") {
-        alert("Payment successful 🎉");
+        // alert("Payment successful 🎉");
         // TODO: redirect to success page
+        router.push(`/checkout/success?orderId=${orderId}`);
+        toast.success("Payment Successful 🎉");
       }
     } catch (err: any) {
       setError(err.message);

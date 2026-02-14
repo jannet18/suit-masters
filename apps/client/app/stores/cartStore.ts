@@ -134,7 +134,7 @@ export const useCartStore = create<CartState>()(
               0,
             );
           }
-          return acc + price * item.quantity;
+          return (acc + price * item.quantity) / 100;
         }, 0),
     }),
     { name: "cart-storage" }, // persisted in localStorage
