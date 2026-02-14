@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ProductCard from "./ProductCard";
+// import ProductCard from "./ProductCard";
 import { Product } from "@/app/lib/types";
+import ProductCard from "./ProductCard";
 
 export default function ProductGrid() {
   const [products, setProducts] = useState<Product[]>([]);

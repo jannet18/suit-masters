@@ -5,7 +5,8 @@
     "declaration": true,
     "emitDeclarationOnly": false,
     "module": "ESNext",
-    "moduleResolution": "Bundler"
+    "moduleResolution": "Bundler",
+    "strict": true
   },
   "include": ["src"]
 }

@@ -5,6 +5,10 @@
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/db.js",
+    "./schema": "./dist/schema/index.js"
+  },
   "scripts": {
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -31,8 +35,5 @@
     "dotenv": "^17.2.4",
     "dotenv-cli": "^11.0.0"
   },
-  "exports": {
-    ".": "./src/db.ts",
-    "./schema": "./src/schema/index.ts"
-  }
+  "type": "module"
 }
