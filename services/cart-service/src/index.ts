@@ -29,14 +29,16 @@ app.post("/add", getUser, async (c) => {
   const user = c.get("user") as AuthUser;
   const userId = user.id;
 
-  const { product_item_id, configuration_id, measurement_id, qty } =
-    await c.req.json<{
-      product_item_id: number;
-      configuration_id?: string;
-      measurement_id?: string;
-      qty: number;
-    }>();
+  const body = await c.req.json<{
+    product_item_id: number;
+    configuration_id?: string;
+    measurement_id?: string;
+    qty: number;
+  }>();
 
+  const safetyQty = Math.max(1, Number(body.qty) || 1);
+
+  const { product_item_id, configuration_id, measurement_id } = body;
   // Find the user's cart or create one
   let cart = await db.query.shoppingCart.findFirst({
     where: eq(shoppingCart.user_id, userId),
@@ -45,7 +47,7 @@ app.post("/add", getUser, async (c) => {
   if (!cart) return c.json({ error: "Cart not found" }, 400);
   const [newCart] = await db
     .insert(shoppingCart)
-    .values({ user_id: userId.toString() })
+    .values({ user_id: userId })
     .returning();
   cart = newCart;
   // Check if the same item (with configuration & measurement) exists
@@ -64,9 +66,10 @@ app.post("/add", getUser, async (c) => {
 
   if (existingItem) {
     // Increase quantity
+
     await db
       .update(shoppingCartItem)
-      .set({ qty: existingItem.qty + qty })
+      .set({ qty: existingItem.qty + safetyQty })
       .where(eq(shoppingCartItem.id, existingItem.id));
   } else {
     // Insert new cart
@@ -75,7 +78,7 @@ app.post("/add", getUser, async (c) => {
       product_item_id,
       configuration_id: configuration_id || null,
       measurement_id: measurement_id || null,
-      qty,
+      qty: safetyQty,
     });
   }
 
@@ -88,10 +91,18 @@ app.get("/cart", getUser, async (c) => {
   const user = c.get("user") as AuthUser;
   const userId = user.id;
 
-  const cart = await db.query.shoppingCart.findFirst({
+  let cart = await db.query.shoppingCart.findFirst({
     where: eq(shoppingCart.user_id, userId),
   });
 
+  if (!cart) {
+    const inserted = await db
+      .insert(shoppingCart)
+      .values({ user_id: userId })
+      .returning();
+
+    cart = inserted[0];
+  }
   if (!cart) {
     return c.json({
       cart_id: null,
@@ -245,103 +256,103 @@ app.get("/cart", getUser, async (c) => {
 //   });
 // });
 
-app.post("/checkout", getUser, async (c) => {
-  const user = c.get("user") as { id: string };
-  const userId = user.id;
+// app.post("/checkout", getUser, async (c) => {
+//   const user = c.get("user") as { id: string };
+//   const userId = user.id;
 
-  const body = await c.req.json<{
-    shipping: {
-      name: string;
-      email: string;
-      phone: string;
-      address_line1: string;
-      address_line2?: string;
-      city: string;
-      region: string;
-      postal_code: string;
-      country: string;
-    };
-  }>();
+//   const body = await c.req.json<{
+//     shipping: {
+//       name: string;
+//       email: string;
+//       phone: string;
+//       address_line1: string;
+//       address_line2?: string;
+//       city: string;
+//       region: string;
+//       postal_code: string;
+//       country: string;
+//     };
+//   }>();
 
-  // 1️⃣ Load cart
-  const cart = await db.query.shoppingCart.findFirst({
-    where: eq(shoppingCart.user_id, userId),
-  });
+//   // 1️⃣ Load cart
+//   const cart = await db.query.shoppingCart.findFirst({
+//     where: eq(shoppingCart.user_id, userId),
+//   });
 
-  if (!cart) {
-    return c.json({ error: "Cart not found" }, 400);
-  }
+//   if (!cart) {
+//     return c.json({ error: "Cart not found" }, 400);
+//   }
 
-  // From this point onward, cart is guaranteed
-  const cartId = cart.id;
+//   // From this point onward, cart is guaranteed
+//   const cartId = cart.id;
 
-  // 2️⃣ Load cart items
-  const cartItems = await db
-    .select({
-      qty: shoppingCartItem.qty,
-      skuPrice: productItem.price,
-      configurationPrice: productConfiguration.final_price,
-    })
-    .from(shoppingCartItem)
-    .leftJoin(
-      productConfiguration,
-      eq(shoppingCartItem.configuration_id, productConfiguration.id),
-    )
-    .innerJoin(
-      productItem,
-      eq(shoppingCartItem.product_item_id, productItem.id),
-    )
-    .where(eq(shoppingCartItem.cart_id, cartId));
+//   // 2️⃣ Load cart items
+//   const cartItems = await db
+//     .select({
+//       qty: shoppingCartItem.qty,
+//       skuPrice: productItem.price,
+//       configurationPrice: productConfiguration.final_price,
+//     })
+//     .from(shoppingCartItem)
+//     .leftJoin(
+//       productConfiguration,
+//       eq(shoppingCartItem.configuration_id, productConfiguration.id),
+//     )
+//     .innerJoin(
+//       productItem,
+//       eq(shoppingCartItem.product_item_id, productItem.id),
+//     )
+//     .where(eq(shoppingCartItem.cart_id, cartId));
 
-  if (cartItems.length === 0) {
-    return c.json({ error: "Cart is empty" }, 400);
-  }
+//   if (cartItems.length === 0) {
+//     return c.json({ error: "Cart is empty" }, 400);
+//   }
 
-  // 3️⃣ Calculate total
-  let total = 0;
-  for (const item of cartItems) {
-    const unitPrice = item.configurationPrice ?? item.skuPrice;
-    total += Number(unitPrice) * item.qty;
-  }
+//   // 3️⃣ Calculate total
+//   let total = 0;
+//   for (const item of cartItems) {
+//     const unitPrice = item.configurationPrice ?? item.skuPrice;
+//     total += Number(unitPrice) * item.qty;
+//   }
 
-  // 4️⃣ Create order
-  const inserted = await db
-    .insert(shopOrder)
-    .values({
-      userId: userId,
-      total: total.toString(),
-      orderedItems: cartItems.length,
-      status: "PENDING",
+//   // 4️⃣ Create order
+//   const inserted = await db
+//     .insert(shopOrder)
+//     .values({
+//       userId: userId,
+//       total: total.toString(),
+//       orderedItems: cartItems.length,
+//       status: "PENDING",
 
-      shipping_name: body.shipping.name,
-      shipping_email: body.shipping.email,
-      shipping_phone: body.shipping.phone,
+//       shipping_name: body.shipping.name,
+//       shipping_email: body.shipping.email,
+//       shipping_phone: body.shipping.phone,
 
-      shipping_address_line1: body.shipping.address_line1,
-      shipping_address_line2: body.shipping.address_line2 ?? null,
-      shipping_city: body.shipping.city,
-      shipping_region: body.shipping.region,
-      shipping_postal_code: body.shipping.postal_code,
-      shipping_country: body.shipping.country,
-    })
-    .returning();
+//       shipping_address_line1: body.shipping.address_line1,
+//       shipping_address_line2: body.shipping.address_line2 ?? null,
+//       shipping_city: body.shipping.city,
+//       shipping_region: body.shipping.region,
+//       shipping_postal_code: body.shipping.postal_code,
+//       shipping_country: body.shipping.country,
+//     })
+//     .returning();
 
-  // Drizzle returns array — make it explicit
-  const order = inserted[0];
+//   // Drizzle returns array — make it explicit
+//   const order = inserted[0];
 
-  if (!order) {
-    return c.json({ error: "Failed to create order" }, 500);
-  }
+//   if (!order) {
+//     return c.json({ error: "Failed to create order" }, 500);
+//   }
 
-  // 5️⃣ Clear cart
-  await db.delete(shoppingCartItem).where(eq(shoppingCartItem.cart_id, cartId));
+//   // 5️⃣ Clear cart
+//   await db.delete(shoppingCartItem).where(eq(shoppingCartItem.cart_id, cartId));
 
-  return c.json({
-    order_id: order.id,
-    total,
-    message: "Order created (payment pending)",
-  });
-});
+//   return c.json({
+//     order_id: order.id,
+//     total,
+//     message: "Order created (payment pending)",
+//   });
+// });
 
 // app.get("/orders", getUser, async (c) => {
 //   const userId = c.get("user").dbUser.id;
