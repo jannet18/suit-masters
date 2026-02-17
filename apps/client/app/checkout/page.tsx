@@ -132,28 +132,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { getCurrentUser } from "../lib/auth";
 import { Elements } from "@stripe/react-stripe-js";
 import ShippingForm from "../components/ShippingForm";
 import PaymentForm from "../components/PaymentForm";
 import { stripePromise } from "../lib/stripe";
+import { toast } from "react-toastify";
 
 export default function CheckoutPage() {
   const [orderId, setOrderId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
+  const [user, setUser] = useState(true);
 
   // 🔐 LOGIN GUARD
   useEffect(() => {
     getCurrentUser().then((user) => {
       if (!user) {
-        router.push("/login?redirect=/checkout");
+        // guest -> redirect to Kinde login with redirect back
+        toast.info("Please sign in to proceed to checkout");
+        router.replace("/api/auth/login?redirect=${pathname}");
       } else {
+        setUser(user);
         setLoading(false);
       }
     });
-  }, []);
+  }, [router, pathname]);
 
   if (loading) return <p>Checking session...</p>;
 

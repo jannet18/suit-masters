@@ -33,14 +33,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        <Navbar />
         <AuthProvider>
           <div className="mx-auto px-2 sm:px-0 sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-7xl">
-            <Navbar />
             <main className="min-h-[80vh]">{children}</main>
-            <Footer />
-            <ToastContainer position="bottom-right" />
           </div>
         </AuthProvider>
+        <Footer />
         <ToastContainer
           position="top-right"
           autoClose={3000}

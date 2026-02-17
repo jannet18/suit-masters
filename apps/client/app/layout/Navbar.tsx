@@ -1,14 +1,16 @@
 import Link from "next/link";
 import SearchBar from "../components/common/SearchBar";
 import { Suspense } from "react";
-import Action from "./Action";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import UserButton from "./Account";
 
 async function Navbar() {
   const { getUser } = getKindeServerSession();
   const user = await getUser();
 
   // const isAdmin = user?.role  === "admin";
+  console.log("NAVBAR SERVER USER:", user);
+
   return (
     <nav className="w-full border-b border-gray-200 p-4">
       <div className="max-w-7xl flex items-center justify-between mx-auto pt-6">
@@ -33,7 +35,7 @@ async function Navbar() {
           <SearchBar />
         </Suspense>
         {/* RIGHT */}
-        <Action />
+        <UserButton user={user} />
       </div>
     </nav>
   );

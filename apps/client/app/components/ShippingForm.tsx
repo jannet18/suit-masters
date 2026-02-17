@@ -151,6 +151,7 @@ import { ShippingFormData, shippingFormSchema } from "../lib/form";
 import { useState } from "react";
 import { createOrder } from "../lib/api/orders";
 import InputField from "./common/InputField";
+import { toast } from "react-toastify";
 
 interface ShippingFormProps {
   onSuccess: (orderId: number) => void;
@@ -172,9 +173,12 @@ export default function ShippingForm({ onSuccess }: ShippingFormProps) {
 
     try {
       const orderId = await createOrder(data);
+
       onSuccess(orderId);
+      toast.success("Order created. Proceed to payment");
     } catch (err: any) {
-      alert(err.message);
+      console.error(err.message);
+      toast.error("Order placement failed");
     }
 
     setLoading(false);
