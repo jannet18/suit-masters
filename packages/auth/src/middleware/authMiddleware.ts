@@ -1,6 +1,7 @@
 import { UserType } from "@kinde-oss/kinde-typescript-sdk";
 import { kindeClient, sessionManager } from "../session/sessionManager.js";
 import { createMiddleware } from "hono/factory";
+
 type AuthEnv = {
   Variables: {
     user: UserType;

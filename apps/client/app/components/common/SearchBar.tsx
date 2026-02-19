@@ -64,7 +64,7 @@ const SearchBar = () => {
         type="submit"
         className="rounded-r-md focus-visible:ring-0 focus-visible:ring-transparent focus-visible:ring-offset-0 bg-transparent border p-0 ml-1"
       >
-        <Search className="size-4" />
+        <Search className="size-4 cursor-pointer" />
       </Button>
     </form>
   );

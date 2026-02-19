@@ -2,7 +2,7 @@
   "name": "suit-masters",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
+    "build": "npm run build -w @repo/auth && npm run build -w @repo/orders",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",

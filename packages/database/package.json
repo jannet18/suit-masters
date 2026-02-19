@@ -5,6 +5,7 @@
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "packageManager": "npm@11.3.0",
   "exports": {
     ".": "./dist/db.js",
     "./schema": "./dist/schema/index.js"

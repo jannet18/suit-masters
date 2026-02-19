@@ -1,3 +1,6 @@
+"use client";
+export const dynamic = "force-dynamic";
+
 import { getOrder } from "@/app/lib/api/orders";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -13,7 +16,6 @@ export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderIdParam = searchParams.get("orderId");
-
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,13 +24,20 @@ export default function CheckoutSuccessPage() {
       router.push("/");
       return;
     }
-
-    const orderId = Number(orderIdParam);
-    getOrder(orderId)
+    fetch(`/api/orders/${orderIdParam}`, {
+      credentials: "include",
+    })
+      .then((res) => res.json())
       .then(setOrder)
-      .catch(() => router.push("/"))
-      .finally(() => setLoading(false));
-  }, [orderIdParam]);
+      .catch(() => router.push("/"));
+  }, [orderIdParam, router]);
+
+  //   const orderId = Number(orderIdParam);
+  //   getOrder(orderId)
+  //     .then(setOrder)
+  //     .catch(() => router.push("/"))
+  //     .finally(() => setLoading(false));
+  // }, [orderIdParam, router]);
 
   if (loading) return <p className="p-6">Loading Orders</p>;
   if (!order) return <p className="p-6">Order not found</p>;
@@ -52,7 +61,7 @@ export default function CheckoutSuccessPage() {
       </div>
 
       <button
-        onClick={() => router.push("/orders")}
+        onClick={() => router.push("/account/orders")}
         className="bg-black text-white px-4 py-2 rounded-lg"
       >
         View My Orders

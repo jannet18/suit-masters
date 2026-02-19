@@ -4,7 +4,8 @@ import "./globals.css";
 import Navbar from "./layout/Navbar";
 import Footer from "./layout/Footer";
 import { ToastContainer } from "react-toastify";
-import { AuthProvider } from "./AuthProvider";
+import { AuthProvider } from "../providers/AuthProvider";
+import { ThemeProvider } from "@/providers/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,11 +35,18 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Navbar />
-        <AuthProvider>
-          <div className="mx-auto px-2 sm:px-0 sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-7xl">
-            <main className="min-h-[80vh]">{children}</main>
-          </div>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <div className="mx-auto px-2 sm:px-0 sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-7xl">
+              <main className="min-h-[80vh]">{children}</main>
+            </div>
+          </AuthProvider>
+        </ThemeProvider>
         <Footer />
         <ToastContainer
           position="top-right"

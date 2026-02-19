@@ -1,6 +1,7 @@
 export * from "./address";
 export * from "./cart";
-export * from "./orders";
+export { orderItems, shopOrder } from "./orders";
+// export * from "./orders";
 export * from "./payments";
 export * from "./products";
 export * from "./promotions";

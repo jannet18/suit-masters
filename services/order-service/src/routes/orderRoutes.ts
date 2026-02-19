@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { AuthContext } from "@repo/auth";
 import { db, orderItems, shopOrder } from "@repo/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 export const orderRoutes = new Hono<AuthContext>();
 
@@ -26,7 +26,7 @@ orderRoutes.post("/", async (c) => {
     }, 0);
 
     // 1. Destructure the single object directly from the transaction result
-    const createdOrder = await db.transaction(async (tx) => {
+    const createdOrder = await db.transaction(async (tx: any) => {
       const [newOrder] = await tx
         .insert(shopOrder)
         .values({
@@ -90,8 +90,8 @@ orderRoutes.get("/", async (c) => {
   const userId = user.id;
 
   const orders = await db.query.shopOrder.findMany({
-    where: (orders, { eq }) => eq(orders.userId, userId),
-    orderBy: (orders, { desc }) => [desc(orders.orderDate)],
+    where: (orders: any, { eq }: any) => eq(orders.userId, userId),
+    orderBy: (orders: any, { desc }: any) => [desc(orders.orderDate)],
   });
   return c.json({ orders });
 });
@@ -101,7 +101,7 @@ orderRoutes.get("/:orderId", async (c) => {
   const orderId = Number(c.req.param("orderId"));
 
   const order = await db.query.shopOrder.findFirst({
-    where: (orders, { and, eq }) =>
+    where: (orders: any, { and, eq }: any) =>
       and(eq(orders.id, orderId), eq(orders.userId, userId)),
   });
   if (!order) {

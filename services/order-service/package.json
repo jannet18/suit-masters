@@ -1,27 +1,30 @@
 {
   "name": "@repo/orders",
   "version": "1.0.0",
-  "description": "",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "type": "module",
-  "devDependencies": {
+  "scripts": {
+    "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/auth": "*",
     "@repo/db": "*",
     "@repo/types": "*",
+    "@hono/node-server": "^1.19.9",
+    "dotenv": "^16.3.1",
+    "hono": "4.11.10"
+  },
+  "devDependencies": {
     "@repo/typescript-config": "*",
     "typescript": "^5.9.2",
     "tsx": "^4.21.0",
     "dotenv": "^17.2.4",
     "dotenv-cli": "^11.0.0"
   },
-  "scripts": {
-    "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
-    "start": "dotenv -e ../../.env -- node dist/index.js",
-    "check-types": "tsc --noEmit"
-  },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@hono/node-server": "^1.19.9"
-  }
+  "license": "ISC"
 }
