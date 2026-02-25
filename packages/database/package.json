@@ -8,12 +8,14 @@
   "packageManager": "npm@11.3.0",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
     "./schema": {
       "types": "./dist/schema/index.d.ts",
-      "import": "./dist/schema/index.js"
+      "import": "./dist/schema/index.js",
+      "default": "./dist/schema/index.js"
     }
   },
   "scripts": {
