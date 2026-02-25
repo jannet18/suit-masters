@@ -7,7 +7,12 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL missing");
 }
 
-const client = new Client({ connectionString: process.env.DATABASE_URL! });
+const client = new Client({
+  connectionString: process.env.DATABASE_URL!,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
 client.connect();
 
 export const db = drizzle(client, { schema });
