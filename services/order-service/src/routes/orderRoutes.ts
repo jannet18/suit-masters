@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { AuthContext } from "@repo/auth";
 import { db, orderItems, shopOrder } from "@repo/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc } from "@repo/db";
 
 export const orderRoutes = new Hono<AuthContext>();
 

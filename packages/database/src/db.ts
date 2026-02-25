@@ -1,5 +1,5 @@
 import "dotenv/config";
-import * as schema from "./schema/index";
+import * as schema from "./schema/index.js";
 import { Client } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 

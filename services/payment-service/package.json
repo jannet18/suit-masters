@@ -3,15 +3,15 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "devDependencies": {
-    "@repo/db": "*",
     "@repo/types": "*",
     "@repo/typescript-config": "*"
   },
   "scripts": {
     "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
-    "start": "dotenv -e ../../.env -- node dist/index.js",
+    "start": "node dist/index.js",
     "build": "tsc",
     "check-types": "tsc --noEmit"
   },
@@ -20,6 +20,9 @@
   "license": "ISC",
   "dependencies": {
     "@hono/node-server": "^1.19.9",
-    "stripe": "^20.3.1"
+    "stripe": "^20.3.1",
+    "hono": "^4.12.2",
+    "@repo/db": "*",
+    "@repo/auth": "*"
   }
 }

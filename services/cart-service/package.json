@@ -2,28 +2,26 @@
   "name": "@repo/cart",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "dist/index.ts",
+  "types": "dist/index.d.ts",
   "scripts": {
     "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
-    "start": "dotenv -e ../../.env -- node dist/index.js",
-    "check-types": "tsc --noEmit",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "start": "node dist/index.js",
+    "check-types": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@hono/node-server": "^1.19.9",
+    "@repo/auth": "*",
+    "@repo/db": "*",
     "cors": "^2.8.5",
-    "hono": "^4.11.8"
+    "hono": "^4.12.2"
   },
   "devDependencies": {
-    "@repo/typescript-config": "*",
-    "@repo/db": "*",
-    "@repo/products": "*",
-    "@repo/auth": "*",
     "@repo/types": "*",
+    "@repo/typescript-config": "*",
     "@types/cors": "^2.8.19"
   }
 }

@@ -1,7 +1,6 @@
-import { Hono } from "hono";
-import { asc, eq } from "drizzle-orm";
+import { Context, Hono } from "hono";
+import { asc, eq } from "@repo/db";
 import { customizationOption, db, product } from "@repo/db";
-// import { customizationOption, product } from "@repo/db/src/schema/products";
 
 interface CustomizationItem {
   id: number;
@@ -19,7 +18,7 @@ interface CustomizationGroup {
   items?: CustomizationItem[];
 }
 export const productsHandler = new Hono()
-  .get("/", async (c) => {
+  .get("/", async (c: Context) => {
     try {
       const allProducts = await db
         .select()
@@ -39,7 +38,7 @@ export const productsHandler = new Hono()
       return c.json({ error: "Failed to fetch products" }, 500);
     }
   })
-  .get("/:id", async (c) => {
+  .get("/:id", async (c: Context) => {
     const id = Number(c.req.param("id"));
     if (Number.isNaN(id)) {
       return c.json({ error: "Invalid product ID" }, 400);
@@ -51,7 +50,7 @@ export const productsHandler = new Hono()
         .from(product)
         .where(eq(product.id, id))
         .limit(1)
-        .then((res) => res[0]);
+        .then((res: any) => res[0]);
       if (!productData) {
         return c.json({ error: "Product not found" }, 404);
       }
@@ -65,7 +64,7 @@ export const productsHandler = new Hono()
 
         // Group options by group_id
         const groupMap = new Map<number, CustomizationGroup>();
-        options.forEach((option) => {
+        options.forEach((option: any) => {
           if (!groupMap.has(option.group_id)) {
             groupMap.set(option.group_id, {
               id: option.group_id,

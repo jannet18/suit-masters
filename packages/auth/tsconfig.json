@@ -1,15 +1,14 @@
 {
   "extends": "@repo/typescript-config/base.json",
-
   "compilerOptions": {
-    "strict": true,
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true,
     "emitDeclarationOnly": false,
-    "lib": ["ES2022"],
-    "types": ["node"],
-    "skipLibCheck": true
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }

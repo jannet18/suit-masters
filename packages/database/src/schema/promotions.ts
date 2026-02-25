@@ -6,8 +6,8 @@ import {
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
-import { timestamps } from "./shared";
-import { productCategory } from "./products";
+import { timestamps } from "./shared.js";
+import { productCategory } from "./products.js";
 
 export const promotionTable = pgTable("promotion", {
   id: serial("id").primaryKey(),

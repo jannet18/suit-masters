@@ -2,19 +2,12 @@
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "declaration": true,
-    "emitDeclarationOnly": false,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "rootDir": "src",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "target": "ES2020",
     "strict": true,
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "@repo/db": ["../db/src"],
-      "@repo/types": ["../types/src"]
-    }
+    "noEmit": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

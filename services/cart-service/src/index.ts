@@ -1,6 +1,5 @@
-import { Hono } from "hono";
-import { and, eq, isNull } from "drizzle-orm";
-import { getUser } from "../../../packages/auth/src/middleware/authMiddleware";
+import { Hono, Context } from "hono";
+import { and, eq, isNull } from "@repo/db";
 import {
   db,
   product,
@@ -9,6 +8,7 @@ import {
   shoppingCart,
   shoppingCartItem,
 } from "@repo/db";
+import { getUser } from "@repo/auth";
 
 // Define a typed user object to satisfy TypeScript
 type AuthUser = {
@@ -23,8 +23,7 @@ const app = new Hono();
  * Add an item to the user's shopping cart
  */
 
-app.post("/add", getUser, async (c) => {
-  // const user = c.get("user") as { id: string; [key: string]: any };
+app.post("/add", getUser, async (c: Context) => {
   const user = c.get("user") as AuthUser;
   const userId = user.id;
 
@@ -43,12 +42,14 @@ app.post("/add", getUser, async (c) => {
     where: eq(shoppingCart.user_id, userId),
   });
 
-  if (!cart) return c.json({ error: "Cart not found" }, 400);
-  const [newCart] = await db
-    .insert(shoppingCart)
-    .values({ user_id: userId })
-    .returning();
-  cart = newCart;
+  if (!cart) {
+    c.json({ error: "Cart not found" }, 400);
+    const [newCart] = await db
+      .insert(shoppingCart)
+      .values({ user_id: userId })
+      .returning();
+    cart = newCart;
+  }
   // Check if the same item (with configuration & measurement) exists
   const existingItem = await db.query.shoppingCartItem.findFirst({
     where: and(
@@ -86,7 +87,7 @@ app.post("/add", getUser, async (c) => {
 /**
  * Get current user's cart
  */
-app.get("/cart", getUser, async (c) => {
+app.get("/cart", getUser, async (c: any) => {
   const user = c.get("user") as AuthUser;
   const userId = user.id;
 
@@ -135,7 +136,7 @@ app.get("/cart", getUser, async (c) => {
 
   let cartTotal = 0;
 
-  const items = rows.map((row) => {
+  const items = rows.map((row: any) => {
     const unitPrice = row.configurationPrice ?? row.skuPrice;
 
     const totalPrice = Number(unitPrice) * row.qty;

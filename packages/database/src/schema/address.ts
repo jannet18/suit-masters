@@ -1,8 +1,8 @@
 import { serial, varchar, integer, uuid } from "drizzle-orm/pg-core";
 import { pgTable } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { timestamps } from "./shared";
-import { usersTable } from "./user";
+import { timestamps } from "./shared.js";
+import { usersTable } from "./user.js";
 
 export const country = pgTable("country", {
   id: serial("id").primaryKey(),

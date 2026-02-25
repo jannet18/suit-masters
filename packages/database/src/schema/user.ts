@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm";
 import { boolean, numeric, pgTable, uuid, varchar } from "drizzle-orm/pg-core";
-import { timestamps } from "./shared";
+import { timestamps } from "./shared.js";
 
 // IDENTITY & MEASUREMENTS
 export const usersTable = pgTable("site_users", {

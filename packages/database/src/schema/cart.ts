@@ -1,6 +1,6 @@
 import { integer, pgTable, serial, timestamp, uuid } from "drizzle-orm/pg-core";
-import { userMeasurements, usersTable } from "./user";
-import { productConfiguration, productItem } from "./products";
+import { userMeasurements, usersTable } from "./user.js";
+import { productConfiguration, productItem } from "./products.js";
 
 // // export const cartItem = pgTable("cart_item", {
 // //   id: uuid("id").primaryKey().defaultRandom(),

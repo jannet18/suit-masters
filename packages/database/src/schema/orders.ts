@@ -7,7 +7,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { usersTable } from "./user";
+import { usersTable } from "./user.js";
 
 export const shopOrder = pgTable("shop_order", {
   id: serial("id").primaryKey(),

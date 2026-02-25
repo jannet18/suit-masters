@@ -1,5 +1,5 @@
-import { db } from "./db";
-import { product, productCategory } from "./schema/products";
+import { db } from "./db.js";
+import { product, productCategory } from "./schema/products.js";
 
 async function seed() {
   console.log("🌱 Seeding products...");

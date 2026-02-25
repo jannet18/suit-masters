@@ -2,7 +2,7 @@
   "name": "suit-masters",
   "private": true,
   "scripts": {
-    "build": "npm run build -w @repo/auth && npm run build -w @repo/orders",
+    "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
@@ -17,22 +17,11 @@
   "engines": {
     "node": ">=18"
   },
-  "overrides": {
-    "react": "$react",
-    "react-dom": "$react-dom"
-  },
   "packageManager": "npm@11.3.0",
   "workspaces": [
     "apps/*",
     "packages/*",
     "services/*"
   ],
-  "dependencies": {
-    "@kinde-oss/kinde-auth-nextjs": "^2.11.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-toastify": "^11.0.5",
-    "stripe": "^20.3.1",
-    "zustand": "^5.0.11"
-  }
+  "dependencies": {}
 }

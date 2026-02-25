@@ -2,10 +2,9 @@ import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
 import { productsHandler } from "./routes/productsRoute.js";
-import { getUser } from "../../../packages/auth/src/middleware/authMiddleware.js";
+import { getUser } from "@repo/auth";
 import { configHandler } from "./routes/configRoute.js";
-import { orderRoutes } from "../../order-service/src/routes/orderRoutes.js";
-// import orderService from "../../order-service";
+
 type Bindings = {
   DATABASE_URL: string;
   KINDE_DOMAIN: string;
@@ -29,8 +28,6 @@ app.use("*", cors());
 // --- 2. Public Routes ---
 // Everyone can see the catalog and product details
 app.route("/products", productsHandler);
-// app.route("/order-service", orderService);
-app.route("/orders", orderRoutes);
 
 // --- 3. Protected Routes ---
 // Only logged-in users can save custom configurations or see private prices

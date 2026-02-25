@@ -6,7 +6,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { timestamps } from "./shared";
+import { timestamps } from "./shared.js";
 
 export const paymentsTypeTable = pgTable("payments_type", {
   id: serial("id").primaryKey(),

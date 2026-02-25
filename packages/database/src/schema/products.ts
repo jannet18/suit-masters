@@ -8,7 +8,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { timestamps } from "./shared";
+import { timestamps } from "./shared.js";
 
 // DESIGNER LOGIC
 export const productCategory = pgTable("product_category", {
