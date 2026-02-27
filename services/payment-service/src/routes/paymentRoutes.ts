@@ -91,7 +91,7 @@
 // });
 
 // services/payment-service/src/routes/paymentRoutes.ts
-import { db } from "@repo/db";
+import { db, eq, shopOrder } from "@repo/db";
 import { Hono } from "hono";
 import Stripe from "stripe";
 
@@ -135,4 +135,42 @@ paymentRoutes.post("/create-intent", async (c) => {
     console.error(err);
     return c.json({ error: "PaymentIntent creation failed" }, 500);
   }
+});
+
+paymentRoutes.post("/webhook", async (c) => {
+  const sig = c.req.header("stripe-signature");
+
+  if (!sig) {
+    return c.text("Missing signature", 400);
+  }
+
+  const body = await c.req.text();
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET!,
+    );
+  } catch (err) {
+    console.error("Webhook signature verification failed", err);
+    return c.text("Invalid signature", 400);
+  }
+
+  // Handle successful payment
+  if (event.type === "payment_intent.succeeded") {
+    const intent = event.data.object as Stripe.PaymentIntent;
+    const orderId = intent.metadata.orderId;
+
+    if (orderId) {
+      await db
+        .update(shopOrder)
+        .set({ status: "PAID" })
+        .where(eq(shopOrder.id, Number(orderId)));
+    }
+  }
+
+  return c.text("ok");
 });

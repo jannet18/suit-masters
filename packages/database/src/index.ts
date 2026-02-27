@@ -11,6 +11,7 @@ export * from "./schema/user.js";
 export * from "./schema/products.js";
 export * from "./schema/promotions.js";
 export * from "./schema/shared.js";
+export * from "./schema/idempotency.js";
 
 // 3. If you have a central schema index, export that too
 export * from "./schema/index.js";

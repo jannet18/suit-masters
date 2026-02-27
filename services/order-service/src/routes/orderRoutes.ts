@@ -7,6 +7,7 @@ import {
   productItem,
   shopOrder,
   shoppingCartItem,
+  idempotencyKeys,
 } from "@repo/db";
 import { eq, and, desc } from "@repo/db";
 
@@ -98,9 +99,35 @@ orderRoutes.post("/", async (c) => {
     const user = c.get("user");
     const userId = user.id;
 
-    const { shipping } = await c.req.json();
+    // Get Idempotency Key
+    const idempotencyKey = c.req.header("Idempotency-Key");
+    if (!idempotencyKey) {
+      return c.json({ error: "Missing Idempotency-Key header" }, 400);
+    }
 
-    // 1️⃣ Load user's cart
+    // Check if key already used
+    const existingKey = await db.query.idempotencyKeys.findFirst({
+      where: (keys, { and, eq }) =>
+        and(eq(keys.key, idempotencyKey), eq(keys.userId, Number(userId))),
+    });
+
+    if (existingKey) {
+      return c.json({
+        orderId: existingKey.orderId,
+        reused: true,
+      });
+    }
+
+    const { shipping } = await c.req.json();
+    // 1 Check for existing unpaid order
+    const existingPendingOrder = await db.query.shopOrder.findFirst({
+      where: (orders, { and, eq }) =>
+        and(eq(orders.userId, userId), eq(orders.status, "PENDING_PAYMENT")),
+    });
+    if (existingPendingOrder) {
+      return c.json({ orderId: existingPendingOrder.id, reused: true });
+    }
+    // 2 Load user's cart
     const cart = await db.query.shoppingCart.findFirst({
       where: (cart, { eq }) => eq(cart.user_id, userId),
     });
@@ -109,7 +136,7 @@ orderRoutes.post("/", async (c) => {
       return c.json({ error: "Cart not found" }, 400);
     }
 
-    // 2️⃣ Load cart items with pricing
+    // 3 Load cart items with pricing
     const cartItems = await db
       .select({
         id: shoppingCartItem.id,
@@ -134,7 +161,7 @@ orderRoutes.post("/", async (c) => {
       return c.json({ error: "Cart is empty" }, 400);
     }
 
-    // 3️⃣ Securely calculate total from DB
+    // 4 Securely calculate total from DB
     let total = 0;
 
     for (const item of cartItems) {
@@ -142,7 +169,7 @@ orderRoutes.post("/", async (c) => {
       total += Number(unitPrice) * item.qty;
     }
 
-    // 4️⃣ Create order inside transaction
+    // 5 Create order inside transaction
     const createdOrder = await db.transaction(async (tx) => {
       const [newOrder] = await tx
         .insert(shopOrder)
@@ -165,7 +192,7 @@ orderRoutes.post("/", async (c) => {
 
       if (!newOrder) throw new Error("Order creation failed");
 
-      // 5️⃣ Move cart items → orderItems
+      // 6 Move cart items → orderItems
       await tx.insert(orderItems).values(
         cartItems.map((item) => ({
           order_id: newOrder.id,
@@ -176,7 +203,7 @@ orderRoutes.post("/", async (c) => {
         })),
       );
 
-      // 6️⃣ Clear cart
+      // 7 Clear cart
       await tx
         .delete(shoppingCartItem)
         .where(eq(shoppingCartItem.cart_id, cart.id));
@@ -184,7 +211,7 @@ orderRoutes.post("/", async (c) => {
       return newOrder;
     });
 
-    return c.json({ orderId: createdOrder.id }, 201);
+    return c.json({ orderId: createdOrder.id, reused: false }, 201);
   } catch (error) {
     console.error(error);
     return c.json({ error: "Failed to create order" }, 500);
