@@ -91,6 +91,7 @@
 // });
 
 // services/payment-service/src/routes/paymentRoutes.ts
+import { db } from "@repo/db";
 import { Hono } from "hono";
 import Stripe from "stripe";
 
@@ -101,16 +102,32 @@ export const paymentRoutes = new Hono();
 
 paymentRoutes.post("/create-intent", async (c) => {
   try {
-    const { orderId, amount } = await c.req.json();
+    const { orderId } = await c.req.json<{ orderId: number }>();
 
-    if (!orderId || !amount) {
-      return c.json({ error: "Order ID and amount required" }, 400);
+    if (!orderId) {
+      return c.json({ error: "Order ID required" }, 400);
+    }
+    // Load order from DB
+    const order = await db.query.shopOrder.findFirst({
+      where: (orders, { eq }) => eq(orders.id, orderId),
+    });
+    if (!order) {
+      return c.json({ error: "Order not found" }, 404);
+    }
+    // Prevent duplicate payment attempts
+    if (order.status !== "PENDING_PAYMENT") {
+      return c.json({ error: "Order not payable" }, 400);
     }
 
+    // Convert to cents
+    const amount = Math.round(Number(order.total) * 100);
+
+    // Create PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // convert to cents
+      amount,
       currency: "usd",
-      metadata: { orderId },
+      metadata: { orderId: String(order.id) },
+      automatic_payment_methods: { enabled: true },
     });
 
     return c.json({ clientSecret: paymentIntent.client_secret });
