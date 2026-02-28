@@ -16,84 +16,8 @@ export const orderRoutes = new Hono<AuthContext>();
 /**
  * POST /orders
  * Protected route — user must be logged in
+ * Checkout user's cart and create order with idempotency
  */
-// orderRoutes.post("/", async (c) => {
-//   try {
-//     const user = c.get("user");
-//     const userId = user.id;
-
-//     const body = await c.req.json();
-
-//     const { items, shipping } = body;
-//     if (!items || items.length === 0) {
-//       return c.json({ error: "Cart is empty" }, 400);
-//     }
-//     // 🔐 Calculate total safely on backend
-//     const calculatedTotal = items.reduce((sum: number, item: any) => {
-//       return sum + Number(item.base_price) * Number(item.quantity);
-//     }, 0);
-
-//     // 1. Destructure the single object directly from the transaction result
-//     const createdOrder = await db.transaction(async (tx: any) => {
-//       const [newOrder] = await tx
-//         .insert(shopOrder)
-//         .values({
-//           userId: userId,
-//           total: calculatedTotal.toString(),
-//           orderedItems: items.length,
-//           status: "PENDING",
-//           shipping_name: shipping.name,
-//           shipping_email: shipping.email,
-//           shipping_phone: shipping.phone,
-//           shipping_address_line1: shipping.addressLine1,
-//           shipping_address_line2: shipping.addressLine2 ?? null,
-//           shipping_city: shipping.city,
-//           shipping_region: shipping.region,
-//           shipping_postal_code: shipping.postalCode,
-//           shipping_country: shipping.country,
-//         })
-//         .returning();
-
-//       if (!newOrder) {
-//         throw new Error("Failed to create order");
-//       }
-
-//       // 2. Move the items insert INSIDE the transaction block using 'tx' - This ensures that if the items fail, the order is also rolled back
-//       await tx.insert(orderItems).values(
-//         items.map((item: any) => ({
-//           order_id: newOrder.id,
-//           product_id: item.id,
-//           quantity: item.quantity,
-//           base_price: item.base_price.toString(),
-//           selected_options: JSON.stringify(item.selected_options ?? []),
-//         })),
-//       );
-
-//       return newOrder;
-//     });
-
-//     // Now createdOrder is the object, and you can access .id safely
-//     return c.json({ orderId: createdOrder?.id }, 201);
-//   } catch (error) {
-//     console.error(error);
-//     return c.json({ error: "Failed to create order" }, 500);
-//   }
-// });
-
-// orderRoutes.post("/:orderId/complete", async (c) => {
-//   const { orderId } = c.req.param();
-//   try {
-//     await db
-//       .update(shopOrder)
-//       .set({ status: "PAID" })
-//       .where(eq(shopOrder.id, Number(orderId)));
-//     return c.json({ success: true });
-//   } catch (err) {
-//     console.error(err);
-//     return c.json({ error: "Failed to update order" }, 500);
-//   }
-// });
-
 orderRoutes.post("/", async (c) => {
   try {
     const user = c.get("user");
@@ -119,14 +43,17 @@ orderRoutes.post("/", async (c) => {
     }
 
     const { shipping } = await c.req.json();
-    // 1 Check for existing unpaid order
-    const existingPendingOrder = await db.query.shopOrder.findFirst({
-      where: (orders, { and, eq }) =>
-        and(eq(orders.userId, userId), eq(orders.status, "PENDING_PAYMENT")),
-    });
-    if (existingPendingOrder) {
-      return c.json({ orderId: existingPendingOrder.id, reused: true });
+    if (!shipping) {
+      return c.json({ error: "Missing shipping information" }, 400);
     }
+    // 1 Check for existing unpaid order
+    // const existingPendingOrder = await db.query.shopOrder.findFirst({
+    //   where: (orders, { and, eq }) =>
+    //     and(eq(orders.userId, userId), eq(orders.status, "PENDING_PAYMENT")),
+    // });
+    // if (existingPendingOrder) {
+    //   return c.json({ orderId: existingPendingOrder.id, reused: true });
+    // }
     // 2 Load user's cart
     const cart = await db.query.shoppingCart.findFirst({
       where: (cart, { eq }) => eq(cart.user_id, userId),
@@ -145,6 +72,7 @@ orderRoutes.post("/", async (c) => {
         configurationPrice: productConfiguration.final_price,
         productId: productItem.product_id,
         selectedOptions: productConfiguration.selected_options,
+        configurationId: shoppingCartItem.configuration_id,
       })
       .from(shoppingCartItem)
       .leftJoin(
@@ -197,12 +125,20 @@ orderRoutes.post("/", async (c) => {
         cartItems.map((item) => ({
           order_id: newOrder.id,
           product_id: item.productId,
+          configuration_id: item.configurationId ?? null,
           quantity: item.qty,
           base_price: (item.configurationPrice ?? item.skuPrice).toString(),
           selected_options: JSON.stringify(item.selectedOptions ?? {}),
         })),
       );
 
+      // insert used idempotency key for auditing
+      await tx.insert(idempotencyKeys).values({
+        key: idempotencyKey,
+        userId: Number(userId),
+        orderId: newOrder.id,
+        createdAt: new Date(),
+      });
       // 7 Clear cart
       await tx
         .delete(shoppingCartItem)
@@ -217,6 +153,10 @@ orderRoutes.post("/", async (c) => {
     return c.json({ error: "Failed to create order" }, 500);
   }
 });
+/**
+ * GET /orders
+ * Fetch all orders for the current user
+ */
 orderRoutes.get("/", async (c) => {
   const user = c.get("user");
   const userId = user.id;
@@ -227,6 +167,10 @@ orderRoutes.get("/", async (c) => {
   });
   return c.json({ orders });
 });
+/**
+ * GET /orders/:orderId
+ * Fetch a single order for the current user
+ */
 orderRoutes.get("/:orderId", async (c) => {
   const user = c.get("user");
   const userId = user.id;

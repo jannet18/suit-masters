@@ -1,4 +1,5 @@
 import {
+  AnyPgColumn,
   boolean,
   integer,
   jsonb,
@@ -13,9 +14,15 @@ import { timestamps } from "./shared.js";
 // DESIGNER LOGIC
 export const productCategory = pgTable("product_category", {
   id: serial("id").primaryKey(),
-  // parent_category_id: integer("parent_category_id").notNull(),
   category_name: varchar("category_name", { length: 128 }).notNull(),
+  slug: varchar("slug", { length: 128 }).notNull().unique(),
+  parent_id: integer("parent_id").references(
+    (): AnyPgColumn => productCategory.id,
+  ),
+  ...timestamps,
 });
+// slug = required for /shop/suits
+// timestamps = admin analytics & sorting
 
 export const product = pgTable("product", {
   id: serial("id").primaryKey(),
@@ -23,15 +30,21 @@ export const product = pgTable("product", {
     .notNull()
     .references(() => productCategory.id),
   name: varchar("name", { length: 128 }).notNull(),
+  slug: varchar("slug", { length: 128 }).notNull().unique(),
   description: varchar("description", { length: 128 }).notNull(),
   product_image: varchar("product_image", { length: 255 }).notNull(),
   product_type: varchar("product_type", { length: 32 })
-    .$type<"STANDARD" | "CUSTOM" | "LATEST" | "COLLECTION">()
+    .$type<"STANDARD" | "CUSTOM">()
     .notNull(),
-
   base_price: numeric("base_price", { precision: 12, scale: 2 }).notNull(),
+  is_featured: boolean("is_featured").default(false),
+  is_active: boolean("is_active").default(true),
   ...timestamps,
 });
+
+// slug → product pages /product/navy-3-piece
+// is_featured → replaces "LATEST"
+// is_active → allows disabling without deleting
 
 // STANDARD ITEMS
 export const productItem = pgTable("product_item", {
@@ -44,11 +57,13 @@ export const productItem = pgTable("product_item", {
   // product_image: varchar("product_image", { length: 255 }).notNull(),
   price: numeric("price", { precision: 12, scale: 2 }).notNull(),
 });
+// Ready-made sizes
+// Standard suits
+// Physical inventory
 
 // CUSTOMISATION LOGIC
 export const customizationGroup = pgTable("customization_group", {
   id: serial("id").primaryKey(),
-
   product_id: integer("product_id")
     .notNull()
     .references(() => product.id),
@@ -60,7 +75,9 @@ export const customizationGroup = pgTable("customization_group", {
 
 export const customizationOption = pgTable("customization_option", {
   id: serial("id").primaryKey(),
-  product_id: integer("product_id"),
+  product_id: integer("product_id")
+    .notNull()
+    .references(() => product.id),
   group_id: integer("group_id")
     .notNull()
     .references(() => customizationGroup.id),
@@ -71,36 +88,6 @@ export const customizationOption = pgTable("customization_option", {
   metadata: jsonb("metadata"), // images, color, fabric info
   is_default: boolean("is_default").default(false),
 });
-
-// export const customizationConstraint = pgTable("customization_constraint", {
-//   id: serial("id").primaryKey(),
-
-//   option_id: integer("option_id")
-//     .notNull()
-//     .references(() => customizationOption.id),
-
-//   incompatible_option_id: integer("incompatible_option_id")
-//     .notNull()
-//     .references(() => customizationOption.id),
-
-//   reason: varchar("reason", { length: 255 }),
-// });
-
-// export const variation = pgTable("variation", {
-//   id: serial("id").primaryKey(),
-//   variation_id: integer("variation_id")
-//     .notNull()
-//     .references(() => productItem.id),
-//   value: varchar("value", { length: 128 }).notNull(),
-// });
-
-// export const variationOption = pgTable("variation_option", {
-//   id: serial("id").primaryKey(),
-//   variation_id: integer("variation_id")
-//     .notNull()
-//     .references(() => variation.id),
-//   value: varchar("value", { length: 128 }).notNull(),
-// });
 
 export const productConfiguration = pgTable("product_configuration", {
   id: uuid("id").primaryKey().defaultRandom(),

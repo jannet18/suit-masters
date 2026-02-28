@@ -29,4 +29,14 @@ export const userMeasurements = pgTable("user_measurements", {
 export const siteUserRelations = relations(usersTable, ({ many }) => ({
   measurements: many(userMeasurements),
 }));
+
+export const userMeasurementsRelations = relations(
+  userMeasurements,
+  ({ one }) => ({
+    user: one(usersTable, {
+      fields: [userMeasurements.userId],
+      references: [usersTable.id],
+    }),
+  }),
+);
 export type User = typeof usersTable.$inferSelect;

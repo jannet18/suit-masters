@@ -1,5 +1,14 @@
 import { Hono, Context } from "hono";
-import { and, eq, isNull } from "@repo/db";
+import {
+  and,
+  customizationOption,
+  eq,
+  idempotencyKeys,
+  inArray,
+  isNull,
+  orderItems,
+  shopOrder,
+} from "@repo/db";
 import {
   db,
   product,
@@ -19,6 +28,106 @@ type AuthUser = {
 };
 
 const app = new Hono();
+app.post("/design/save", getUser, async (c: Context) => {
+  const user = c.get("user") as AuthUser;
+  const { productId, selections, measurements, qty } = await c.req.json<{
+    productId: number;
+    selections: Record<string, number>;
+    measurements?: Record<string, string>;
+    qty?: number;
+  }>();
+
+  // 1️⃣ Validate product
+  const productData = await db.query.product.findFirst({
+    where: eq(product.id, productId),
+  });
+  if (!productData || productData.product_type !== "CUSTOM") {
+    return c.json({ error: "Invalid or non-customizable product" }, 400);
+  }
+
+  // 2️⃣ Validate selected options
+  const optionIds = Object.values(selections);
+  const dbOptions = await db
+    .select()
+    .from(customizationOption)
+    .where(inArray(customizationOption.id, optionIds));
+
+  if (dbOptions.length !== optionIds.length) {
+    return c.json({ error: "One or more selected options are invalid" }, 400);
+  }
+
+  // 3️⃣ Calculate final price
+  const finalPrice =
+    Number(productData.base_price) +
+    dbOptions.reduce((sum, opt) => sum + Number(opt.price_delta), 0);
+
+  const snapshot = dbOptions.reduce((acc: Record<string, any>, opt) => {
+    acc[opt.group_id] = {
+      id: opt.id,
+      label: opt.value,
+      price_impact: opt.price_delta,
+    };
+    return acc;
+  }, {});
+
+  // 4️⃣ Save product configuration
+  const [newConfig] = await db
+    .insert(productConfiguration)
+    .values({
+      kinde_user_id: user.id,
+      product_id: productId,
+      selected_options: snapshot,
+      final_price: finalPrice.toString(),
+      createdAT: new Date(),
+    })
+    .returning();
+
+  if (!newConfig) return c.json({ error: "Failed to save configuration" }, 500);
+
+  // 5️⃣ Add configuration to cart automatically
+  let cart = await db.query.shoppingCart.findFirst({
+    where: eq(shoppingCart.user_id, user.id),
+  });
+  if (!cart) {
+    const [newCart] = await db
+      .insert(shoppingCart)
+      .values({ user_id: user.id })
+      .returning();
+    cart = newCart;
+  }
+
+  const safeQty = Math.max(1, Number(qty) || 1);
+
+  const existingItem = await db.query.shoppingCartItem.findFirst({
+    where: and(
+      eq(shoppingCartItem.cart_id, cart!.id),
+      eq(shoppingCartItem.product_item_id, productId),
+      eq(shoppingCartItem.configuration_id, newConfig.id),
+    ),
+  });
+
+  if (existingItem) {
+    await db
+      .update(shoppingCartItem)
+      .set({ qty: existingItem.qty + safeQty })
+      .where(eq(shoppingCartItem.id, existingItem.id));
+  } else {
+    await db.insert(shoppingCartItem).values({
+      cart_id: cart!.id,
+      product_item_id: productId,
+      configuration_id: newConfig.id,
+      measurement_id: measurements ? JSON.stringify(measurements) : null,
+      qty: safeQty,
+    });
+  }
+
+  return c.json({
+    success: true,
+    configId: newConfig.id,
+    finalPrice,
+    message: "Design saved and added to cart!",
+  });
+});
 /**
  * Add an item to the user's shopping cart
  */
@@ -122,6 +231,7 @@ app.get("/cart", getUser, async (c: any) => {
       skuPrice: productItem.price,
       configuration: productConfiguration.selected_options,
       configurationPrice: productConfiguration.final_price,
+      selectedOptions: productConfiguration.selected_options,
     })
     .from(shoppingCartItem)
     .leftJoin(
@@ -149,10 +259,12 @@ app.get("/cart", getUser, async (c: any) => {
         name: row.productName,
         image: row.productImage,
       },
-      configuration: row.configuration ?? null,
+      configuration: row.configurationId ?? null,
       qty: row.qty,
       unit_price: unitPrice,
       total_price: totalPrice,
+      selectedOptions: row.selected_options ?? {},
+      measurements: row.measurement_id ? JSON.parse(row.measurement_id) : {},
     };
   });
 
@@ -163,217 +275,143 @@ app.get("/cart", getUser, async (c: any) => {
   });
 });
 
-/**
- * Checkout the user's cart and create an order
- */
-// app.post("/checkout", getUser, async (c) => {
-//   const user = c.get("user") as AuthUser;
-//   const userId = user.id;
+app.post("/checkout", getUser, async (c: Context) => {
+  const user = c.get("user") as AuthUser;
+  const userId = user.id;
 
-//   // 1. Load cart
-//   const cart = await db.query.shoppingCart.findFirst({
-//     where: eq(shoppingCart.user_id, userId),
-//   });
+  const body = await c.req.json<{
+    shipping: {
+      name: string;
+      email: string;
+      phone: string;
+      address_line1: string;
+      address_line2?: string;
+      city: string;
+      region: string;
+      postal_code: string;
+      country: string;
+    };
+  }>();
 
-//   if (!cart) {
-//     return c.json({ error: "Cart not found" }, 400);
-//   }
+  const idempotencyKey = c.req.header("Idempotency-Key");
+  if (!idempotencyKey) return c.json({ error: "Missing Idempotency-Key" }, 400);
 
-//   // 2. Load cart items
-//   const cartItems = await db
-//     .select({
-//       qty: shoppingCartItem.qty,
-//       skuPrice: productItem.price,
-//       configurationPrice: productConfiguration.final_price,
-//     })
-//     .from(shoppingCartItem)
-//     .leftJoin(
-//       productConfiguration,
-//       eq(shoppingCartItem.configuration_id, productConfiguration.id),
-//     )
-//     .innerJoin(
-//       productItem,
-//       eq(shoppingCartItem.product_item_id, productItem.id),
-//     )
-//     .where(eq(shoppingCartItem.cart_id, cart.id));
+  // Check if key already used
+  const existingKey = await db.query.idempotencyKeys.findFirst({
+    where: and(
+      eq(idempotencyKeys.key, idempotencyKey),
+      eq(idempotencyKeys.userId, Number(userId)),
+    ),
+  });
 
-//   if (cartItems.length === 0) {
-//     return c.json({ error: "Cart is empty" }, 400);
-//   }
+  if (existingKey)
+    return c.json({ orderId: existingKey.orderId, reused: true });
+  // 1️⃣ Load user's cart
+  const cart = await db.query.shoppingCart.findFirst({
+    where: eq(shoppingCart.user_id, userId),
+  });
 
-//   // 3. Calculate total
-//   let total = 0;
-//   for (const item of cartItems) {
-//     const unitPrice = item.configurationPrice ?? item.skuPrice;
-//     total += Number(unitPrice) * item.qty;
-//   }
+  if (!cart) return c.json({ error: "Cart not found" }, 400);
 
-//   // 4. Create order
-//   const { shipping } = await c.req.json<{
-//     shipping: {
-//       name: string;
-//       email: string;
-//       phone: string;
-//       address_line1: string;
-//       address_line2?: string;
-//       city: string;
-//       region: string;
-//       postal_code: string;
-//       country: string;
-//     };
-//   }>();
-//   const [order] = await db
-//     .insert(shopOrder)
-//     .values({
-//       userId: userId.toString(),
-//       total: total.toString(),
-//       orderedItems: cartItems.length,
-//       status: "PENDING",
+  // 2️⃣ Load cart items with configuration prices if available
+  const cartItems = await db
+    .select({
+      itemId: shoppingCartItem.id,
+      qty: shoppingCartItem.qty,
+      productId: productItem.product_id,
+      skuPrice: productItem.price,
+      configurationId: shoppingCartItem.configuration_id,
+      configurationPrice: productConfiguration.final_price,
+      selectedOptions: productConfiguration.selected_options,
+      measurement: shoppingCartItem.measurement_id,
+    })
+    .from(shoppingCartItem)
+    .leftJoin(
+      productConfiguration,
+      eq(shoppingCartItem.configuration_id, productConfiguration.id),
+    )
+    .innerJoin(
+      productItem,
+      eq(shoppingCartItem.product_item_id, productItem.id),
+    );
 
-//       shipping_name: shipping.name,
-//       shipping_email: shipping.email,
-//       shipping_phone: shipping.phone,
+  if (cartItems.length === 0) return c.json({ error: "Cart is empty" }, 400);
 
-//       shipping_address_line1: shipping.address_line1,
-//       shipping_address_line2: shipping.address_line2 ?? null,
-//       shipping_city: shipping.city,
-//       shipping_region: shipping.region,
-//       shipping_postal_code: shipping.postal_code,
-//       shipping_country: shipping.country,
-//     })
-//     .returning();
+  // 3️⃣ Calculate total securely
+  let total = 0;
+  for (const item of cartItems) {
+    const unitPrice = item.configurationPrice ?? item.skuPrice;
+    total += Number(unitPrice) * item.qty;
+  }
 
-//   // 5. Clear cart items
-//   if (!cart) throw new Error("Cart not found");
+  // 4️⃣ Create order with transaction
+  const createdOrder = await db.transaction(async (tx) => {
+    // a) Insert order
+    const [order] = await tx
+      .insert(shopOrder)
+      .values({
+        userId,
+        total: total.toString(),
+        orderedItems: cartItems.length,
+        status: "PENDING_PAYMENT",
+        shipping_name: body.shipping.name,
+        shipping_email: body.shipping.email,
+        shipping_phone: body.shipping.phone,
+        shipping_address_line1: body.shipping.address_line1,
+        shipping_address_line2: body.shipping.address_line2 ?? null,
+        shipping_city: body.shipping.city,
+        shipping_region: body.shipping.region,
+        shipping_postal_code: body.shipping.postal_code,
+        shipping_country: body.shipping.country,
+      })
+      .returning();
 
-//   await db
-//     .delete(shoppingCartItem)
-//     .where(eq(shoppingCartItem.cart_id, cart.id));
+    if (!order) throw new Error("Order creation failed");
 
-//   return c.json({
-//     order_id: order.id,
-//     total,
-//     message: "Order created (payment pending)",
-//   });
-// });
+    // b) Insert order items
+    await tx.insert(orderItems).values(
+      cartItems.map((item) => ({
+        order_id: order.id,
+        product_id: item.productId,
+        configuration_id: item.configurationId ?? null,
+        quantity: item.qty,
+        base_price: (item.configurationPrice ?? item.skuPrice).toString(),
+        selected_options: JSON.stringify(item.selectedOptions ?? {}),
+      })),
+    );
 
-// app.post("/checkout", getUser, async (c) => {
-//   const user = c.get("user") as { id: string };
-//   const userId = user.id;
+    // Save idempotency key
+    await tx.insert(idempotencyKeys).values({
+      userId: Number(userId),
+      key: idempotencyKey,
+      orderId: order.id,
+    });
+    // c) Clear cart items
+    await tx
+      .delete(shoppingCartItem)
+      .where(eq(shoppingCartItem.cart_id, cart.id));
 
-//   const body = await c.req.json<{
-//     shipping: {
-//       name: string;
-//       email: string;
-//       phone: string;
-//       address_line1: string;
-//       address_line2?: string;
-//       city: string;
-//       region: string;
-//       postal_code: string;
-//       country: string;
-//     };
-//   }>();
-
-//   // 1️⃣ Load cart
-//   const cart = await db.query.shoppingCart.findFirst({
-//     where: eq(shoppingCart.user_id, userId),
-//   });
-
-//   if (!cart) {
-//     return c.json({ error: "Cart not found" }, 400);
-//   }
-
-//   // From this point onward, cart is guaranteed
-//   const cartId = cart.id;
-
-//   // 2️⃣ Load cart items
-//   const cartItems = await db
-//     .select({
-//       qty: shoppingCartItem.qty,
-//       skuPrice: productItem.price,
-//       configurationPrice: productConfiguration.final_price,
-//     })
-//     .from(shoppingCartItem)
-//     .leftJoin(
-//       productConfiguration,
-//       eq(shoppingCartItem.configuration_id, productConfiguration.id),
-//     )
-//     .innerJoin(
-//       productItem,
-//       eq(shoppingCartItem.product_item_id, productItem.id),
-//     )
-//     .where(eq(shoppingCartItem.cart_id, cartId));
-
-//   if (cartItems.length === 0) {
-//     return c.json({ error: "Cart is empty" }, 400);
-//   }
-
-//   // 3️⃣ Calculate total
-//   let total = 0;
-//   for (const item of cartItems) {
-//     const unitPrice = item.configurationPrice ?? item.skuPrice;
-//     total += Number(unitPrice) * item.qty;
-//   }
-
-//   // 4️⃣ Create order
-//   const inserted = await db
-//     .insert(shopOrder)
-//     .values({
-//       userId: userId,
-//       total: total.toString(),
-//       orderedItems: cartItems.length,
-//       status: "PENDING",
-
-//       shipping_name: body.shipping.name,
-//       shipping_email: body.shipping.email,
-//       shipping_phone: body.shipping.phone,
-
-//       shipping_address_line1: body.shipping.address_line1,
-//       shipping_address_line2: body.shipping.address_line2 ?? null,
-//       shipping_city: body.shipping.city,
-//       shipping_region: body.shipping.region,
-//       shipping_postal_code: body.shipping.postal_code,
-//       shipping_country: body.shipping.country,
-//     })
-//     .returning();
-
-//   // Drizzle returns array — make it explicit
-//   const order = inserted[0];
-
-//   if (!order) {
-//     return c.json({ error: "Failed to create order" }, 500);
-//   }
-
-//   // 5️⃣ Clear cart
-//   await db.delete(shoppingCartItem).where(eq(shoppingCartItem.cart_id, cartId));
-
-//   return c.json({
-//     order_id: order.id,
-//     total,
-//     message: "Order created (payment pending)",
-//   });
-// });
-
-// app.get("/orders", getUser, async (c) => {
-//   const userId = c.get("user").dbUser.id;
-
-//   const orders = await db
-//     .select({
-//       id: shopOrder.id,
-//       total: shopOrder.total,
-//       order_date: shopOrder.order_date,
-//     })
-//     .from(shopOrder)
-//     .where(eq(shopOrder.user_id, userId))
-//     .orderBy(desc(shopOrder.order_date));
-
-//   return c.json(
-//     orders.map((order) => ({
-//       ...order,
-//       status: "PENDING_PAYMENT",
-//     }))
-//   );
-// });
+    return order;
+  });
+  // prepare order summary with full product info + snapshot
+  const orderSummaryItems = cartItems.map((item) => ({
+    productId: item.productId,
+    // name: item.productName ??,
+    // image: item.productImage,
+    configurationId: item.configurationId,
+    quantity: item.qty,
+    price: item.configurationPrice ?? item.skuPrice,
+    total_price: Number(item.configurationPrice ?? item.skuPrice) * item.qty,
+    selectedOption: item.selectedOptions ?? {},
+    // measurement: item.measurement_id ? JSON.parse(item.measurement_id) : {},
+  }));
+  return c.json({
+    success: true,
+    orderId: createdOrder.id,
+    total,
+    items: orderSummaryItems,
+    message: "Order created successfully! Payment pending.",
+  });
+});
 
 export default app;

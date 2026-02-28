@@ -14,13 +14,6 @@ const pool = new Pool({
   },
   max: 1,
 });
-// const client = new Client({
-//   connectionString: process.env.DATABASE_URL!,
-//   ssl: {
-//     rejectUnauthorized: false,
-//   },
-// });
-// client.connect();
 
 export const db = drizzle(pool, { schema });
 export * from "./schema/index.js";

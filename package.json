@@ -22,6 +22,5 @@
     "apps/*",
     "packages/*",
     "services/*"
-  ],
-  "dependencies": {}
+  ]
 }

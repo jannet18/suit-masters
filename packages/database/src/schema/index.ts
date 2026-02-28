@@ -7,4 +7,5 @@ export * from "./products.js";
 export * from "./promotions.js";
 export * from "./shared.js";
 export * from "./user.js";
+export * from "./collection.js";
 export { idempotencyKeys } from "./idempotency.js";
