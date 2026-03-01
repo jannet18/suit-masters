@@ -101,7 +101,7 @@ export const collectionsHandler = new Hono()
           product_type: product.product_type,
         })
         .from(productCollection)
-        .innerJoin(product, eq(productCollection.collection_id, product.id))
+        .innerJoin(product, eq(productCollection.product_id, product.id))
         .where(eq(productCollection.collection_id, col.id))
         .orderBy(asc(product.name));
 

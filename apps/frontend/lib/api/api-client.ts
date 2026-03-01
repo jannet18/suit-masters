@@ -48,4 +48,15 @@ export const api = {
     });
     return res.json();
   },
+
+  // Example API function
+  getCollectionBySlug: async (slug: string) => {
+    const res = await fetch(`${SERVICES.product}/collections/${slug}`);
+    return res.json(); // return { success: true, collection }
+  },
+
+  getProductBySlug: async (slug: string) => {
+    const res = await fetch(`${SERVICES.product}/products/slug/${slug}`);
+    return res.json();
+  },
 };

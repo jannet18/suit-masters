@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRightIcon } from "lucide-react";
 
 interface Collection {
+  id: number;
   title: string;
   subtitle: string;
   description: string;
@@ -24,6 +25,7 @@ export function CollectionGrid({ collections }: CollectionGridProps) {
   const inView = useInView(ref, { once: true, margin: "-100px" });
   const router = useRouter();
   console.log(collections);
+
   const handleCollectionClick = (slug: string) => {
     router.push(`/collections/${slug}`);
   };
@@ -56,12 +58,12 @@ export function CollectionGrid({ collections }: CollectionGridProps) {
         >
           {collections?.map((col, i) => (
             <motion.button
-              key={col.slug}
+              key={col.id}
               onClick={() => handleCollectionClick(col.slug)}
               initial={{ opacity: 0, y: 40 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.7, delay: i * 0.15 }}
-              className={`relative overflow-hidden rounded-lg group cursor-pointer min-h-112 w-full ${
+              className={`relative overflow-hidden rounded-lg group cursor-pointer min-h-114 w-full ${
                 // col.span ?? "lg:col-span-1 lg:row-span-1"
                 col.span === "wide"
                   ? "md:col-span-2"
