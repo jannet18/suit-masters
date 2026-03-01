@@ -41,7 +41,7 @@ export function ProductGrid() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex gap-1 bg-[#1a202c] p-1">
+          <div className="flex gap-1 bg-[#0f0f0f] p-1">
             {["All", "Suits", "Blazers", "Trousers"].map((tab, i) => (
               <button
                 key={tab}

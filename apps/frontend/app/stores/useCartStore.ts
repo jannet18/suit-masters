@@ -1,5 +1,6 @@
 "use client";
 
+import { CartItem } from "@/lib/types";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -16,15 +17,16 @@ export interface CustomOption {
 /**
  * CartItem is what we store in the cart
  */
-export interface CartItem {
-  id: number; //product id
-  name: string;
-  image_url: string;
-  base_price: string;
-  product_type: "STANDARD" | "CUSTOM";
-  quantity: number;
-  selected_options?: CustomOption[]; // only for CUSTOM products
-}
+
+// export interface CartItem {
+//   id: number; //product id
+//   name: string;
+//   image_url: string;
+//   base_price: number;
+//   product_type: "STANDARD" | "CUSTOM";
+//   quantity: number;
+//   selected_options?: CustomOption[]; // only for CUSTOM products
+// }
 
 interface CartState {
   cart: CartItem[];

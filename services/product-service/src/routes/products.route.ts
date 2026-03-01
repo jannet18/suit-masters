@@ -56,7 +56,7 @@ export const productsHandler = new Hono()
         .where(eq(product.id, id))
         .limit(1)
         .then((res: any) => res[0]);
-      if (!productData) {
+      if (!productData.length) {
         return c.json({ error: "Product not found" }, 404);
       }
       // 2. Fetch customization groups/options if it's a CUSTOM product

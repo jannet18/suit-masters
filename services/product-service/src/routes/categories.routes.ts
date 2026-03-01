@@ -1,36 +1,52 @@
 // // GET /categories
 // // GET /categories/:slug
 // // GET /categories/:slug/products
-
-// import { Hono, Context } from "hono";
-// import { collection, db, eq, product, productCollection } from "@repo/db";
-
-// export const categoriesHandler = new Hono()
-//   .get("/", async (c: Context) => {
-//     const categories = await db
-//       .select()
-//       .from(categories)
-//       .orderBy(collection.name);
-//     return c.json({ cols });
-//   })
-//   .get("/:slug/products", async (c: Context) => {
-//     const slug = c.req.param("slug");
-//     const col = await db
-//       .select()
-//       .from(collection)
-//       .where(eq(collection.slug, slug))
-//       .limit(1)
-//       .then((r) => r[0]);
-//     if (!col) return c.json({ error: "Collection not found" }, 404);
-
-//     const productsInCollection = await db
-//       .select()
-//       .from(product)
-//       .innerJoin(
-//         productCollection,
-//         eq(product.id, productCollection.product_id),
-//       )
-//       .where(eq(productCollection.collection_id, col.id));
-
-//     return c.json({ collection: col, products: productsInCollection });
 //   });
+import { Hono } from "hono";
+import { db, eq } from "@repo/db";
+import { product } from "@repo/db";
+
+export const productRoutes = new Hono();
+
+productRoutes.get("/", async (c) => {
+  const categorySlug = c.req.query("category");
+
+  try {
+    if (!categorySlug) {
+      const products = await db.select().from(product);
+      return c.json({ success: true, products });
+    }
+
+    // Find category first
+    const category = await db.query.productCategory.findFirst({
+      where: (cat, { eq }) => eq(cat.slug, categorySlug),
+    });
+
+    if (!category) {
+      return c.json({ success: false, error: "Category not found" }, 404);
+    }
+
+    const products = await db
+      .select()
+      .from(product)
+      .where(eq(product.category_id, category.id));
+
+    return c.json({ success: true, products });
+  } catch (err) {
+    return c.json({ success: false }, 500);
+  }
+});
+
+productRoutes.get("/:slug", async (c) => {
+  const slug = c.req.param("slug");
+
+  const result = await db.query.product.findFirst({
+    where: (p, { eq }) => eq(p.slug, slug),
+  });
+
+  if (!result) {
+    return c.json({ success: false, error: "Product not found" }, 404);
+  }
+
+  return c.json({ success: true, product: result });
+});

@@ -1,4 +1,3 @@
-import React from "react";
 import { CheckIcon } from "lucide-react";
 interface FittingData {
   style: string;
@@ -16,10 +15,14 @@ interface FittingData {
     hips: string;
     inseam: string;
     shoulder: string;
+    // basePrice: number;
+    // totalPrice: number;
   };
 }
 interface StepProps {
   data: FittingData;
+  basePrice: number;
+  totalPrice: number;
   onChange: (updates: Partial<FittingData>) => void;
 }
 const fabricPrices: Record<string, number> = {
@@ -69,10 +72,10 @@ const colorHex: Record<string, string> = {
   stone: "#c4b89a",
   cream: "#f5f0eb",
 };
-export function StepSummary({ data }: StepProps) {
-  const basePrice = 695;
-  const fabricExtra = fabricPrices[data.fabric] || 0;
-  const totalPrice = basePrice + fabricExtra;
+export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
+  // const basePrice = 695;
+  // const fabricExtra = fabricPrices[data.fabric] || 0;
+  // const totalPrice = basePrice + fabricExtra;
   const measurementsFilled = Object.values(data.measurements).filter(
     Boolean,
   ).length;
@@ -182,14 +185,14 @@ export function StepSummary({ data }: StepProps) {
             <span className="text-[#9a9490]">Base price</span>
             <span className="text-[#f5f0eb]">£{basePrice}</span>
           </div>
-          {fabricExtra > 0 && (
+          {/* {fabricExtra > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-[#9a9490]">
                 Fabric upgrade ({fabricLabels[data.fabric]})
               </span>
               <span className="text-[#f5f0eb]">+£{fabricExtra}</span>
             </div>
-          )}
+          )} */}
           <div className="flex justify-between text-sm">
             <span className="text-[#9a9490]">Made to measure</span>
             <span className="text-[#c9a96e]">Included</span>

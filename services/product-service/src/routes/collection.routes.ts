@@ -48,6 +48,38 @@ export const collectionsHandler = new Hono()
       );
     }
   })
+  // .get("/:slug/products", async (c: Context) => {
+  //   const slug = c.req.param("slug");
+  //   try {
+  //     // Find collection by slug
+  //     const col = await db
+  //       .select()
+  //       .from(collection)
+  //       .where(eq(collection.slug, slug))
+  //       .limit(1)
+  //       .then((r) => r[0]);
+  //     if (!col) return c.json({ error: "Collection not found" }, 404);
+  //     const productsInCollection = await db
+  //       .select()
+  //       .from(product)
+  //       .innerJoin(
+  //         productCollection,
+  //         eq(product.id, productCollection.product_id),
+  //       )
+  //       .where(eq(productCollection.collection_id, col.id))
+  //       .orderBy(asc(product.name));
+
+  //     return c.json({
+  //       success: true,
+  //       collection: col,
+  //       products: productsInCollection,
+  //     });
+  //   } catch (error) {
+  //     console.error("Error fetching products for collection:", error);
+  //     return c.json({ error: "Failed to fetch products for collection" });
+  //   }
+  // });
+
   .get("/:slug/products", async (c: Context) => {
     const slug = c.req.param("slug");
     try {
@@ -60,12 +92,16 @@ export const collectionsHandler = new Hono()
         .then((r) => r[0]);
       if (!col) return c.json({ error: "Collection not found" }, 404);
       const productsInCollection = await db
-        .select()
-        .from(product)
-        .innerJoin(
-          productCollection,
-          eq(product.id, productCollection.product_id),
-        )
+        .select({
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          product_image: product.product_image,
+          base_price: product.base_price,
+          product_type: product.product_type,
+        })
+        .from(productCollection)
+        .innerJoin(product, eq(productCollection.collection_id, product.id))
         .where(eq(productCollection.collection_id, col.id))
         .orderBy(asc(product.name));
 

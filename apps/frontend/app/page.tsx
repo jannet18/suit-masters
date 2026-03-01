@@ -4,7 +4,6 @@ import { EditorialBanner } from "./components/common/EditorialBanner";
 import { HeroSection } from "./components/common/HeroSection";
 import { Newsletter } from "./components/common/Newsletter";
 import { Testimonials } from "./components/common/Testimonials";
-import { CustomFitting } from "./components/CustomFitting";
 import { ProductGrid } from "./components/ProductGrid";
 import { USPStrip } from "./components/USPStrip";
 import { CollectionGrid } from "./components/CollectionGrid";
@@ -32,7 +31,7 @@ export default function Home() {
     fetchCollections();
   }, []);
   return (
-    <div className="min-h-screen bg-[#1a202c]">
+    <div className="min-h-screen bg-[#0f0f0f]">
       <main>
         <HeroSection onOpenFitting={() => setFittingOpen(true)} />
         <USPStrip />
@@ -42,10 +41,10 @@ export default function Home() {
         <Testimonials />
         <Newsletter />
       </main>
-      <CustomFitting
+      {/* <CustomFitting
         isOpen={fittingOpen}
         onClose={() => setFittingOpen(false)}
-      />
+      /> */}
     </div>
   );
 }

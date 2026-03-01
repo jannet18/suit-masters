@@ -46,7 +46,7 @@ export function Navbar({ user, onOpenFitting }: NavbarProps) {
           duration: 0.6,
           ease: "easeOut",
         }}
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${scrolled ? "bg-[#1a202c]/95 backdrop-blur-md border-b border-[#2e2e2e]" : "bg-transparent"}`}
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${scrolled ? "bg-[#0f0f0f]/95 backdrop-blur-md border-b border-[#2e2e2e]" : "bg-transparent"}`}
       >
         <div className="flex flex-col max-w-7xl mx-auto px-6 lg:px-10">
           <div className="flex items-center justify-between h-20">
@@ -154,7 +154,7 @@ export function Navbar({ user, onOpenFitting }: NavbarProps) {
               duration: 0.35,
               ease: "easeInOut",
             }}
-            className="fixed inset-0 z-40 bg-[#1a202c] flex flex-col pt-24 px-8"
+            className="fixed inset-0 z-40 bg-[#0f0f0f] flex flex-col pt-24 px-8"
           >
             <nav className="flex flex-col gap-6">
               {[

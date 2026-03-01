@@ -17,7 +17,7 @@ export function HeroSection({ onOpenFitting }: HeroSectionProps) {
   return (
     <section
       ref={ref}
-      className="relative h-screen min-h-175 overflow-hidden bg-[#1a202c]"
+      className="relative h-screen min-h-175 overflow-hidden bg-[#0f0f0f]"
     >
       {/* Parallax Background */}
       <motion.div

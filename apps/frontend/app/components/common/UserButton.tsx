@@ -139,7 +139,7 @@ export default function UserButton({ user }: UserButtonProps) {
             onClick={() => setIsOpen(false)}
           />
 
-          <div className="absolute right-0 mt-3 w-56 bg-[#1a202c] border border-[#2e2e2e] rounded-lg shadow-xl z-20 overflow-hidden py-1 animate-in fade-in zoom-in duration-150">
+          <div className="absolute right-0 mt-3 w-56 bg-[#0f0f0f] border border-[#2e2e2e] rounded-lg shadow-xl z-20 overflow-hidden py-1 animate-in fade-in zoom-in duration-150">
             <div className="px-4 py-3 border-b border-[#2e2e2e]">
               <p className="text-sm text-[#f5f0eb] font-medium truncate">
                 {user?.given_name} {user?.family_name}

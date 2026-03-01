@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api/api-client";
 import { ArrowRightIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Product {
   id: number;
@@ -18,7 +19,7 @@ export default function CollectionPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const router = useRouter();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
 
   useEffect(() => {
@@ -46,22 +47,23 @@ export default function CollectionPage() {
 
   if (loading) return <p className="text-center py-24">Loading products...</p>;
   if (error) return <p className="text-center py-24 text-red-500">{error}</p>;
-  if (products.length === 0)
+  if (!products || products.length === 0)
     return (
       <p className="text-center py-24">No products found in this collection.</p>
     );
 
   return (
-    <section className="py-24 bg-[#1a202c]">
+    <section className="py-24 bg-[#0f0f0f]">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <h1 className="text-4xl md:text-5xl font-serif text-[#f5f0eb] font-bold mb-12">
           {slug?.replace(/-/g, " ")} Collection
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((p) => (
+          {products.map((p: any) => (
             <div
               key={p.id}
+              onClick={() => router.push(`/products/${p.product.slug}`)}
               className="bg-[#1a1a1a] rounded-lg overflow-hidden shadow group cursor-pointer"
             >
               <img

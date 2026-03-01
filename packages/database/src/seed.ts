@@ -1,68 +1,3 @@
-// import { db } from "./db.js";
-// import { product, productCategory } from "./schema/products.js";
-
-// async function seed() {
-//   console.log("🌱 Seeding products...");
-
-//   const weddingResult = await db
-//     .insert(productCategory)
-//     .values({ category_name: "wedding" })
-//     .returning();
-
-//   if (!weddingResult[0]) {
-//     throw new Error("Failed to create wedding category");
-//   }
-//   const wedding = weddingResult[0];
-
-//   const corporateResult = await db
-//     .insert(productCategory)
-//     .values({ category_name: "corporate" })
-//     .returning();
-
-//   if (!corporateResult[0]) {
-//     throw new Error("Failed to create corporate category");
-//   }
-//   const corporate = corporateResult[0];
-
-//   await db.insert(product).values([
-//     {
-//       name: "Navy Wedding Suit",
-//       description: "Elegant navy suit for weddings",
-//       category_id: wedding.id,
-//       product_image:
-//         "https://plus.unsplash.com/premium_photo-1696942353102-0a5def645595",
-//       product_type: "STANDARD",
-//       base_price: "18000",
-//     },
-//     {
-//       name: "Charcoal Corporate Suit",
-//       description: "Sharp charcoal suit for business",
-//       category_id: corporate.id,
-//       product_image:
-//         "https://media.istockphoto.com/id/2236494619/photo/businessman-posing-confidently-with-tablet-in-office.jpg",
-//       product_type: "STANDARD",
-//       base_price: "22000",
-//     },
-//     {
-//       name: "Bespoke Custom Suit",
-//       description: "Fully customizable bespoke suit",
-//       category_id: wedding.id,
-//       product_image:
-//         "https://lugo.co.ke/35-large_default/pinstripe-black-suit-in-nairobi.jpg",
-//       product_type: "CUSTOM",
-//       base_price: "35000",
-//     },
-//   ]);
-
-//   console.log("✅ Seed complete");
-//   process.exit(0);
-// }
-
-// seed().catch((err) => {
-//   console.error("❌ Seed failed", err);
-//   process.exit(1);
-// });
-
 import { db } from "./db.js";
 import { product, productCategory, productCollection } from "./schema/index.js";
 import { collection } from "./schema/index.js";
@@ -127,21 +62,33 @@ async function seed() {
         name: "Wedding",
         slug: "wedding",
         description: "Timeless elegance for your special day",
+        category_id: suits.id,
+        image:
+          "https://images.unsplash.com/photo-1765292783311-1797d8b16826?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8YmxhY2slMjB3ZWRkaW5nJTIwc3VpdHN8ZW58MHx8MHx8fDA%3D",
       },
       {
         name: "Evening",
         slug: "evening",
         description: "Sophisticated looks for night events",
+        category_id: suits.id,
+        image:
+          "https://images.unsplash.com/photo-1615398264198-718da97f988d?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjB8fGJsYWNrJTIwZXZlbmluZyUyMHN1aXRzfGVufDB8fDB8fHww",
       },
       {
         name: "Boardroom",
         slug: "boardroom",
         description: "Power dressing for leadership moments",
+        category_id: suits.id,
+        image:
+          "https://media.istockphoto.com/id/2229590936/photo/successful-male-business-team.webp?a=1&b=1&s=612x612&w=0&k=20&c=ahL275nh0h4p74BHgYqptuX15SCj7djpsmlvxq4Tq0Y=",
       },
       {
         name: "Smart Casual",
         slug: "smart-casual",
         description: "Relaxed but refined everyday style",
+        category_id: blazers.id,
+        image:
+          "https://images.unsplash.com/photo-1618886614638-80e3c103d31a?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8YmxhY2slMjBzbWFydCUyMGNhc3VhbHMlMjBzdWl0c3xlbnwwfHwwfHx8MA%3D%3D",
       },
     ])
     .returning();

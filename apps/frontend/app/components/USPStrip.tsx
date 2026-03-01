@@ -15,7 +15,7 @@ export function USPStrip() {
     margin: "-60px",
   });
   return (
-    <section ref={ref} className="border-y border-[#2e2e2e] bg-[#1a202c]">
+    <section ref={ref} className="border-y border-[#2e2e2e] bg-[#0f0f0f]">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {/* Item 1 */}

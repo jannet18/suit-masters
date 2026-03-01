@@ -1,0 +1,1 @@
+ALTER TABLE "collection" ALTER COLUMN "category_slug" DROP NOT NULL;

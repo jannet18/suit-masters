@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 export function Footer() {
   return (
-    <footer className="bg-[#1a202c] border-t border-[#2e2e2e]">
+    <footer className="bg-[#0f0f0f] border-t border-[#2e2e2e]">
       {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">

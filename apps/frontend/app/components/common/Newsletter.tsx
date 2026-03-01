@@ -19,7 +19,7 @@ export function Newsletter() {
     }
   };
   return (
-    <section ref={ref} className="relative py-28 bg-[#1a202c] overflow-hidden">
+    <section ref={ref} className="relative py-28 bg-[#0f0f0f] overflow-hidden">
       {/* Background texture */}
       <div className="absolute inset-0 opacity-5">
         <img

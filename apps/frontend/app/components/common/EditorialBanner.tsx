@@ -18,7 +18,7 @@ export function EditorialBanner({ onOpenFitting }: EditorialBannerProps) {
   });
   const y = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
   return (
-    <section ref={ref} className="py-24 bg-[#1a202c]">
+    <section ref={ref} className="py-24 bg-[#0f0f0f]">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <div className="grid lg:grid-cols-2 gap-0 overflow-hidden">
           {/* Image Side */}

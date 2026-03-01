@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { HeartIcon, ShoppingBagIcon } from "lucide-react";
+
 interface ProductCardProps {
   name: string;
   price: number;
@@ -26,6 +27,7 @@ export function ProductCard({
   const [hovered, setHovered] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     setAddedToCart(true);
@@ -78,7 +80,7 @@ export function ProductCard({
 
           {/* Overlay on hover */}
           <div
-            className={`absolute inset-0 bg-[#1a202c]/20 transition-opacity duration-300 ${hovered ? "opacity-100" : "opacity-0"}`}
+            className={`absolute inset-0 bg-[#0f0f0f]/20 transition-opacity duration-300 ${hovered ? "opacity-100" : "opacity-0"}`}
           />
 
           {/* Tags */}
@@ -89,7 +91,7 @@ export function ProductCard({
               </span>
             )}
             {discount && (
-              <span className="bg-[#1a202c] text-[#f5f0eb] text-[9px] tracking-widest uppercase font-bold px-2.5 py-1">
+              <span className="bg-[#0f0f0f] text-[#f5f0eb] text-[9px] tracking-widest uppercase font-bold px-2.5 py-1">
                 -{discount}%
               </span>
             )}
@@ -102,7 +104,7 @@ export function ProductCard({
               e.preventDefault();
               setWishlisted(!wishlisted);
             }}
-            className={`absolute top-4 right-4 w-9 h-9 flex items-center justify-center bg-[#1a202c]/80 backdrop-blur-sm transition-all duration-300 ${hovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
+            className={`absolute top-4 right-4 w-9 h-9 flex items-center justify-center bg-[#0f0f0f]/80 backdrop-blur-sm transition-all duration-300 ${hovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
           >
             <HeartIcon
               size={15}
@@ -113,7 +115,7 @@ export function ProductCard({
           {/* Add to Cart */}
           <motion.button
             onClick={handleAddToCart}
-            className={`absolute bottom-0 left-0 right-0 bg-[#1a202c]/90 backdrop-blur-sm text-[#f5f0eb] py-3.5 text-[10px] tracking-[0.25em] uppercase font-semibold flex items-center justify-center gap-2 transition-all duration-300 hover:bg-[#c9a96e] hover:text-[#0f0f0f] ${hovered ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}`}
+            className={`absolute bottom-0 left-0 right-0 bg-[#0f0f0f]/90 backdrop-blur-sm text-[#f5f0eb] py-3.5 text-[10px] tracking-[0.25em] uppercase font-semibold flex items-center justify-center gap-2 transition-all duration-300 hover:bg-[#c9a96e] hover:text-[#0f0f0f] ${hovered ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}`}
           >
             {addedToCart ? (
               <span className="text-[#c9a96e]">Added ✓</span>

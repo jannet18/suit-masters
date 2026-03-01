@@ -29,7 +29,7 @@ export function CollectionGrid({ collections }: CollectionGridProps) {
   };
 
   return (
-    <section id="collection" className="relative py-24 bg-[#1a202c]" ref={ref}>
+    <section id="collection" className="relative py-24 bg-[#0f0f0f]" ref={ref}>
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         {/* Header */}
         <motion.div
