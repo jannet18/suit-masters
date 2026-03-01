@@ -23,7 +23,7 @@ export function CollectionGrid({ collections }: CollectionGridProps) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
   const router = useRouter();
-
+  console.log(collections);
   const handleCollectionClick = (slug: string) => {
     router.push(`/collections/${slug}`);
   };
@@ -52,17 +52,22 @@ export function CollectionGrid({ collections }: CollectionGridProps) {
 
         {/* Grid */}
         <div
-          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 lg:grid-rows-2 gap-6`}
+          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 auto-rows-[450px] lg:grid-rows-2 gap-6`}
         >
-          {collections.map((col, i) => (
+          {collections?.map((col, i) => (
             <motion.button
               key={col.slug}
               onClick={() => handleCollectionClick(col.slug)}
               initial={{ opacity: 0, y: 40 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.7, delay: i * 0.15 }}
-              className={`relative overflow-hidden rounded-lg group cursor-pointer ${
-                col.span ?? "lg:col-span-1 lg:row-span-1"
+              className={`relative overflow-hidden rounded-lg group cursor-pointer min-h-112 w-full ${
+                // col.span ?? "lg:col-span-1 lg:row-span-1"
+                col.span === "wide"
+                  ? "md:col-span-2"
+                  : col.span === "tall"
+                    ? "md:row-span-2"
+                    : ""
               }`}
             >
               {/* Image */}

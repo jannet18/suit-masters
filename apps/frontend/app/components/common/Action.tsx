@@ -1,4 +1,3 @@
-// import { Button } from "@/components/ui/button";
 import {
   LoginLink,
   LogoutLink,
@@ -12,8 +11,7 @@ import { Button } from "@/components/ui/button";
 async function Action() {
   const { getUser } = getKindeServerSession();
   const user = await getUser();
-  // const { isAuthenticated, getUser } = getKindeServerSession();
-  // const user = await getUser();
+
   return (
     <div className="flex items-center justify-end gap-x-2 ml-2 lg:ml-0">
       <div className="flex items-center gap-4">
