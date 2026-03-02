@@ -39,7 +39,7 @@ export interface CartItem {
   product_type: "STANDARD" | "CUSTOM";
   selected_options?: CustomOption[];
   measurements?: Record<string, any>;
-  customizations?: Record<number, number>; // for backward compatibility
+  customizations?: Record<number, number>; // for backward compatibil
   configuration: Record<string, any>;
   totalPrice: number;
 }
