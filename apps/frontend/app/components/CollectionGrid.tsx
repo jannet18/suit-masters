@@ -4,17 +4,7 @@ import { useRef } from "react";
 import { useInView, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon } from "lucide-react";
-
-interface Collection {
-  id: number;
-  title: string;
-  subtitle: string;
-  description: string;
-  image: string;
-  tag?: string;
-  span?: string;
-  slug: string;
-}
+import { Collection } from "@/lib/types";
 
 interface CollectionGridProps {
   collections: Collection[];

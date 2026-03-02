@@ -6,20 +6,10 @@ import { Newsletter } from "./components/common/Newsletter";
 import { Testimonials } from "./components/common/Testimonials";
 import { ProductGrid } from "./components/ProductGrid";
 import { USPStrip } from "./components/USPStrip";
-import { api } from "@/lib/api/api-client";
 import { CustomFitting } from "./components/CustomFitting";
 import { CollectionGrid } from "./components/CollectionGrid";
-
-interface Collection {
-  id: number;
-  title: string;
-  subtitle: string;
-  description: string;
-  image: string;
-  tag?: string;
-  span?: string;
-  slug: string;
-}
+import { api } from "@/lib/api/api-client";
+import { Collection } from "@/lib/types";
 
 export default function Home() {
   const [fittingOpen, setFittingOpen] = useState(false);

@@ -53,14 +53,13 @@ export interface Group {
   items: CustomizationItem[];
 }
 
-export type Unit = "cm" | "in";
-
-export interface Measurements {
-  unit: Unit;
-  height: number;
-  chest: number;
-  waist: number;
-  hips: number;
-  inseam: number;
-  shoulder: number;
+export interface Collection {
+  id: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  image: string;
+  tag?: string;
+  span?: string;
+  slug: string;
 }
