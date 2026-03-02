@@ -1,5 +1,6 @@
 import {
   integer,
+  jsonb,
   numeric,
   pgTable,
   serial,
@@ -11,12 +12,10 @@ import { usersTable } from "./user.js";
 
 export const shopOrder = pgTable("shop_order", {
   id: serial("id").primaryKey(),
-  userId: uuid("user_id")
-    .references(() => usersTable.id)
-    .notNull(),
+  userId: uuid("user_id").references(() => usersTable.id),
   total: numeric("total", { precision: 12, scale: 2 }).notNull(),
-  orderedItems: integer("ordered_items").notNull(),
-  orderDate: timestamp("order_date").defaultNow(),
+  // orderedItems: integer("ordered_items").notNull(),
+  // orderDate: timestamp("order_date").defaultNow(),
   status: varchar("status", { length: 64 }).notNull(),
 
   // Shipping snapshot
@@ -50,5 +49,23 @@ export const orderItems = pgTable("order_items", {
   quantity: integer("quantity").notNull(),
   base_price: numeric("base_price", { precision: 12, scale: 2 }).notNull(),
   // JSON snapshot of custom options(fabric size)
-  selected_options: varchar("selected_options", { length: 400 }),
+  selected_options: jsonb("selected_options").notNull(),
+  final_price: numeric("final_price", { precision: 12, scale: 2 }).notNull(),
+});
+
+export const orderMeasurements = pgTable("order_measurements", {
+  id: serial("id").primaryKey(),
+  orderItemId: integer("order_item_id")
+    .references(() => orderItems.id)
+    .notNull(),
+
+  unit: varchar("unit", { length: 5 }).notNull(),
+
+  height: numeric("height", { precision: 5, scale: 2 }).notNull(),
+  chest: numeric("chest", { precision: 5, scale: 2 }).notNull(),
+  waist: numeric("waist", { precision: 5, scale: 2 }).notNull(),
+  hips: numeric("hips", { precision: 5, scale: 2 }).notNull(),
+  inseam: numeric("inseam", { precision: 5, scale: 2 }).notNull(),
+  shoulder: numeric("shoulder", { precision: 5, scale: 2 }).notNull(),
+  profile_name: varchar("profile_name", { length: 64 }),
 });

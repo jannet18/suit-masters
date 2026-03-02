@@ -41,11 +41,26 @@ export interface CartItem {
   measurements?: Record<string, any>;
   customizations?: Record<number, number>; // for backward compatibility
   configuration: Record<string, any>;
+  totalPrice: number;
 }
+// because if user reopens configurator later, it should not mutate cart item.
+// Cart must be immutable.
 
 export interface Group {
   id: number;
   name: string;
   type: "fabric" | "style" | "details";
   items: CustomizationItem[];
+}
+
+export type Unit = "cm" | "in";
+
+export interface Measurements {
+  unit: Unit;
+  height: number;
+  chest: number;
+  waist: number;
+  hips: number;
+  inseam: number;
+  shoulder: number;
 }

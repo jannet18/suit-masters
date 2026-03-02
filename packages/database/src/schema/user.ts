@@ -14,16 +14,37 @@ export const usersTable = pgTable("site_users", {
   // createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// export const userMeasurements = pgTable("user_measurements", {
+//   id: uuid("id").primaryKey().defaultRandom(),
+//   userId: uuid("user_id")
+//     .notNull()
+//     .references(() => usersTable.id),
+//   profileName: varchar("profile_name", { length: 64 }).notNull(), // e.g., "My Slim Fit"
+//   chest: numeric("chest", { precision: 5, scale: 2 }),
+//   sleeve: numeric("sleeve", { precision: 5, scale: 2 }),
+//   waist: numeric("waist", { precision: 5, scale: 2 }),
+//   isDefault: boolean("is_default").default(false),
+//   ...timestamps,
+// });
+
 export const userMeasurements = pgTable("user_measurements", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
     .notNull()
     .references(() => usersTable.id),
-  profileName: varchar("profile_name", { length: 64 }).notNull(), // e.g., "My Slim Fit"
-  chest: numeric("chest", { precision: 5, scale: 2 }),
-  sleeve: numeric("sleeve", { precision: 5, scale: 2 }),
-  waist: numeric("waist", { precision: 5, scale: 2 }),
+
+  profileName: varchar("profile_name", { length: 64 }).notNull(),
+  unit: varchar("unit", { length: 5 }).notNull(),
+
+  height: numeric("height", { precision: 5, scale: 2 }).notNull(),
+  chest: numeric("chest", { precision: 5, scale: 2 }).notNull(),
+  waist: numeric("waist", { precision: 5, scale: 2 }).notNull(),
+  hips: numeric("hips", { precision: 5, scale: 2 }).notNull(),
+  inseam: numeric("inseam", { precision: 5, scale: 2 }).notNull(),
+  shoulder: numeric("shoulder", { precision: 5, scale: 2 }).notNull(),
+
   isDefault: boolean("is_default").default(false),
+
   ...timestamps,
 });
 export const siteUserRelations = relations(usersTable, ({ many }) => ({

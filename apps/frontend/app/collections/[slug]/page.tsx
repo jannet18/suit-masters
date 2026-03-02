@@ -170,7 +170,7 @@ export default function CollectionPage({
           {collection.products.map((product: Product) => (
             <div
               key={product.id}
-              onClick={() => router.push(`/products/${product.slug}`)}
+              onClick={() => router.push(`/products/${product.id}`)}
               className="bg-[#1a1a1a] p-4 rounded-lg cursor-pointer group"
             >
               <img

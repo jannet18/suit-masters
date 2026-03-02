@@ -85,6 +85,9 @@ interface Product {
 export default function ProductPage({ params }: { params: { slug: string } }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedOptions, setSelectedOptions] = useState<{
+    [groupId: number]: number; // optionId
+  }>({});
   const router = useRouter();
 
   useEffect(() => {
@@ -97,6 +100,12 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
     fetchProduct();
   }, [params.slug]);
 
+  const handleSelect = (groupId: number, optionId: number) => {
+    setSelectedOptions((prev) => ({
+      ...prev,
+      [groupId]: optionId,
+    }));
+  };
   if (loading) return <p className="text-white p-10">Loading...</p>;
 
   if (!product) return <p className="text-white p-10">Product not found</p>;

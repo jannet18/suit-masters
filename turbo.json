@@ -1,11 +1,20 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "NODE_ENV",
+    "KINDE_ISSUER_URL",
+    "KINDE_CLIENT_ID",
+    "KINDE_CLIENT_SECRET",
+    "KINDE_SITE_URL",
+    "KINDE_POST_LOGOUT_REDIRECT_URL",
+    "KINDE_POST_LOGIN_REDIRECT_URL"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
     },
     "db:reset": {
       "cache": false,

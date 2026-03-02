@@ -6,10 +6,12 @@ import { Newsletter } from "./components/common/Newsletter";
 import { Testimonials } from "./components/common/Testimonials";
 import { ProductGrid } from "./components/ProductGrid";
 import { USPStrip } from "./components/USPStrip";
-import { CollectionGrid } from "./components/CollectionGrid";
 import { api } from "@/lib/api/api-client";
+import { CustomFitting } from "./components/CustomFitting";
+import { CollectionGrid } from "./components/CollectionGrid";
 
 interface Collection {
+  id: number;
   title: string;
   subtitle: string;
   description: string;
@@ -41,10 +43,10 @@ export default function Home() {
         <Testimonials />
         <Newsletter />
       </main>
-      {/* <CustomFitting
+      <CustomFitting
         isOpen={fittingOpen}
         onClose={() => setFittingOpen(false)}
-      /> */}
+      />
     </div>
   );
 }

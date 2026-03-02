@@ -21,7 +21,7 @@ export const orderRoutes = new Hono<AuthContext>();
 orderRoutes.post("/", async (c) => {
   try {
     const user = c.get("user");
-    const userId = user.id;
+    const userId = user?.id ?? null;
 
     // Get Idempotency Key
     const idempotencyKey = c.req.header("Idempotency-Key");
@@ -32,7 +32,10 @@ orderRoutes.post("/", async (c) => {
     // Check if key already used
     const existingKey = await db.query.idempotencyKeys.findFirst({
       where: (keys, { and, eq }) =>
-        and(eq(keys.key, idempotencyKey), eq(keys.userId, Number(userId))),
+        and(
+          eq(keys.key, idempotencyKey),
+          eq(keys.userId, Number(userId) ?? -1),
+        ),
     });
 
     if (existingKey) {
