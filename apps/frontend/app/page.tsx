@@ -8,8 +8,17 @@ import { ProductGrid } from "./components/ProductGrid";
 import { USPStrip } from "./components/USPStrip";
 import { CustomFitting } from "./components/CustomFitting";
 import { CollectionGrid } from "./components/CollectionGrid";
-import { api } from "@/lib/api/api-client";
-import { Collection } from "@/lib/types";
+
+interface Collection {
+  id: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  image: string;
+  tag?: string;
+  span?: string;
+  slug: string;
+}
 
 export default function Home() {
   const [fittingOpen, setFittingOpen] = useState(false);
