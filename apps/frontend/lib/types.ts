@@ -49,3 +49,14 @@ export interface Group {
   type: "fabric" | "style" | "details";
   items: CustomizationItem[];
 }
+
+export interface Collection {
+  id: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  image: string;
+  tag?: string;
+  span?: string;
+  slug: string;
+}
