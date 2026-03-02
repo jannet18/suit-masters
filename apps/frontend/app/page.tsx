@@ -8,6 +8,7 @@ import { ProductGrid } from "./components/ProductGrid";
 import { USPStrip } from "./components/USPStrip";
 import { CustomFitting } from "./components/CustomFitting";
 import { CollectionGrid } from "./components/CollectionGrid";
+import { api } from "@/lib/api/api-client";
 
 interface Collection {
   id: number;
