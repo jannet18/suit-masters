@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useStripe, useElements } from "@stripe/react-stripe-js";
+import { Elements, useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
 import { v4 as uuidv4 } from "uuid";
+import { stripePromise } from "../../lib/stripe";
 
-export function useBespokeCheckout() {
+function CheckoutClient() {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -61,7 +62,7 @@ export function useBespokeCheckout() {
         throw new Error(stripeError.message);
       }
 
-      if (paymentIntent.status === "succeeded") {
+      if (paymentIntent?.status === "succeeded") {
         // SUCCESS: The Webhook will handle the DB status update to "PAID"
         return { success: true, orderId };
       }
@@ -73,5 +74,30 @@ export function useBespokeCheckout() {
     }
   };
 
-  return { processCheckout, isProcessing, error };
+  // Minimal UI: PaymentElement should be mounted by Elements on the page when clientSecret provided server-side.
+  // This button demonstrates calling the same `processCheckout` logic from the client.
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-semibold">Checkout</h1>
+      <div>
+        <PaymentElement />
+      </div>
+      {error && <div className="text-red-600">{error}</div>}
+      <button
+        className="px-4 py-2 bg-blue-600 text-white rounded"
+        onClick={() => processCheckout({})}
+        disabled={isProcessing}
+      >
+        {isProcessing ? "Processing…" : "Pay"}
+      </button>
+    </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutClient />
+    </Elements>
+  );
 }
