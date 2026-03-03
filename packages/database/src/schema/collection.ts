@@ -6,9 +6,9 @@ export const collection = pgTable("collection", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 128 }).notNull(),
   slug: varchar("slug", { length: 128 }).notNull().unique(),
-  category_id: integer("category_id")
-    .notNull()
-    .references(() => productCategory.id),
+  // category_id: integer("category_id")
+  //   .notNull()
+  //   .references(() => productCategory.id),
   description: varchar("description", { length: 255 }),
   image: varchar("image", { length: 255 }),
   ...timestamps,

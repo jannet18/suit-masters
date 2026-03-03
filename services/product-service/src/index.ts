@@ -13,6 +13,7 @@ app.use(
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   }),
 );
+
 serve({
   fetch: app.fetch,
   port,

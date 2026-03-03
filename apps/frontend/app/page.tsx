@@ -6,9 +6,9 @@ import { Newsletter } from "./components/common/Newsletter";
 import { Testimonials } from "./components/common/Testimonials";
 import { ProductGrid } from "./components/ProductGrid";
 import { USPStrip } from "./components/USPStrip";
-import { CustomFitting } from "./components/CustomFitting";
 import { CollectionGrid } from "./components/CollectionGrid";
 import { api } from "@/lib/api/api-client";
+import { BespokeConfigurator } from "./products/[slug]/configure/Configurator";
 
 interface Collection {
   id: number;
@@ -43,7 +43,7 @@ export default function Home() {
         <Testimonials />
         <Newsletter />
       </main>
-      <CustomFitting
+      <BespokeConfigurator
         isOpen={fittingOpen}
         onClose={() => setFittingOpen(false)}
       />

@@ -94,6 +94,21 @@ export const productsHandler = new Hono()
     }
   });
 
+//   app.get('/configurator/init', async (c) => {
+//   const options = await db.select().from(customOptions).where(eq(customOptions.isActive, true));
+//   const constraints = await db.select().from(optionConstraints);
+
+//   // We return a "Global Config" object
+//   return c.json({
+//     options: {
+//       fabrics: options.filter(o => o.category === 'fabric'),
+//       lapels: options.filter(o => o.category === 'lapel'),
+//       buttons: options.filter(o => o.category === 'button'),
+//       linings: options.filter(o => o.category === 'lining'),
+//     },
+//     constraints
+//   });
+// });
 // Example of a product details response structure
 /*
 {

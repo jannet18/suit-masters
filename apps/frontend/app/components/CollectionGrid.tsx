@@ -17,7 +17,7 @@ export function CollectionGrid({ collections }: CollectionGridProps) {
   console.log(collections);
 
   const handleCollectionClick = (slug: string) => {
-    router.push(`/collections/${slug}`);
+    router.push(`/collection/${slug}`);
   };
 
   return (
@@ -48,8 +48,11 @@ export function CollectionGrid({ collections }: CollectionGridProps) {
         >
           {collections?.map((col, i) => (
             <motion.button
-              key={col.id}
-              onClick={() => handleCollectionClick(col.slug)}
+              key={col.id || i}
+              onClick={(e) => {
+                e.preventDefault();
+                handleCollectionClick(col.slug);
+              }}
               initial={{ opacity: 0, y: 40 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.7, delay: i * 0.15 }}

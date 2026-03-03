@@ -53,14 +53,44 @@ export interface Group {
   items: CustomizationItem[];
 }
 
+export interface Collection {
+  id: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  image: string;
+  tag?: string;
+  span?: string;
+  slug: string;
+}
+
 export type Unit = "cm" | "in";
 
-export interface Measurements {
-  unit: Unit;
-  height: number;
-  chest: number;
-  waist: number;
-  hips: number;
-  inseam: number;
-  shoulder: number;
+export interface Measurements {}
+
+export interface FittingData {
+  style: string;
+  fit: string;
+  buttons: string;
+  fabric: string;
+  fabricColor: string;
+  lapel: string;
+  lining: string;
+  buttonColor: string;
+  measurements: {
+    unit: Unit;
+    height: number;
+    chest: number;
+    waist: number;
+    hips: number;
+    inseam: number;
+    shoulder: number;
+  };
+}
+
+export interface StepProps {
+  data: FittingData;
+  onChange: (updates: Partial<FittingData>) => void;
+  basePrice: number;
+  totalPrice: number;
 }

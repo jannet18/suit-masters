@@ -15,8 +15,9 @@ export const api = {
   },
 
   // --- Products ---
-  getProducts: async () => {
-    const res = await fetch(`${SERVICES.product}/products`);
+  getProducts: async (params?: { category?: string; search?: string }) => {
+    const queryString = new URLSearchParams(params as any).toString();
+    const res = await fetch(`${SERVICES.product}/products?${queryString}`);
     return res.json();
   },
 
@@ -37,6 +38,10 @@ export const api = {
   },
 
   // --- Orders ---
+  getOrders: async (data: any, token: string) => {
+    const res = await fetch(`${SERVICES.order}/orders`);
+    return res.json();
+  },
   createOrder: async (data: any, token: string) => {
     const res = await fetch(`${SERVICES.order}/checkout`, {
       method: "POST",
@@ -56,7 +61,16 @@ export const api = {
   },
 
   getProductBySlug: async (slug: string) => {
-    const res = await fetch(`${SERVICES.product}/products/slug/${slug}`);
+    const res = await fetch(`${SERVICES}/products/${slug}`);
     return res.json();
+  },
+
+  createBespokeOrder: async (data: any) => {
+    const response = await fetch("/api/checkout/bespoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return response.json();
   },
 };
