@@ -1000,7 +1000,7 @@ export function BespokeConfigurator({
               className="absolute inset-0"
             >
               <img
-                src={product.product_image}
+                src={product?.product_image}
                 alt="Preview"
                 className="w-full h-full object-cover grayscale-20%"
               />
@@ -1036,7 +1036,7 @@ export function BespokeConfigurator({
                     onChange={(newData) =>
                       setSelections((prev) => ({ ...prev, ...newData }))
                     }
-                    basePrice={parseFloat(product.base_price)}
+                    basePrice={parseFloat(product?.base_price)}
                     totalPrice={totalPrice}
                   />
                 )}
@@ -1046,7 +1046,7 @@ export function BespokeConfigurator({
                     onChange={(newData) =>
                       setSelections((prev) => ({ ...prev, ...newData }))
                     }
-                    basePrice={parseFloat(product.base_price)}
+                    basePrice={parseFloat(product?.base_price)}
                     totalPrice={totalPrice}
                   />
                 )}
@@ -1056,7 +1056,7 @@ export function BespokeConfigurator({
                     onChange={(newData) =>
                       setSelections((prev) => ({ ...prev, ...newData }))
                     }
-                    basePrice={parseFloat(product.base_price)}
+                    basePrice={parseFloat(product?.base_price)}
                     totalPrice={totalPrice}
                   />
                 )}
@@ -1064,7 +1064,7 @@ export function BespokeConfigurator({
                   <StepMeasurements
                     data={measurements}
                     onChange={setMeasurements}
-                    basePrice={parseFloat(product.base_price)}
+                    basePrice={parseFloat(product?.base_price)}
                     totalPrice={totalPrice}
                   />
                 )}
@@ -1074,7 +1074,7 @@ export function BespokeConfigurator({
                     onChange={(newData) =>
                       setSelections((prev) => ({ ...prev, ...newData }))
                     }
-                    basePrice={parseFloat(product.base_price)}
+                    basePrice={parseFloat(product?.base_price)}
                     totalPrice={totalPrice}
                   />
                 )}

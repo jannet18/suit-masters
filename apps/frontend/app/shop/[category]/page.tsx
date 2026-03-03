@@ -42,7 +42,7 @@ export default async function CategoryPage({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {products.map((p: any) => (
+          {(Array.isArray(products) ? products : []).map((p: any) => (
             <a key={p.id} href={`/product/${p.slug}`} className="group">
               <div className="aspect-square overflow-hidden bg-gray-100 mb-2">
                 <img
