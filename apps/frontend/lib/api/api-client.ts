@@ -20,7 +20,7 @@ export const api = {
       }
     } catch (error) {
       console.log("Error fetching cart: ", error);
-      return { success: false, cart: null };  
+      return { success: false, cart: null };
     }
   },
 
@@ -73,18 +73,8 @@ export const api = {
   },
 
   getProductsInCollection: async (slug: string) => {
-    try {
-      const res = await fetch(`${SERVICES.product}/collections/${slug}/products`);
-      if (res.ok) {
-        return res.json();
-      } else {
-        console.log("Failed to fetch collection products: ", res.statusText);
-        return { success: false, products: [] };
-      }
-    } catch (error) {
-      console.log("Error fetching collection products: ", error);
-      return { success: false, products: [] };
-    }
+    const res = await fetch(`${SERVICES.product}/collections/${slug}`);
+    return res.json();
   },
 
   // --- Orders ---
@@ -141,18 +131,8 @@ export const api = {
   },
 
   getProductBySlug: async (slug: string) => {
-    try {
-      const res = await fetch(`${SERVICES}/products/${slug}`);
-      if (res.ok) {
-        return res.json();
-      } else {
-        console.log("Failed to fetch product: ", res.statusText);
-        return { success: false, product: null };
-      }
-    } catch (error) {
-      console.log("Error fetching slugged product: ", error);
-      return { success: false, product: null };
-    }
+    const res = await fetch(`${SERVICES.product}/products/${slug}`);
+    return res.json();
   },
 
   createBespokeOrder: async (data: any) => {

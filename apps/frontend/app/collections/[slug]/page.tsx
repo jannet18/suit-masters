@@ -1,17 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api/api-client";
 import { ArrowRightIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { RelatedCollections } from "@/app/components/RelatedCollection";
 
-export default function CollectionPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
+export default function CollectionPage() {
+  const { slug } = useParams();
   const [collection, setCollection] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [allCollections, setAllCollections] = useState<any[]>([]);
@@ -24,12 +21,13 @@ export default function CollectionPage({
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await api.getProductsInCollection(params.slug);
+        if (!slug) return;
+        const res = await api.getProductsInCollection(slug as string);
         const allRes = await api.getCollections();
         if (res.success) {
           setCollection(res.collection);
           setProducts(res.products);
-          setAllCollections(allRes.collectionss);
+          setAllCollections(allRes.collections);
         }
       } catch (err) {
         console.error("Failed to load collection", err);
@@ -38,7 +36,7 @@ export default function CollectionPage({
       }
     }
     loadData();
-  }, [params.slug]);
+  }, [slug]);
 
   if (loading)
     return (
@@ -116,7 +114,7 @@ export default function CollectionPage({
           ))}
         </div>
       </section>
-      <RelatedCollections collections={collection} currentSlug={params.slug} />
+      <RelatedCollections collections={allCollections} currentSlug={"slug"} />
     </main>
   );
 }

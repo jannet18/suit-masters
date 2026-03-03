@@ -125,7 +125,7 @@ export function HeroSection({ onOpenFitting }: HeroSectionProps) {
               className="flex flex-col sm:flex-row gap-4"
             >
               <a
-                href="#collection"
+                href="/collections"
                 className="group inline-flex items-center gap-3 bg-[#c9a96e] text-[#0f0f0f] px-8 py-4 text-xs tracking-[0.2em] uppercase font-semibold hover:bg-[#dfc08a] transition-colors duration-300"
               >
                 Shop Collection
