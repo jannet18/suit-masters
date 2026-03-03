@@ -4,17 +4,7 @@ import { useRef } from "react";
 import { useInView, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon } from "lucide-react";
-
-interface Collection {
-  id: number;
-  title: string;
-  subtitle: string;
-  description: string;
-  image: string;
-  tag?: string;
-  span?: string;
-  slug: string;
-}
+import { Collection } from "@/lib/types";
 
 interface CollectionGridProps {
   collections: Collection[];
@@ -58,8 +48,11 @@ export function CollectionGrid({ collections }: CollectionGridProps) {
         >
           {collections?.map((col, i) => (
             <motion.button
-              key={col.id}
-              onClick={() => handleCollectionClick(col.slug)}
+              key={col.id || i}
+              onClick={(e) => {
+                e.preventDefault();
+                handleCollectionClick(col.slug);
+              }}
               initial={{ opacity: 0, y: 40 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.7, delay: i * 0.15 }}

@@ -83,7 +83,7 @@ export const customizationOption = pgTable("customization_option", {
     .references(() => customizationGroup.id),
 
   value: varchar("value", { length: 128 }).notNull(), // Italian Wool
-  price_delta: numeric("price_delta", { precision: 12, scale: 2 }).default("0"),
+  price_delta: integer("price_delta").default(0),
 
   metadata: jsonb("metadata"), // images, color, fabric info
   is_default: boolean("is_default").default(false),

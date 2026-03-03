@@ -1,221 +1,177 @@
-import { CheckIcon } from "lucide-react";
-interface FittingData {
-  style: string;
-  fit: string;
-  buttons: string;
-  fabric: string;
-  fabricColor: string;
-  lapel: string;
-  lining: string;
-  buttonColor: string;
-  measurements: {
-    height: string;
-    chest: string;
-    waist: string;
-    hips: string;
-    inseam: string;
-    shoulder: string;
-    // basePrice: number;
-    // totalPrice: number;
-  };
-}
-interface StepProps {
-  data: FittingData;
-  basePrice: number;
-  totalPrice: number;
-  onChange: (updates: Partial<FittingData>) => void;
-}
-const fabricPrices: Record<string, number> = {
-  wool: 0,
-  cashmere: 180,
-  linen: 60,
-  tweed: 90,
-};
+"use client";
+
+import { StepProps } from "@/lib/types";
+import { CheckIcon, Ruler, Scissors, Box, Globe } from "lucide-react";
+
+// Helper to map values to readable labels (keep your existing Record maps here)
 const fabricLabels: Record<string, string> = {
   wool: "Super 120s Wool",
   cashmere: "Cashmere Blend",
   linen: "Irish Linen",
   tweed: "Harris Tweed",
 };
-const styleLabels: Record<string, string> = {
-  single: "Single Breasted",
-  double: "Double Breasted",
-  tuxedo: "Tuxedo",
-};
-const fitLabels: Record<string, string> = {
-  slim: "Slim Fit",
-  regular: "Regular Fit",
-  relaxed: "Relaxed Fit",
-};
-const lapelLabels: Record<string, string> = {
-  notch: "Notch Lapel",
-  peak: "Peak Lapel",
-  shawl: "Shawl Lapel",
-};
-const colorLabels: Record<string, string> = {
-  charcoal: "Charcoal",
-  navy: "Navy",
-  midnight: "Midnight Blue",
-  black: "Black",
-  grey: "Mid Grey",
-  brown: "Tobacco",
-  stone: "Stone",
-  cream: "Ivory",
-};
-const colorHex: Record<string, string> = {
-  charcoal: "#3a3a3a",
-  navy: "#1a2744",
-  midnight: "#0d1b2a",
-  black: "#0f0f0f",
-  grey: "#6b6b6b",
-  brown: "#6b4c2a",
-  stone: "#c4b89a",
-  cream: "#f5f0eb",
-};
+
 export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
-  // const basePrice = 695;
-  // const fabricExtra = fabricPrices[data.fabric] || 0;
-  // const totalPrice = basePrice + fabricExtra;
-  const measurementsFilled = Object.values(data.measurements).filter(
-    Boolean,
+  // Calculate the delta for the summary view
+  const fabricUpgrade = totalPrice - basePrice;
+
+  // Count filled measurements
+  const measurementKeys = [
+    "height",
+    "chest",
+    "waist",
+    "hips",
+    "inseam",
+    "shoulder",
+  ];
+  const filledCount = measurementKeys.filter(
+    (key) =>
+      data.measurements &&
+      data.measurements[key as keyof typeof data.measurements],
   ).length;
+
   return (
-    <div className="space-y-8">
-      {/* Summary Header */}
-      <div className="text-center pb-6 border-b border-[#2e2e2e]">
-        <div className="inline-flex items-center justify-center w-12 h-12 border border-[#c9a96e]/40 mb-4">
-          <CheckIcon size={20} className="text-[#c9a96e]" />
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* 1. Header Section */}
+      <div className="text-center pb-8 border-b border-white/5">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full border border-[#c9a96e]/20 bg-[#c9a96e]/5 mb-4">
+          <CheckIcon size={24} className="text-[#c9a96e]" />
         </div>
-        <h3 className="font-serif text-[#f5f0eb] text-xl font-bold mb-1">
-          Your Bespoke Suit
+        <h3 className="font-serif text-[#f5f0eb] text-2xl font-bold mb-2">
+          Review Your Masterpiece
         </h3>
-        <p className="text-[#9a9490] text-sm">
-          Review your selections before we begin crafting
+        <p className="text-[#9a9490] text-sm font-light tracking-wide">
+          Every detail has been logged for our master tailors.
         </p>
       </div>
 
-      {/* Selections Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Style */}
-        <div className="p-4 border border-[#2e2e2e] bg-[#1a1a1a]">
-          <div className="text-[#9a9490] text-[9px] tracking-[0.3em] uppercase mb-2">
-            Style
+      {/* 2. Selection Breakdown Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Design & Fit */}
+        <div className="group p-5 border border-white/5 bg-[#121212] hover:border-[#c9a96e]/30 transition-colors">
+          <div className="flex items-center gap-2 mb-3">
+            <Scissors size={14} className="text-[#c9a96e]" />
+            <span className="text-[#9a9490] text-[10px] tracking-[0.3em] uppercase">
+              Silhouette
+            </span>
           </div>
-          <div className="font-serif text-[#f5f0eb] text-sm">
-            {styleLabels[data.style] || (
-              <span className="text-[#6b6560] italic">Not selected</span>
-            )}
-          </div>
-          {data.fit && (
-            <div className="text-[#9a9490] text-xs mt-1">
-              {fitLabels[data.fit]}
-            </div>
-          )}
+          <p className="font-serif text-[#f5f0eb] text-lg capitalize">
+            {data.style || "Standard"} Cut
+          </p>
+          <p className="text-[#6b6560] text-xs mt-1 uppercase tracking-widest">
+            {data.fit || "Regular"} Fit • {data.lapel || "Notch"} Lapel
+          </p>
         </div>
 
-        {/* Fabric */}
-        <div className="p-4 border border-[#2e2e2e] bg-[#1a1a1a]">
-          <div className="text-[#9a9490] text-[9px] tracking-[0.3em] uppercase mb-2">
-            Fabric
+        {/* Material & Color */}
+        <div className="group p-5 border border-white/5 bg-[#121212] hover:border-[#c9a96e]/30 transition-colors">
+          <div className="flex items-center gap-2 mb-3">
+            <Box size={14} className="text-[#c9a96e]" />
+            <span className="text-[#9a9490] text-[10px] tracking-[0.3em] uppercase">
+              Material
+            </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {data.fabricColor && (
               <div
-                className="w-4 h-4 rounded-full border border-[#2e2e2e] shrink-0"
-                style={{
-                  backgroundColor: colorHex[data.fabricColor],
-                }}
+                className="w-4 h-4 rounded-full border border-white/10"
+                style={{ backgroundColor: data.fabricColor }}
               />
             )}
-            <div className="font-serif text-[#f5f0eb] text-sm">
-              {fabricLabels[data.fabric] || (
-                <span className="text-[#6b6560] italic">Not selected</span>
-              )}
-            </div>
+            <p className="font-serif text-[#f5f0eb] text-lg">
+              {fabricLabels[data.fabric] || "Bespoke Selection"}
+            </p>
           </div>
-          {data.fabricColor && (
-            <div className="text-[#9a9490] text-xs mt-1">
-              {colorLabels[data.fabricColor]}
-            </div>
-          )}
-        </div>
-
-        {/* Details */}
-        <div className="p-4 border border-[#2e2e2e] bg-[#1a1a1a]">
-          <div className="text-[#9a9490] text-[9px] tracking-[0.3em] uppercase mb-2">
-            Details
-          </div>
-          <div className="font-serif text-[#f5f0eb] text-sm">
-            {lapelLabels[data.lapel] || (
-              <span className="text-[#6b6560] italic">Not selected</span>
-            )}
-          </div>
-          {data.buttons && (
-            <div className="text-[#9a9490] text-xs mt-1">
-              {data.buttons} Button
-            </div>
-          )}
-        </div>
-
-        {/* Measurements */}
-        <div className="p-4 border border-[#2e2e2e] bg-[#1a1a1a]">
-          <div className="text-[#9a9490] text-[9px] tracking-[0.3em] uppercase mb-2">
-            Measurements
-          </div>
-          <div className="font-serif text-[#f5f0eb] text-sm">
-            {measurementsFilled} / 6 entered
-          </div>
-          <div className="mt-1.5 flex gap-1">
-            {Array.from({
-              length: 6,
-            }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-1 flex-1 ${i < measurementsFilled ? "bg-[#c9a96e]" : "bg-[#2e2e2e]"}`}
-              />
-            ))}
-          </div>
+          <p className="text-[#6b6560] text-xs mt-1 uppercase tracking-widest">
+            Premium {data.lining || "Silk"} Lining
+          </p>
         </div>
       </div>
 
-      {/* Pricing */}
-      <div className="border border-[#2e2e2e] bg-[#1a1a1a]">
-        <div className="p-5 space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-[#9a9490]">Base price</span>
-            <span className="text-[#f5f0eb]">£{basePrice}</span>
+      {/* 3. Measurement Progress Card */}
+      <div className="p-6 border border-white/5 bg-[#121212]">
+        <div className="flex justify-between items-end mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Ruler size={14} className="text-[#c9a96e]" />
+              <span className="text-[#9a9490] text-[10px] tracking-[0.3em] uppercase">
+                Proportions
+              </span>
+            </div>
+            <p className="font-serif text-[#f5f0eb] text-lg">
+              Personal Measurement Profile
+            </p>
           </div>
-          {/* {fabricExtra > 0 && (
+          <span className="text-[#c9a96e] text-xs font-mono">
+            {filledCount}/6 Metrics
+          </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-1 w-full bg-white/5 flex gap-1">
+          {measurementKeys.map((_, i) => (
+            <div
+              key={i}
+              className={`h-full flex-1 transition-all duration-500 ${i < filledCount ? "bg-[#c9a96e]" : "bg-white/10"}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* 4. Final Pricing & Logistics */}
+      <div className="border border-white/5 bg-[#151515] overflow-hidden rounded-sm">
+        <div className="p-6 space-y-4">
+          <div className="flex justify-between text-sm">
+            <span className="text-[#9a9490]">Base Tailoring</span>
+            <span className="text-[#f5f0eb]">£{basePrice.toFixed(2)}</span>
+          </div>
+
+          {fabricUpgrade > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-[#9a9490]">
-                Fabric upgrade ({fabricLabels[data.fabric]})
+                Material Surcharge ({data.fabric})
               </span>
-              <span className="text-[#f5f0eb]">+£{fabricExtra}</span>
+              <span className="text-[#f5f0eb]">
+                +£{fabricUpgrade.toFixed(2)}
+              </span>
             </div>
-          )} */}
+          )}
+
           <div className="flex justify-between text-sm">
-            <span className="text-[#9a9490]">Made to measure</span>
-            <span className="text-[#c9a96e]">Included</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-[#9a9490]">Worldwide delivery</span>
-            <span className="text-[#c9a96e]">Included</span>
+            <div className="flex items-center gap-2">
+              <Globe size={12} className="text-[#c9a96e]" />
+              <span className="text-[#9a9490]">Express Global Shipping</span>
+            </div>
+            <span className="text-[#c9a96e] uppercase text-[10px] font-bold">
+              Complimentary
+            </span>
           </div>
         </div>
-        <div className="flex justify-between items-center px-5 py-4 border-t border-[#2e2e2e]">
-          <span className="font-serif text-[#f5f0eb] text-base font-semibold">
-            Total
-          </span>
-          <span className="font-serif text-[#c9a96e] text-2xl font-bold">
-            £{totalPrice}
+
+        <div className="flex justify-between items-center px-6 py-5 bg-white/5">
+          <div>
+            <p className="text-[#f5f0eb] font-serif text-lg font-medium">
+              Final Investment
+            </p>
+            <p className="text-[#6b6560] text-[9px] uppercase tracking-widest italic">
+              Includes VAT & Insurance
+            </p>
+          </div>
+          <span className="font-serif text-[#c9a96e] text-3xl font-bold">
+            £{totalPrice.toFixed(2)}
           </span>
         </div>
       </div>
 
-      {/* Delivery Info */}
-      <div className="flex items-center gap-3 text-[#9a9490] text-xs">
-        <div className="w-1.5 h-1.5 bg-[#c9a96e] rounded-full shrink-0" />
-        Estimated delivery: 14–18 working days after order confirmation
+      {/* 5. Production Disclaimer */}
+      <div className="flex items-start gap-3 p-4 bg-[#c9a96e]/5 border border-[#c9a96e]/10">
+        <div className="w-1.5 h-1.5 bg-[#c9a96e] rounded-full mt-1.5 shrink-0" />
+        <p className="text-[#9a9490] text-[11px] leading-relaxed italic">
+          By proceeding, you acknowledge that bespoke items are crafted to your
+          unique proportions. Production begins in{" "}
+          <span className="text-[#c9a96e]">24 hours</span>, after which details
+          cannot be modified.
+        </p>
       </div>
     </div>
   );

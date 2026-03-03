@@ -1,26 +1,5 @@
-import React from "react";
-interface FittingData {
-  style: string;
-  fit: string;
-  buttons: string;
-  fabric: string;
-  fabricColor: string;
-  lapel: string;
-  lining: string;
-  buttonColor: string;
-  measurements: {
-    height: string;
-    chest: string;
-    waist: string;
-    hips: string;
-    inseam: string;
-    shoulder: string;
-  };
-}
-interface StepProps {
-  data: FittingData;
-  onChange: (updates: Partial<FittingData>) => void;
-}
+import { StepProps } from "@/lib/types";
+
 const lapels = [
   {
     id: "notch",

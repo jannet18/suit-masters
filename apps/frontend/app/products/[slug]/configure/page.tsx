@@ -1,9 +1,14 @@
-import { Configurator } from "./Configurator";
+import { BespokeConfigurator } from "./Configurator";
 
-export default function ConfigurePage({ params }: { params: { id: string } }) {
+export default async function ConfigurePage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
   return (
     <main>
-      <Configurator productId={params.id} />
+      <BespokeConfigurator productId={slug} slug={slug} data={{}} />
     </main>
   );
 }

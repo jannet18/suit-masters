@@ -43,57 +43,85 @@ export const productsHandler = new Hono()
       return c.json({ error: "Failed to fetch products" }, 500);
     }
   })
-  .get("/:id", async (c: Context) => {
-    const id = Number(c.req.param("id"));
-    if (Number.isNaN(id)) {
-      return c.json({ error: "Invalid product ID" }, 400);
+  .get("/:slug", async (c: Context) => {
+    const slug = c.req.param("slug");
+
+    const result = await db.query.product.findFirst({
+      where: (p, { eq }) => eq(p.slug, slug),
+    });
+
+    if (!result) {
+      return c.json({ success: false, error: "Product not found" }, 404);
     }
-    try {
-      // 1.Fetch product details
-      const productData = await db
-        .select()
-        .from(product)
-        .where(eq(product.id, id))
-        .limit(1)
-        .then((res: any) => res[0]);
-      if (!productData.length) {
-        return c.json({ error: "Product not found" }, 404);
-      }
-      // 2. Fetch customization groups/options if it's a CUSTOM product
-      let customizationGroups: CustomizationGroup[] = [];
-      if (productData.product_type === "CUSTOM") {
-        const options = await db
-          .select()
-          .from(customizationOption)
-          .where(eq(customizationOption.product_id, id));
 
-        // Group options by group_id
-        const groupMap = new Map<number, CustomizationGroup>();
-        options.forEach((option: any) => {
-          if (!groupMap.has(option.group_id)) {
-            groupMap.set(option.group_id, {
-              id: option.group_id,
-              name: "", // You can fetch group name if needed
-              items: [],
-            });
-          }
-          groupMap.get(option.group_id)?.items?.push(option);
-        });
-
-        // Convert map to array
-        customizationGroups = Array.from(groupMap.values());
-      }
-
-      return c.json({
-        ...productData,
-        options: customizationGroups,
-      });
-    } catch (error) {
-      console.error("Error fetching product details:", error);
-      return c.json({ error: "Failed to fetch product details" }, 500);
-    }
+    return c.json({ success: true, product: result });
   });
+// .get("/:id", async (c: Context) => {
+//   const id = Number(c.req.param("id"));
+//   if (Number.isNaN(id)) {
+//     return c.json({ error: "Invalid product ID" }, 400);
+//   }
+//   try {
+//     // 1.Fetch product details
+//     const productData = await db
+//       .select()
+//       .from(product)
+//       .where(eq(product.id, id))
+//       .limit(1)
+//       .then((res: any) => res[0]);
+//     if (!productData.length) {
+//       return c.json({ error: "Product not found" }, 404);
+//     }
+//     // 2. Fetch customization groups/options if it's a CUSTOM product
+//     let customizationGroups: CustomizationGroup[] = [];
+//     if (productData.product_type === "CUSTOM") {
+//       const options = await db
+//         .select()
+//         .from(customizationOption)
+//         .where(eq(customizationOption.product_id, id));
 
+//       // Group options by group_id
+//       const groupMap = new Map<number, CustomizationGroup>();
+//       options.forEach((option: any) => {
+//         if (!groupMap.has(option.group_id)) {
+//           groupMap.set(option.group_id, {
+//             id: option.group_id,
+//             name: "", // You can fetch group name if needed
+//             items: [],
+//           });
+//         }
+//         groupMap.get(option.group_id)?.items?.push(option);
+//       });
+
+//       // Convert map to array
+//       customizationGroups = Array.from(groupMap.values());
+//     }
+
+//     return c.json({
+//       ...productData,
+//       options: customizationGroups,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching product details:", error);
+//     return c.json({ error: "Failed to fetch product details" }, 500);
+//   }
+// });
+
+//   app.get('/configurator/init', async (c) => {
+//   const options = await db.select().from(customOptions).where(eq(customOptions.isActive, true));
+//   const constraints = await db.select().from(optionConstraints);
+
+//   // We return a "Global Config" object
+//   return c.json({
+//     options: {
+//       fabrics: options.filter(o => o.category === 'fabric'),
+//       lapels: options.filter(o => o.category === 'lapel'),
+//       buttons: options.filter(o => o.category === 'button'),
+//       linings: options.filter(o => o.category === 'lining'),
+//     },
+//     constraints
+//   });
+// });
 // Example of a product details response structure
 /*
 {

@@ -1,7 +1,6 @@
 "use client";
-// import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const SearchBar = () => {
@@ -13,6 +12,13 @@ const SearchBar = () => {
   const params = new URLSearchParams(searchParams);
   const query = searchParams.get("query") || "";
 
+  useEffect(() => {
+    // If there is a query in the URL, put it in the input box
+    const currentQuery = searchParams.get("query");
+    if (currentQuery) {
+      setValue(currentQuery);
+    }
+  }, [searchParams]);
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!value) return;

@@ -14,6 +14,7 @@ import {
 import SearchBar from "./SearchBar";
 import UserButton from "./UserButton";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface NavbarProps {
   user: any;
@@ -23,6 +24,7 @@ export function Navbar({ user, onOpenFitting }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
 
   // const [cartCount] = useState(2);
   useEffect(() => {
@@ -52,7 +54,7 @@ export function Navbar({ user, onOpenFitting }: NavbarProps) {
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <div className="flex-1 lg:flex-none flex justify-center lg:justify-center">
-              <a href="#" className="flex flex-col items-center">
+              <a href="/" className="flex flex-col items-center">
                 <span className="font-serif text-2xl font-bold tracking-[0.15em] text-[#f5f0eb]">
                   Suit Masters
                 </span>
@@ -82,7 +84,7 @@ export function Navbar({ user, onOpenFitting }: NavbarProps) {
                 Shirts
               </a>
               <button
-                onClick={onOpenFitting}
+                onClick={() => router.push(`/configure`)}
                 className="text-[#c9a96e] hover:text-[#dfc08a] text-xs tracking-[0.2em] uppercase font-semibold transition-colors duration-200 flex items-center gap-1.5"
               >
                 <ScissorsIcon size={12} />
