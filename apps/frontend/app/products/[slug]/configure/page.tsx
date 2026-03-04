@@ -8,7 +8,7 @@ export default async function ConfigurePage({
   const { slug } = await params;
   return (
     <main>
-      <BespokeConfigurator productId={slug} slug={slug} data={{}} />
+      <BespokeConfigurator slug={slug} isOpen={true} onClose={() => {}} />
     </main>
   );
 }

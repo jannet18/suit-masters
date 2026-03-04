@@ -1,1 +1,0 @@
-ALTER TABLE "collection" ADD COLUMN "category_slug" varchar(128) NOT NULL;

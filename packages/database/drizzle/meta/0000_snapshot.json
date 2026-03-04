@@ -1,5 +1,5 @@
 {
-  "id": "ac1a1976-4c0d-427f-975e-738fefc7bc1c",
+  "id": "a094fc37-f116-4277-891c-bfd4a29ccd5a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -198,6 +198,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "product_id": {
+          "name": "product_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
         "product_item_id": {
           "name": "product_item_id",
           "type": "integer",
@@ -232,6 +238,19 @@
           "tableTo": "shopping_cart",
           "columnsFrom": [
             "cart_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "shopping_cart_item_product_id_product_id_fk": {
+          "name": "shopping_cart_item_product_id_product_id_fk",
+          "tableFrom": "shopping_cart_item",
+          "tableTo": "product",
+          "columnsFrom": [
+            "product_id"
           ],
           "columnsTo": [
             "id"
@@ -470,9 +489,39 @@
           "primaryKey": false,
           "notNull": true
         },
-        "product_id": {
-          "name": "product_id",
-          "type": "integer",
+        "product_name": {
+          "name": "product_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sku": {
+          "name": "sku",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "customization_snapshot": {
+          "name": "customization_snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "measurement_snapshot": {
+          "name": "measurement_snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_at_purchase": {
+          "name": "price_at_purchase",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit_price": {
+          "name": "unit_price",
+          "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -481,18 +530,6 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true
-        },
-        "base_price": {
-          "name": "base_price",
-          "type": "numeric(12, 2)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "selected_options": {
-          "name": "selected_options",
-          "type": "varchar(400)",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {},
@@ -531,26 +568,13 @@
           "name": "user_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "total": {
           "name": "total",
           "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true
-        },
-        "ordered_items": {
-          "name": "ordered_items",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "order_date": {
-          "name": "order_date",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
         },
         "status": {
           "name": "status",
@@ -621,6 +645,93 @@
           "tableTo": "site_users",
           "columnsFrom": [
             "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.order_measurements": {
+      "name": "order_measurements",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "order_item_id": {
+          "name": "order_item_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit": {
+          "name": "unit",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "height": {
+          "name": "height",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "chest": {
+          "name": "chest",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "waist": {
+          "name": "waist",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hips": {
+          "name": "hips",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inseam": {
+          "name": "inseam",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "shoulder": {
+          "name": "shoulder",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "profile_name": {
+          "name": "profile_name",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "order_measurements_order_item_id_order_items_id_fk": {
+          "name": "order_measurements_order_item_id_order_items_id_fk",
+          "tableFrom": "order_measurements",
+          "tableTo": "order_items",
+          "columnsFrom": [
+            "order_item_id"
           ],
           "columnsTo": [
             "id"
@@ -806,15 +917,15 @@
           "primaryKey": true,
           "notNull": true
         },
-        "product_id": {
-          "name": "product_id",
+        "group_id": {
+          "name": "group_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "group_id": {
-          "name": "group_id",
-          "type": "integer",
+        "name": {
+          "name": "name",
+          "type": "varchar(128)",
           "primaryKey": false,
           "notNull": true
         },
@@ -829,7 +940,7 @@
           "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": false,
-          "default": "'0'"
+          "default": "'0.00'"
         },
         "metadata": {
           "name": "metadata",
@@ -847,19 +958,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "customization_option_product_id_product_id_fk": {
-          "name": "customization_option_product_id_product_id_fk",
-          "tableFrom": "customization_option",
-          "tableTo": "product",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
         "customization_option_group_id_customization_group_id_fk": {
           "name": "customization_option_group_id_customization_group_id_fk",
           "tableFrom": "customization_option",
@@ -890,15 +988,27 @@
           "primaryKey": true,
           "notNull": true
         },
+        "name": {
+          "name": "name",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
         "category_id": {
           "name": "category_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "name": {
-          "name": "name",
-          "type": "varchar(128)",
+        "product_type": {
+          "name": "product_type",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_price": {
+          "name": "base_price",
+          "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -917,18 +1027,6 @@
         "product_image": {
           "name": "product_image",
           "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "product_type": {
-          "name": "product_type",
-          "type": "varchar(32)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "base_price": {
-          "name": "base_price",
-          "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1075,12 +1173,6 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "user_id": {
-          "name": "user_id",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
         "product_id": {
           "name": "product_id",
           "type": "integer",
@@ -1101,6 +1193,13 @@
         },
         "created_at": {
           "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
@@ -1143,11 +1242,18 @@
           "primaryKey": false,
           "notNull": true
         },
-        "price": {
-          "name": "price",
+        "size": {
+          "name": "size",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "additional_price": {
+          "name": "additional_price",
           "type": "numeric(12, 2)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false,
+          "default": "'0.00'"
         }
       },
       "indexes": {},
@@ -1310,23 +1416,47 @@
           "primaryKey": false,
           "notNull": true
         },
+        "unit": {
+          "name": "unit",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "height": {
+          "name": "height",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
         "chest": {
           "name": "chest",
           "type": "numeric(5, 2)",
           "primaryKey": false,
-          "notNull": false
-        },
-        "sleeve": {
-          "name": "sleeve",
-          "type": "numeric(5, 2)",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "waist": {
           "name": "waist",
           "type": "numeric(5, 2)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
+        },
+        "hips": {
+          "name": "hips",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inseam": {
+          "name": "inseam",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "shoulder": {
+          "name": "shoulder",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
         },
         "is_default": {
           "name": "is_default",

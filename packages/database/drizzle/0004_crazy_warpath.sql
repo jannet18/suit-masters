@@ -1,1 +1,0 @@
-ALTER TABLE "collection" ALTER COLUMN "category_id" SET DATA TYPE integer;

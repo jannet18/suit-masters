@@ -43,10 +43,10 @@ export default function Home() {
         <Testimonials />
         <Newsletter />
       </main>
-      <BespokeConfigurator
+      {/* <BespokeConfigurator
         isOpen={fittingOpen}
         onClose={() => setFittingOpen(false)}
-      />
+      /> */}
     </div>
   );
 }

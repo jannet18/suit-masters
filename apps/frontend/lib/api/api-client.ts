@@ -1,3 +1,5 @@
+import { URLSearchParams } from "url";
+
 const SERVICES = {
   cart: process.env.NEXT_PUBLIC_CART_SERVICE_URL,
   product: process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
@@ -27,14 +29,12 @@ export const api = {
   // --- Products ---
   getProducts: async (params?: { category?: string; search?: string }) => {
     try {
-      const queryString = new URLSearchParams(params as any).toString();
+      const filteredParams = Object.fromEntries(
+        Object.entries(params || {}).filter(([_, v]) => v != null),
+      );
+      const queryString = new URLSearchParams(filteredParams).toString();
       const res = await fetch(`${SERVICES.product}/products?${queryString}`);
-      if (res.ok) {
-        return res.json();
-      } else {
-        console.log("Failed to fetch products: ", res.statusText);
-        return { success: false, products: [] };
-      }
+      return res.ok ? res.json() : { success: false, products: [] };
     } catch (error) {
       console.log("Error fetching products: ", error);
       return { success: false, products: [] };
@@ -73,8 +73,13 @@ export const api = {
   },
 
   getProductsInCollection: async (slug: string) => {
-    const res = await fetch(`${SERVICES.product}/collections/${slug}`);
-    return res.json();
+    try {
+      const res = await fetch(`${SERVICES.product}/collections/${slug}`);
+      if (!res.ok) throw new Error("Collection fetch failed");
+      return res.json();
+    } catch (error) {
+      return { success: false, collection: null, products: [] };
+    }
   },
 
   // --- Orders ---
@@ -131,8 +136,13 @@ export const api = {
   },
 
   getProductBySlug: async (slug: string) => {
-    const res = await fetch(`${SERVICES.product}/products/${slug}`);
-    return res.json();
+    try {
+      const res = await fetch(`${SERVICES.product}/products/${slug}`);
+      if (!res.ok) throw new Error("Not found");
+      return res.json();
+    } catch (error) {
+      return { success: false, product: null };
+    }
   },
 
   createBespokeOrder: async (data: any) => {

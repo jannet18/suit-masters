@@ -1,4 +1,4 @@
-import { CustomOption } from "@/app/stores/useCartStore";
+// import { CustomOption } from "@/app/stores/useCartStore";
 
 export interface Product {
   id: number;
@@ -14,6 +14,12 @@ export interface Product {
   colors?: string[];
 }
 
+export interface CustomOption {
+  id: number;
+  value: string;
+  price_delta: string;
+  metadata?: CustomOption[];
+}
 export interface CustomizationItem {
   id: number;
   group_id: number;
@@ -26,7 +32,7 @@ export interface CustomizationItem {
 export interface CustomizationGroup {
   id: number;
   name?: string;
-  items?: CustomizationItem[];
+  options?: CustomOption[];
 }
 
 export interface CartItem {
@@ -93,4 +99,11 @@ export interface StepProps {
   onChange: (updates: Partial<FittingData>) => void;
   basePrice: number;
   totalPrice: number;
+  product?: any;
+}
+
+export interface ConfigureProps {
+  slug: string;
+  isOpen?: boolean;
+  onClose?: () => void;
 }

@@ -28,6 +28,7 @@ CREATE TABLE "shopping_cart" (
 CREATE TABLE "shopping_cart_item" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"cart_id" integer NOT NULL,
+	"product_id" integer NOT NULL,
 	"product_item_id" integer NOT NULL,
 	"configuration_id" uuid,
 	"measurement_id" uuid,
@@ -62,18 +63,19 @@ CREATE TABLE "idempotency_keys" (
 CREATE TABLE "order_items" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"order_id" integer NOT NULL,
-	"product_id" integer NOT NULL,
-	"quantity" integer NOT NULL,
-	"base_price" numeric(12, 2) NOT NULL,
-	"selected_options" varchar(400)
+	"product_name" varchar NOT NULL,
+	"sku" varchar,
+	"customization_snapshot" jsonb,
+	"measurement_snapshot" jsonb,
+	"price_at_purchase" numeric(12, 2) NOT NULL,
+	"unit_price" numeric(12, 2) NOT NULL,
+	"quantity" integer NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "shop_order" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"user_id" uuid NOT NULL,
+	"user_id" uuid,
 	"total" numeric(12, 2) NOT NULL,
-	"ordered_items" integer NOT NULL,
-	"order_date" timestamp DEFAULT now(),
 	"status" varchar(64) NOT NULL,
 	"shipping_name" varchar(255) NOT NULL,
 	"shipping_email" varchar(255) NOT NULL,
@@ -84,6 +86,19 @@ CREATE TABLE "shop_order" (
 	"shipping_region" varchar(128) NOT NULL,
 	"shipping_postal_code" varchar(16) NOT NULL,
 	"shipping_country" varchar(64) NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "order_measurements" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"order_item_id" integer NOT NULL,
+	"unit" varchar(5) NOT NULL,
+	"height" numeric(5, 2) NOT NULL,
+	"chest" numeric(5, 2) NOT NULL,
+	"waist" numeric(5, 2) NOT NULL,
+	"hips" numeric(5, 2) NOT NULL,
+	"inseam" numeric(5, 2) NOT NULL,
+	"shoulder" numeric(5, 2) NOT NULL,
+	"profile_name" varchar(64)
 );
 --> statement-breakpoint
 CREATE TABLE "payment_method" (
@@ -112,23 +127,23 @@ CREATE TABLE "customization_group" (
 --> statement-breakpoint
 CREATE TABLE "customization_option" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"product_id" integer NOT NULL,
 	"group_id" integer NOT NULL,
+	"name" varchar(128) NOT NULL,
 	"value" varchar(128) NOT NULL,
-	"price_delta" numeric(12, 2) DEFAULT '0',
+	"price_delta" numeric(12, 2) DEFAULT '0.00',
 	"metadata" jsonb,
 	"is_default" boolean DEFAULT false
 );
 --> statement-breakpoint
 CREATE TABLE "product" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"category_id" integer NOT NULL,
 	"name" varchar(128) NOT NULL,
+	"category_id" integer NOT NULL,
+	"product_type" varchar(32) NOT NULL,
+	"base_price" numeric(12, 2) NOT NULL,
 	"slug" varchar(128) NOT NULL,
 	"description" varchar(128) NOT NULL,
 	"product_image" varchar(255) NOT NULL,
-	"product_type" varchar(32) NOT NULL,
-	"base_price" numeric(12, 2) NOT NULL,
 	"is_featured" boolean DEFAULT false,
 	"is_active" boolean DEFAULT true,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -148,11 +163,11 @@ CREATE TABLE "product_category" (
 --> statement-breakpoint
 CREATE TABLE "product_configuration" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" varchar NOT NULL,
 	"product_id" integer NOT NULL,
 	"selected_options" jsonb NOT NULL,
 	"final_price" numeric(12, 2) NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "product_item" (
@@ -160,7 +175,8 @@ CREATE TABLE "product_item" (
 	"product_id" integer NOT NULL,
 	"sku" varchar(128) NOT NULL,
 	"stock" integer NOT NULL,
-	"price" numeric(12, 2) NOT NULL
+	"size" varchar(32),
+	"additional_price" numeric(12, 2) DEFAULT '0.00'
 );
 --> statement-breakpoint
 CREATE TABLE "promotion_category" (
@@ -183,9 +199,13 @@ CREATE TABLE "user_measurements" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
 	"profile_name" varchar(64) NOT NULL,
-	"chest" numeric(5, 2),
-	"sleeve" numeric(5, 2),
-	"waist" numeric(5, 2),
+	"unit" varchar(5) NOT NULL,
+	"height" numeric(5, 2) NOT NULL,
+	"chest" numeric(5, 2) NOT NULL,
+	"waist" numeric(5, 2) NOT NULL,
+	"hips" numeric(5, 2) NOT NULL,
+	"inseam" numeric(5, 2) NOT NULL,
+	"shoulder" numeric(5, 2) NOT NULL,
 	"is_default" boolean DEFAULT false,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
@@ -207,6 +227,7 @@ CREATE TABLE "site_users" (
 ALTER TABLE "address" ADD CONSTRAINT "address_user_id_site_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."site_users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shopping_cart" ADD CONSTRAINT "shopping_cart_user_id_site_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."site_users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shopping_cart_item" ADD CONSTRAINT "shopping_cart_item_cart_id_shopping_cart_id_fk" FOREIGN KEY ("cart_id") REFERENCES "public"."shopping_cart"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "shopping_cart_item" ADD CONSTRAINT "shopping_cart_item_product_id_product_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."product"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shopping_cart_item" ADD CONSTRAINT "shopping_cart_item_product_item_id_product_item_id_fk" FOREIGN KEY ("product_item_id") REFERENCES "public"."product_item"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shopping_cart_item" ADD CONSTRAINT "shopping_cart_item_configuration_id_product_configuration_id_fk" FOREIGN KEY ("configuration_id") REFERENCES "public"."product_configuration"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shopping_cart_item" ADD CONSTRAINT "shopping_cart_item_measurement_id_user_measurements_id_fk" FOREIGN KEY ("measurement_id") REFERENCES "public"."user_measurements"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -214,9 +235,9 @@ ALTER TABLE "product_collection" ADD CONSTRAINT "product_collection_product_id_p
 ALTER TABLE "product_collection" ADD CONSTRAINT "product_collection_collection_id_collection_id_fk" FOREIGN KEY ("collection_id") REFERENCES "public"."collection"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_shop_order_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."shop_order"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shop_order" ADD CONSTRAINT "shop_order_user_id_site_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."site_users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "order_measurements" ADD CONSTRAINT "order_measurements_order_item_id_order_items_id_fk" FOREIGN KEY ("order_item_id") REFERENCES "public"."order_items"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment_method" ADD CONSTRAINT "payment_method_payment_type_id_payments_type_id_fk" FOREIGN KEY ("payment_type_id") REFERENCES "public"."payments_type"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "customization_group" ADD CONSTRAINT "customization_group_product_id_product_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."product"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "customization_option" ADD CONSTRAINT "customization_option_product_id_product_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."product"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "customization_option" ADD CONSTRAINT "customization_option_group_id_customization_group_id_fk" FOREIGN KEY ("group_id") REFERENCES "public"."customization_group"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product" ADD CONSTRAINT "product_category_id_product_category_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."product_category"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_category" ADD CONSTRAINT "product_category_parent_id_product_category_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."product_category"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

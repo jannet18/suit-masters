@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRightIcon } from "lucide-react";
+import Link from "next/link";
 interface HeroSectionProps {
   onOpenFitting?: () => void;
 }
@@ -35,7 +36,6 @@ export function HeroSection({ onOpenFitting }: HeroSectionProps) {
         <div className="absolute inset-0 bg-linear-to-r from-[#0f0f0f]/90 via-[#0f0f0f]/60 to-[#0f0f0f]/20" />
         <div className="absolute inset-0 bg-linear-to-t from-[#0f0f0f]/80 via-transparent to-transparent" />
       </motion.div>
-
       {/* Content */}
       <motion.div
         style={{
@@ -124,7 +124,7 @@ export function HeroSection({ onOpenFitting }: HeroSectionProps) {
               }}
               className="flex flex-col sm:flex-row gap-4"
             >
-              <a
+              <Link
                 href="/collections"
                 className="group inline-flex items-center gap-3 bg-[#c9a96e] text-[#0f0f0f] px-8 py-4 text-xs tracking-[0.2em] uppercase font-semibold hover:bg-[#dfc08a] transition-colors duration-300"
               >
@@ -133,7 +133,7 @@ export function HeroSection({ onOpenFitting }: HeroSectionProps) {
                   size={14}
                   className="group-hover:translate-x-1 transition-transform duration-200"
                 />
-              </a>
+              </Link>
               <button
                 onClick={onOpenFitting}
                 className="inline-flex items-center gap-3 border border-[#f5f0eb]/30 text-[#f5f0eb] px-8 py-4 text-xs tracking-[0.2em] uppercase font-semibold hover:border-[#c9a96e] hover:text-[#c9a96e] transition-all duration-300"

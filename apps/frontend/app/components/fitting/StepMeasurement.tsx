@@ -56,10 +56,11 @@ export function StepMeasurements({ data, onChange }: StepProps) {
     key: keyof FittingData["measurements"],
     value: string,
   ) => {
+    const numValue = value === "" ? 0 : parseFloat(value);
     onChange({
       measurements: {
         ...data.measurements,
-        [key]: value,
+        [key]: numValue,
       },
     });
   };

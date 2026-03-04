@@ -35,22 +35,21 @@ export const shopOrder = pgTable("shop_order", {
   shipping_country: varchar("shipping_country", { length: 64 }).notNull(),
 });
 
-// export const orderStatusTable = pgTable("order_status", {
-//   id: serial("id").primaryKey(),
-//   status: varchar("status", { length: 64 }).notNull(),
-// });
-
 export const orderItems = pgTable("order_items", {
   id: serial("id").primaryKey(),
-  order_id: integer("order_id")
+  orderId: integer("order_id")
     .references(() => shopOrder.id)
     .notNull(),
-  product_id: integer("product_id").notNull(),
+  productNameSnapshot: varchar("product_name").notNull(),
+  skuSnapshot: varchar("sku"),
+  customizationSnapsot: jsonb("customization_snapshot"),
+  measurementSnapshot: jsonb("measurement_snapshot"),
+  priceAtPurchase: numeric("price_at_purchase", {
+    precision: 12,
+    scale: 2,
+  }).notNull(),
+  unitPrice: numeric("unit_price", { precision: 12, scale: 2 }).notNull(),
   quantity: integer("quantity").notNull(),
-  base_price: numeric("base_price", { precision: 12, scale: 2 }).notNull(),
-  // JSON snapshot of custom options(fabric size)
-  selected_options: jsonb("selected_options").notNull(),
-  final_price: numeric("final_price", { precision: 12, scale: 2 }).notNull(),
 });
 
 export const orderMeasurements = pgTable("order_measurements", {

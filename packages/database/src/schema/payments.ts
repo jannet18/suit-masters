@@ -30,10 +30,6 @@ export const paymentMethodTable = pgTable("payment_method", {
 export const paymentMethodRelations = relations(
   paymentMethodTable,
   ({ one }) => ({
-    // user: one(usersTable, {
-    //     fields: [paymentMethodTable.user_id],
-    //     references: [usersTable.id],
-    // }),
     paymentType: one(paymentsTypeTable, {
       fields: [paymentMethodTable.payment_type_id],
       references: [paymentsTypeTable.id],

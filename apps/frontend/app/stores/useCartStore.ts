@@ -30,6 +30,8 @@ export interface CustomOption {
 
 interface CartState {
   cart: CartItem[];
+  globalMeasurements: Record<string, number>;
+  setGlobalMeasurements: (measurements: Record<string, number>) => void;
   addToCart: (item: CartItem) => void;
   removeFromCart: (id: number, selected_options?: CustomOption[]) => void;
   updateQuantity: (id: number, quantity: number) => void;
@@ -45,11 +47,21 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       cart: [],
       hasHydrated: false,
+      globalMeasurements: {
+        height: 0,
+        chest: 0,
+        waist: 0,
+        hips: 0,
+        shoulder: 0,
+        inseam: 0,
+      },
       /**
        * Add a product to the cart
        * If the same product + same options exists, increment quantity
        * Otherwise, push as new item
        */
+      setGlobalMeasurements: (measurements) =>
+        set({ globalMeasurements: measurements }),
       addToCart: (item) => {
         const existingIndex = get().cart.findIndex((p) => {
           // Match by ID + options if CUSTOM
@@ -132,7 +144,7 @@ export const useCartStore = create<CartState>()(
           let price = Number(item.base_price);
           if (item.selected_options) {
             price += item.selected_options.reduce(
-              (sum, opt) => sum + Number(opt.price_impact),
+              (sum, opt) => sum + Number(opt.price_delta),
               0,
             );
           }

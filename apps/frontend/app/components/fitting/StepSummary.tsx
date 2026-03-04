@@ -11,9 +11,14 @@ const fabricLabels: Record<string, string> = {
   tweed: "Harris Tweed",
 };
 
-export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
+export function StepSummary({
+  data,
+  basePrice,
+  totalPrice,
+  product,
+}: StepProps) {
   // Calculate the delta for the summary view
-  const fabricUpgrade = totalPrice - basePrice;
+  const totalSurcharges = totalPrice - basePrice;
 
   // Count filled measurements
   const measurementKeys = [
@@ -38,10 +43,10 @@ export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
           <CheckIcon size={24} className="text-[#c9a96e]" />
         </div>
         <h3 className="font-serif text-[#f5f0eb] text-2xl font-bold mb-2">
-          Review Your Masterpiece
+          Final Review
         </h3>
         <p className="text-[#9a9490] text-sm font-light tracking-wide">
-          Every detail has been logged for our master tailors.
+          Please confirm your bespoke specifications below.
         </p>
       </div>
 
@@ -56,7 +61,7 @@ export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
             </span>
           </div>
           <p className="font-serif text-[#f5f0eb] text-lg capitalize">
-            {data.style || "Standard"} Cut
+            {data.style || "Classic"} {product?.name || "Suit"}
           </p>
           <p className="text-[#6b6560] text-xs mt-1 uppercase tracking-widest">
             {data.fit || "Regular"} Fit • {data.lapel || "Notch"} Lapel
@@ -68,7 +73,7 @@ export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
           <div className="flex items-center gap-2 mb-3">
             <Box size={14} className="text-[#c9a96e]" />
             <span className="text-[#9a9490] text-[10px] tracking-[0.3em] uppercase">
-              Material
+              Material Selection
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -79,11 +84,11 @@ export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
               />
             )}
             <p className="font-serif text-[#f5f0eb] text-lg">
-              {fabricLabels[data.fabric] || "Bespoke Selection"}
+              {data.fabric || "Premium Wool"}
             </p>
           </div>
           <p className="text-[#6b6560] text-xs mt-1 uppercase tracking-widest">
-            Premium {data.lining || "Silk"} Lining
+            Premium {data.lining || "Signature"}
           </p>
         </div>
       </div>
@@ -95,7 +100,7 @@ export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
             <div className="flex items-center gap-2 mb-1">
               <Ruler size={14} className="text-[#c9a96e]" />
               <span className="text-[#9a9490] text-[10px] tracking-[0.3em] uppercase">
-                Proportions
+                Anatomical Data
               </span>
             </div>
             <p className="font-serif text-[#f5f0eb] text-lg">
@@ -109,12 +114,16 @@ export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
 
         {/* Progress bar */}
         <div className="h-1 w-full bg-white/5 flex gap-1">
-          {measurementKeys.map((_, i) => (
-            <div
-              key={i}
-              className={`h-full flex-1 transition-all duration-500 ${i < filledCount ? "bg-[#c9a96e]" : "bg-white/10"}`}
-            />
-          ))}
+          {measurementKeys.map((key, i) => {
+            const isFilled =
+              data.measurements[key as keyof typeof data.measurements];
+            return (
+              <div
+                key={key}
+                className={`h-full flex-1 transition-all duration-500 ${isFilled ? "bg-[#c9a96e]" : "bg-white/10"}`}
+              />
+            );
+          })}
         </div>
       </div>
 
@@ -126,13 +135,13 @@ export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
             <span className="text-[#f5f0eb]">£{basePrice.toFixed(2)}</span>
           </div>
 
-          {fabricUpgrade > 0 && (
+          {totalSurcharges > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-[#9a9490]">
-                Material Surcharge ({data.fabric})
+                Premium Upgrades (Fabric/Style)
               </span>
               <span className="text-[#f5f0eb]">
-                +£{fabricUpgrade.toFixed(2)}
+                +£{totalSurcharges.toFixed(2)}
               </span>
             </div>
           )}
@@ -140,7 +149,7 @@ export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
           <div className="flex justify-between text-sm">
             <div className="flex items-center gap-2">
               <Globe size={12} className="text-[#c9a96e]" />
-              <span className="text-[#9a9490]">Express Global Shipping</span>
+              <span className="text-[#9a9490]">Insured Global Shipping</span>
             </div>
             <span className="text-[#c9a96e] uppercase text-[10px] font-bold">
               Complimentary
@@ -151,10 +160,10 @@ export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
         <div className="flex justify-between items-center px-6 py-5 bg-white/5">
           <div>
             <p className="text-[#f5f0eb] font-serif text-lg font-medium">
-              Final Investment
+              Total Investment
             </p>
             <p className="text-[#6b6560] text-[9px] uppercase tracking-widest italic">
-              Includes VAT & Insurance
+              Final Price (VAT Incl.)
             </p>
           </div>
           <span className="font-serif text-[#c9a96e] text-3xl font-bold">
@@ -167,10 +176,9 @@ export function StepSummary({ data, basePrice, totalPrice }: StepProps) {
       <div className="flex items-start gap-3 p-4 bg-[#c9a96e]/5 border border-[#c9a96e]/10">
         <div className="w-1.5 h-1.5 bg-[#c9a96e] rounded-full mt-1.5 shrink-0" />
         <p className="text-[#9a9490] text-[11px] leading-relaxed italic">
-          By proceeding, you acknowledge that bespoke items are crafted to your
-          unique proportions. Production begins in{" "}
-          <span className="text-[#c9a96e]">24 hours</span>, after which details
-          cannot be modified.
+          Production commences <span className="text-[#c9a96e]">24 hours</span>
+          after order placement. By adding to wardrobe, you confirm these unique
+          specifications are correct for your commission.
         </p>
       </div>
     </div>
