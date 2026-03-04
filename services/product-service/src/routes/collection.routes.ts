@@ -200,8 +200,8 @@ export const collectionsHandler = new Hono()
         slug: p.slug,
         name: p.name,
         base_price: Number(p.basePrice),
-        product_image: p.mainImage,
-        product_type: "CUSTOM" as const,
+        product_image: p.productImage,
+        product_type: p.productType,
       }));
 
       return c.json({

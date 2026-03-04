@@ -8,7 +8,7 @@
 // export * from "./shared.js";
 // export * from "./user.js";
 // export * from "./collection.js";
-// export { idempotencyKeys } from "./idempotency.js";
+export { idempotencyKeys } from "./idempotency.js";
 // export * from "./relations.js";
 import {
   pgTable,
