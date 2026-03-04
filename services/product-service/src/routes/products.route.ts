@@ -261,8 +261,8 @@ export const productsHandler = new Hono()
         slug: p.slug,
         name: p.name,
         base_price: Number(p.basePrice),
-        product_image: p.productImage,
-        product_type: p.productType,
+        product_image: p.mainImage,
+        product_type: "CUSTOM" as const,
       }));
 
       return c.json({ success: true, products });
@@ -277,6 +277,17 @@ export const productsHandler = new Hono()
     try {
       const dbProduct = (await db.query.product.findFirst({
         where: (p, { eq }) => eq(p.slug, slug),
+        with: {
+          category: {
+            with: {
+              customizationGroups: {
+                with: {
+                  options: true,
+                },
+              },
+            },
+          },
+        },
       })) as any;
 
       if (!dbProduct) {
@@ -286,14 +297,30 @@ export const productsHandler = new Hono()
         );
       }
 
+      // Map DB customization structure into the UI-friendly shape
+      const customizationGroups =
+        dbProduct.category?.customizationGroups?.map((group: any) => ({
+          id: group.id,
+          name: group.name,
+          options: group.options?.map((opt: any) => ({
+            id: opt.id,
+            value: opt.name,
+            price_delta: opt.priceDelta,
+            metadata: {
+              thumbnailUrl: opt.thumbnailUrl,
+              factoryCode: opt.factoryCode,
+            },
+          })),
+        })) ?? [];
+
       const responseProduct = {
         id: dbProduct.id,
         slug: dbProduct.slug,
         name: dbProduct.name,
         base_price: Number(dbProduct.basePrice),
-        product_image: dbProduct.productImage,
-        product_type: dbProduct.productType,
-        customizationGroups: [],
+        product_image: dbProduct.mainImage,
+        product_type: "CUSTOM" as const,
+        customizationGroups,
       };
 
       return c.json({ success: true, product: responseProduct });
@@ -309,4 +336,3 @@ export const productsHandler = new Hono()
       );
     }
   });
-

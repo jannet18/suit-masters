@@ -130,16 +130,16 @@ export const collectionsHandler = new Hono()
   .get("/", async (c: Context) => {
     try {
       const categories = await db.query.productCategory.findMany({
-        where: (category, { isNull }) => isNull(category.parent_id),
+        where: (category, { isNull }) => isNull(category.parentId),
       });
 
       // Map DB categories into the frontend Collection view model
       const collections = categories.map((cat, index) => ({
         id: cat.id,
         slug: cat.slug,
-        title: cat.category_name,
+        title: cat.name,
         subtitle: "Bespoke collection",
-        description: `Explore our ${cat.category_name.toLowerCase()} collection.`,
+        description: `Explore our ${cat.name.toLowerCase()} collection.`,
         // Simple visual placeholder – you can replace with real assets later
         image:
           "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=1200&q=80&auto=format&fit=crop",
@@ -189,8 +189,8 @@ export const collectionsHandler = new Hono()
 
       const collection = {
         slug: data.slug,
-        name: data.category_name,
-        description: `Explore our ${data.category_name.toLowerCase()} collection.`,
+        name: data.name,
+        description: `Explore our ${data.name.toLowerCase()} collection.`,
         image:
           "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=1200&q=80&auto=format&fit=crop",
       };
@@ -200,8 +200,8 @@ export const collectionsHandler = new Hono()
         slug: p.slug,
         name: p.name,
         base_price: Number(p.basePrice),
-        product_image: p.productImage,
-        product_type: p.productType,
+        product_image: p.mainImage,
+        product_type: "CUSTOM" as const,
       }));
 
       return c.json({

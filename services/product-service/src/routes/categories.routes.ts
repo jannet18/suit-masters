@@ -55,7 +55,7 @@ import { product } from "@repo/db";
 export const categoryRoutes = new Hono()
   .get("/", async (c) => {
     const categories = await db.query.productCategory.findMany({
-      where: (cat, { isNull }) => isNull(cat.parent_id), // Gets top-level categories only
+      where: (cat, { isNull }) => isNull(cat.parentId), // Gets top-level categories only
     });
     return c.json({ success: true, categories });
   })
