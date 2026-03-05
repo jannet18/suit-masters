@@ -27,7 +27,9 @@ const SearchBar = () => {
       params.set("query", value);
       replace(`${pathname}?${params.toString()}`);
     } else {
-      router.push(`/shop?query=${value}`);
+      // Redirect to a default category with search query
+      // Using "suits" as the default category
+      router.push(`/shop/suits?query=${value}`);
     }
 
     console.log("Search for:", value);

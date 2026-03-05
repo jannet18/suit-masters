@@ -47,8 +47,10 @@ export function Navbar({
   }: NavbarProps) => {
     setMenuOpen(false);
     if (activeProductSlug) {
-      router.push(`/products/${slug}/configure]`);
+      router.push(`/products/${activeProductSlug}/configure`);
     } else {
+      // Redirect to the /configure page which will dynamically
+      // redirect to an available product
       router.push("/configure");
     }
   };

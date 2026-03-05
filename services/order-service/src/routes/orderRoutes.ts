@@ -311,7 +311,7 @@ import { Hono } from "hono";
 import type { AuthContext } from "@repo/auth";
 import {
   db,
-  orderItem,
+  orderItems,
   productConfiguration,
   shopOrder,
   cartItem, // Updated from CartItem/shoppingCartItem
@@ -357,7 +357,7 @@ orderRoutes.post("/", async (c) => {
     const userCartItems = await db
       .select({
         id: cartItem.id,
-        qty: cartItem.qty,
+        qty: cartItem.quantity,
         configurationId: cartItem.configurationId,
         finalPrice: productConfiguration.finalPrice,
         selectedOptions: productConfiguration.selectedOptions,
@@ -387,17 +387,15 @@ orderRoutes.post("/", async (c) => {
           userId,
           total: totalAmount.toFixed(2),
           status: "pending", // Matches our orderStatusEnum
-          shippingName: shipping.name,
-          shippingAddress: {
-            line1: shipping.addressLine1,
-            line2: shipping.addressLine2,
-            city: shipping.city,
-            region: shipping.region,
-            postalCode: shipping.postalCode,
-            country: shipping.country,
-            phone: shipping.phone,
-            email: shipping.email,
-          },
+          shipping_name: shipping.name,
+          shipping_email: shipping.email,
+          shipping_phone: shipping.phone,
+          shipping_address_line1: shipping.addressLine1,
+          shipping_address_line2: shipping.addressLine2,
+          shipping_city: shipping.city,
+          shipping_region: shipping.region,
+          shipping_postal_code: shipping.postalCode,
+          shipping_country: shipping.country,
         })
         .returning();
 
@@ -405,15 +403,14 @@ orderRoutes.post("/", async (c) => {
         throw new Error("Order creation failed: No row returned");
       }
       // Create Order Items (Snapshots)
-      await tx.insert(orderItem).values(
+      await tx.insert(orderItems).values(
         userCartItems.map((item) => ({
           orderId: newOrder.id,
-          productName: "Custom Suit Item", // You can join 'product' to get the actual name
+          productNameSnapshot: "Custom Suit Item", // You can join 'product' to get the actual name
           unitPrice: item.finalPrice,
+          priceAtPurchase: item.finalPrice,
           quantity: item.qty,
-          configurationSnapshot: item.selectedOptions,
-          fabricSnapshot: {}, // Add fabric data here if needed
-          measurementSnapshot: {}, // Link to user_measurement_profile here
+          customizationSnapsot: item.selectedOptions,
         })),
       );
 
@@ -444,7 +441,7 @@ orderRoutes.get("/", async (c) => {
   const user = c.get("user");
   const orders = await db.query.shopOrder.findMany({
     where: (table, { eq }) => eq(table.userId, user.id),
-    orderBy: [desc(shopOrder.createdAt)],
+    orderBy: [desc(shopOrder.id)],
   });
   return c.json({ orders });
 });

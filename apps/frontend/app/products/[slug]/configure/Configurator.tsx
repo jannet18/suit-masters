@@ -106,7 +106,10 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
       totalPrice: totalPrice,
       quantity: 1,
       product_type: "CUSTOM" as const,
-      image_url: product.product_image,
+      image_url:
+        typeof product.product_image === "string"
+          ? product.product_image
+          : product.product_image?.default || "",
       // We send the full snapshot to the cart
       configuration: {
         selections: Object.values(selections),
@@ -155,7 +158,11 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
           <AnimatePresence mode="wait">
             <motion.img
               key={currentStep}
-              src={product?.product_image} // In real world, swap with selection image
+              src={
+                typeof product?.product_image === "string"
+                  ? product?.product_image
+                  : product?.product_image?.default || ""
+              } // In real world, swap with selection image
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="max-h-full object-contain"
@@ -193,8 +200,10 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
                         <div>
                           <span className="font-medium">{option.value}</span>
                           <span className="text-xs text-[#9a9490]">
-                            {parseFloat(option.price_delta) > 0
-                              ? `+ £${option.price_delta}`
+                            {parseFloat(
+                              option.priceDelta || option.price_delta || 0,
+                            ) > 0
+                              ? `+ £${option.priceDelta || option.price_delta}`
                               : "Included"}
                           </span>
                         </div>

@@ -97,7 +97,7 @@ export default async function CategoryPage({
         /* Pass to a simple grid component */
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {products.map((p: any) => (
-            <a key={p.id} href={`/product/${p.slug}`} className="group">
+            <a key={p.id} href={`/products/${p.slug}`} className="group">
               <div className="aspect-square overflow-hidden bg-[#1a1a1a] mb-2">
                 <img
                   src={p.product_image}

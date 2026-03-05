@@ -1,5 +1,3 @@
-import React from "react";
-import { motion } from "framer-motion";
 import { StepProps } from "@/lib/types";
 
 const styles = [

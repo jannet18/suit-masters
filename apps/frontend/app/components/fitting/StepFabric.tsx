@@ -1,41 +1,4 @@
 import { StepProps } from "@/lib/types";
-
-const fabrics = [
-  {
-    id: "wool",
-    label: "Super 120s Wool",
-    origin: "Huddersfield, England",
-    description:
-      "The gold standard. Breathable, durable, and impeccably draping.",
-    price: "+£0",
-    texture: "bg-[#3a3a3a]",
-  },
-  {
-    id: "cashmere",
-    label: "Cashmere Blend",
-    origin: "Biella, Italy",
-    description: "Unrivalled softness. A touch of luxury in every fibre.",
-    price: "+£180",
-    texture: "bg-[#5c4a3a]",
-  },
-  {
-    id: "linen",
-    label: "Irish Linen",
-    origin: "Belfast, Ireland",
-    description:
-      "Effortlessly cool. Perfect for warmer climates and occasions.",
-    price: "+£60",
-    texture: "bg-[#c4b89a]",
-  },
-  {
-    id: "tweed",
-    label: "Harris Tweed",
-    origin: "Outer Hebrides, Scotland",
-    description: "Handwoven heritage. Character and warmth in every thread.",
-    price: "+£90",
-    texture: "bg-[#6b5a3e]",
-  },
-];
 const colors: {
   id: string;
   label: string;

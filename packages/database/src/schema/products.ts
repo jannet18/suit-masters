@@ -1,119 +1,107 @@
-// import {
-//   AnyPgColumn,
-//   boolean,
-//   integer,
-//   jsonb,
-//   numeric,
-//   pgTable,
-//   serial,
-//   uuid,
-//   varchar,
-// } from "drizzle-orm/pg-core";
-// import { timestamps } from "./shared.js";
+import {
+  pgTable,
+  serial,
+  varchar,
+  integer,
+  numeric,
+  boolean,
+  text,
+  pgEnum,
+} from "drizzle-orm/pg-core";
 
-// // DESIGNER LOGIC
-// export const productCategory = pgTable("product_category", {
-//   id: serial("id").primaryKey(),
-//   category_name: varchar("category_name", { length: 128 }).notNull(),
-//   slug: varchar("slug", { length: 128 }).notNull().unique(),
-//   parent_id: integer("parent_id").references(
-//     (): AnyPgColumn => productCategory.id,
-//   ),
-//   ...timestamps,
-// });
-// // slug = required for /shop/suits
-// // timestamps = admin analytics & sorting
-// export const fabric = pgTable("fabric", {
-//   id: serial("id").primaryKey(),
-//   name: varchar("name", { length: 128 }).notNull(),
-//   sku: varchar("sku", { length: 64 }).unique().notNull(),
-//   composition: varchar("composition", { length: 255 }),
-//   weight: varchar("weight", { length: 64 }),
-//   brand: varchar("brand", { length: 64 }),
-//   imageUrl: varchar("image_url", { length: 255 }),
-//   isActive: boolean("is_active").default(true),
-// });
+// Product type enum
+export const productTypeEnum = pgEnum("product_type", ["STANDARD", "CUSTOM"]);
 
-// export const product = pgTable("product", {
-//   id: serial("id").primaryKey(),
-//   name: varchar("name", { length: 128 }).notNull(),
-//   categoryId: integer("category_id")
-//     .notNull()
-//     .references(() => productCategory.id),
-//   productType: varchar("product_type", { length: 32 })
-//     .$type<"STANDARD" | "CUSTOM">()
-//     .notNull(),
-//   basePrice: numeric("base_price", { precision: 12, scale: 2 }).notNull(),
-//   slug: varchar("slug", { length: 128 }).notNull().unique(),
-//   description: varchar("description", { length: 128 }).notNull(),
-//   productImage: varchar("product_image", { length: 255 }).notNull(),
+// Product Category
+export const productCategory = pgTable("product_category", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  slug: varchar("slug", { length: 128 }).unique().notNull(),
+  parentId: integer("parent_id"), // Self-reference for sub-categories
+});
 
-//   isFeatured: boolean("is_featured").default(false),
-//   isActive: boolean("is_active").default(true),
-//   ...timestamps,
-// });
+// Fabric
+export const fabric = pgTable("fabric", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  sku: varchar("sku", { length: 64 }).unique().notNull(),
+  composition: varchar("composition", { length: 255 }),
+  weight: varchar("weight", { length: 64 }),
+  brand: varchar("brand", { length: 64 }),
+  imageUrl: varchar("image_url", { length: 255 }),
+  isActive: boolean("is_active").default(true),
+});
 
-// // slug → product pages /product/navy-3-piece
-// // is_featured → replaces "LATEST"
-// // is_active → allows disabling without deleting
+// Product
+export const product = pgTable("product", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id")
+    .references(() => productCategory.id)
+    .notNull(),
+  fabricId: integer("fabric_id")
+    .references(() => fabric.id)
+    .notNull(),
+  name: varchar("name", { length: 128 }).notNull(),
+  slug: varchar("slug", { length: 128 }).unique().notNull(),
+  productType: productTypeEnum("product_type").notNull().default("CUSTOM"),
+  basePrice: numeric("base_price", { precision: 12, scale: 2 }).notNull(),
+  description: text("description"),
+  mainImage: varchar("main_image", { length: 255 }),
+  productImage: varchar("product_image", { length: 255 }),
+  isActive: boolean("is_active").default(true).notNull(),
+});
 
-// // STANDARD ITEMS
-// export const productItem = pgTable("product_item", {
-//   id: serial("id").primaryKey(),
-//   productId: integer("product_id")
-//     .notNull()
-//     .references(() => product.id),
-//   sku: varchar("sku", { length: 128 }).notNull(),
-//   stock: integer("stock").notNull(),
-//   size: varchar("size", { length: 32 }),
-//   // product_image: varchar("product_image", { length: 255 }).notNull(),
-//   additionalPrice: numeric("additional_price", {
-//     precision: 12,
-//     scale: 2,
-//   }).default("0.00"),
-// });
-// // Ready-made sizes
-// // Standard suits
-// // Physical inventory
+// Customization Group
+export const customizationGroup = pgTable("customization_group", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id")
+    .references(() => productCategory.id)
+    .notNull(),
+  name: varchar("name", { length: 64 }).notNull(),
+  isRequired: boolean("is_required").default(true),
+  displayOrder: integer("display_order").default(0),
+});
 
-// // CUSTOMISATION LOGIC
-// export const customizationGroup = pgTable("customization_group", {
-//   id: serial("id").primaryKey(),
-//   productId: integer("product_id")
-//     .notNull()
-//     .references(() => product.id),
+// Customization Option
+export const customizationOption = pgTable("customization_option", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id")
+    .references(() => customizationGroup.id)
+    .notNull(),
+  name: varchar("name", { length: 128 }).notNull(),
+  value: varchar("value", { length: 128 }),
+  priceDelta: numeric("price_delta", { precision: 12, scale: 2 }).default(
+    "0.00",
+  ),
+  thumbnailUrl: varchar("thumbnail_url", { length: 255 }),
+  factoryCode: varchar("factory_code", { length: 32 }),
+});
 
-//   name: varchar("name", { length: 64 }).notNull(), // Fabric, Fit, Lapel
-//   isRequired: boolean("required").default(true),
-//   displayOrder: integer("display_order").notNull(),
-// });
+// Product Configuration (for custom products)
+export const productConfiguration = pgTable("product_configuration", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id")
+    .references(() => product.id)
+    .notNull(),
+  selectedOptions: text("selected_options").$type<Record<string, any>>(),
+  finalPrice: numeric("final_price", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  kindeUserId: varchar("kinde_user_id"),
+});
 
-// export const customizationOption = pgTable("customization_option", {
-//   id: serial("id").primaryKey(),
-//   // product_id: integer("product_id")
-//   //   .notNull()
-//   //   .references(() => product.id),
-//   group_id: integer("group_id")
-//     .notNull()
-//     .references(() => customizationGroup.id),
-//   name: varchar("name", { length: 128 }).notNull(),
-//   value: varchar("value", { length: 128 }).notNull(), // Italian Wool
-//   priceDelta: numeric("price_delta", { precision: 12, scale: 2 }).default(
-//     "0.00",
-//   ),
-//   metadata: jsonb("metadata"), // images, color, fabric info
-//   isDefault: boolean("is_default").default(false),
-// });
+// For backward compatibility with existing code
+export const productItem = pgTable("product_item", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id")
+    .references(() => product.id)
+    .notNull(),
+  sku: varchar("sku", { length: 64 }).unique().notNull(),
+  size: varchar("size", { length: 16 }),
+  color: varchar("color", { length: 64 }),
+  price: numeric("price", { precision: 12, scale: 2 }).notNull(),
+  stock: integer("stock").default(0),
+  isActive: boolean("is_active").default(true),
+});
 
-// export const productConfiguration = pgTable("product_configuration", {
-//   id: uuid("id").primaryKey().defaultRandom(),
-//   // kinde_user_id: varchar("user_id").notNull(),
-//   productId: integer("product_id").notNull(),
-//   // Snapshot of selections
-//   selectedOptions: jsonb("selected_options").notNull(),
-
-//   // Snapshot of price
-//   totalPrice: numeric("final_price", { precision: 12, scale: 2 }).notNull(),
-
-//   ...timestamps,
-// });
+// Import timestamp function
+import { timestamp } from "drizzle-orm/pg-core";

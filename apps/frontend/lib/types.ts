@@ -1,5 +1,3 @@
-// import { CustomOption } from "@/app/stores/useCartStore";
-
 export interface Product {
   id: number;
   name: string;

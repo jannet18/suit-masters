@@ -10,7 +10,7 @@ interface Product {
   slug: string;
   name: string;
   base_price: number;
-  product_image: string;
+  product_image: string | { default: string };
   product_type?: "STANDARD" | "CUSTOM";
 }
 

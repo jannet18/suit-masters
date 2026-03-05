@@ -17,17 +17,6 @@ export interface CustomOption {
 /**
  * CartItem is what we store in the cart
  */
-
-// export interface CartItem {
-//   id: number; //product id
-//   name: string;
-//   image_url: string;
-//   base_price: number;
-//   product_type: "STANDARD" | "CUSTOM";
-//   quantity: number;
-//   selected_options?: CustomOption[]; // only for CUSTOM products
-// }
-
 interface CartState {
   cart: CartItem[];
   globalMeasurements: Record<string, number>;
@@ -37,8 +26,6 @@ interface CartState {
   updateQuantity: (id: number, quantity: number) => void;
   clearCart: () => void;
   getTotal: () => number;
-  // addStandardItem: (item: CartItem) => void;
-  // addCustomItem: (item: CartItem) => void;
 }
 
 // Store
