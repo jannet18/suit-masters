@@ -291,8 +291,8 @@ export const productsHandler = new Hono()
         slug: dbProduct.slug,
         name: dbProduct.name,
         base_price: Number(dbProduct.basePrice),
-        product_image: dbProduct.productImage,
-        product_type: dbProduct.productType,
+        product_image: dbProduct.mainImage,
+        product_type: "CUSTOM" as const,
         customizationGroups: [],
       };
 

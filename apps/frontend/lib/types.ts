@@ -16,9 +16,9 @@ export interface Product {
 
 export interface CustomOption {
   id: number;
-  value: string;
-  price_delta: string;
-  metadata?: CustomOption[];
+  group_id: number;
+  label: string;
+  price_impact: string;
 }
 export interface CustomizationItem {
   id: number;
@@ -97,8 +97,8 @@ export interface FittingData {
 export interface StepProps {
   data: FittingData;
   onChange: (updates: Partial<FittingData>) => void;
-  basePrice: number;
-  totalPrice: number;
+  basePrice?: number;
+  totalPrice?: number;
   product?: any;
 }
 

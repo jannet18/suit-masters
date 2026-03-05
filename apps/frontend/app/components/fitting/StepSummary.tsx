@@ -13,12 +13,12 @@ const fabricLabels: Record<string, string> = {
 
 export function StepSummary({
   data,
-  basePrice,
-  totalPrice,
+  basePrice = 0,
+  totalPrice = 0,
   product,
 }: StepProps) {
   // Calculate the delta for the summary view
-  const totalSurcharges = totalPrice - basePrice;
+  const totalSurcharges = (totalPrice || 0) - (basePrice || 0);
 
   // Count filled measurements
   const measurementKeys = [
@@ -132,7 +132,9 @@ export function StepSummary({
         <div className="p-6 space-y-4">
           <div className="flex justify-between text-sm">
             <span className="text-[#9a9490]">Base Tailoring</span>
-            <span className="text-[#f5f0eb]">£{basePrice.toFixed(2)}</span>
+            <span className="text-[#f5f0eb]">
+              £{(basePrice || 0).toFixed(2)}
+            </span>
           </div>
 
           {totalSurcharges > 0 && (
@@ -167,7 +169,7 @@ export function StepSummary({
             </p>
           </div>
           <span className="font-serif text-[#c9a96e] text-3xl font-bold">
-            £{totalPrice.toFixed(2)}
+            £{(totalPrice || 0).toFixed(2)}
           </span>
         </div>
       </div>

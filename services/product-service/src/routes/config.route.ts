@@ -29,8 +29,8 @@ export const configHandler = new Hono().post(
       where: eq(product.id, productId),
     });
 
-    if (!productData || productData.product_type !== "CUSTOM") {
-      return c.json({ error: "Invalid or non-customizable product" }, 400);
+    if (!productData) {
+      return c.json({ error: "Invalid product" }, 400);
     }
 
     // 3. Load and validate all selected options from DB
@@ -47,7 +47,7 @@ export const configHandler = new Hono().post(
     // 4. Calculate secure price (Base + Deltas)
     const finalPrice = dbOptions.reduce(
       (sum: any, opt: any) => sum + Number(opt.price_delta),
-      Number(productData.base_price),
+      Number(productData.basePrice),
     );
 
     // 5. Create a snapshot for the designJson (keeps data safe if IDs change later)
@@ -67,11 +67,10 @@ export const configHandler = new Hono().post(
     const [newConfig] = await db
       .insert(productConfiguration)
       .values({
-        kinde_user_id: user.id,
-        product_id: productId,
-        selected_options: snapshot, // Correct key from your schema
-        final_price: finalPrice.toString(), // Convert to string if using decimal/numeric type
-        createdAT: new Date(), // Correct key from your schema
+        productId: productId,
+        selectedOptions: snapshot,
+        finalPrice: finalPrice.toString(),
+        createdAt: new Date(),
       })
       .returning();
 
@@ -100,16 +99,15 @@ export const savedDesignsHandler = new Hono().get(
     const userDesigns = await db
       .select({
         id: productConfiguration.id,
-        finalPrice: productConfiguration.final_price,
-        selected_options: productConfiguration.selected_options,
-        createdAt: productConfiguration.createdAT,
+        finalPrice: productConfiguration.finalPrice,
+        selected_options: productConfiguration.selectedOptions,
+        createdAt: productConfiguration.createdAt,
         name: product.name,
         // product_image: product.image,
       })
       .from(productConfiguration)
-      .innerJoin(product, eq(productConfiguration.product_id, product.id))
-      .where(eq(productConfiguration.kinde_user_id, user.id))
-      .orderBy(desc(productConfiguration.createdAT));
+      .innerJoin(product, eq(productConfiguration.productId, product.id))
+      .orderBy(desc(productConfiguration.createdAt));
 
     return c.json({
       success: true,

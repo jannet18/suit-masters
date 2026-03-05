@@ -144,7 +144,7 @@ export const useCartStore = create<CartState>()(
           let price = Number(item.base_price);
           if (item.selected_options) {
             price += item.selected_options.reduce(
-              (sum, opt) => sum + Number(opt.price_delta),
+              (sum, opt) => sum + Number(opt.price_impact),
               0,
             );
           }
