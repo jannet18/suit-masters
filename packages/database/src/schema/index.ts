@@ -1,11 +1,13 @@
-export * from "./address.js";
+// Export everything from separate schema files
+export * from "./products.js";
+export * from "./user.js";
 export * from "./cart.js";
-export { orderItems, shopOrder } from "./orders.js";
 export * from "./orders.js";
 export * from "./payments.js";
-export * from "./products.js";
 export * from "./promotions.js";
-export * from "./shared.js";
-export * from "./user.js";
 export * from "./collection.js";
-export { idempotencyKeys } from "./idempotency.js";
+export * from "./idempotency.js";
+export * from "./relations.js";
+
+// Re-export drizzle-orm for convenience
+export * from "drizzle-orm";

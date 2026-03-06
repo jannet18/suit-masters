@@ -5,6 +5,8 @@ import { productsHandler } from "./routes/products.route.js";
 import { getUser } from "@repo/auth";
 import { configHandler } from "./routes/config.route.js";
 import { collectionsHandler } from "./routes/collection.routes.js";
+import { measurementsHandler } from "./routes/measurements.routes.js";
+import { categoryRoutes } from "./routes/categories.routes.js";
 
 type Bindings = {
   DATABASE_URL: string;
@@ -29,7 +31,9 @@ app.use("*", cors());
 // --- 2. Public Routes ---
 // Everyone can see the catalog and product details
 app.route("/products", productsHandler);
+app.route("/categories", categoryRoutes);
 app.route("/collections", collectionsHandler);
+app.route("/measurements", measurementsHandler);
 
 // --- 3. Protected Routes ---
 // Only logged-in users can save custom configurations or see private prices

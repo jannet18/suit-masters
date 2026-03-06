@@ -1,5 +1,3 @@
-import { CustomOption } from "@/app/stores/useCartStore";
-
 export interface Product {
   id: number;
   name: string;
@@ -14,6 +12,12 @@ export interface Product {
   colors?: string[];
 }
 
+export interface CustomOption {
+  id: number;
+  group_id: number;
+  label: string;
+  price_impact: string;
+}
 export interface CustomizationItem {
   id: number;
   group_id: number;
@@ -26,7 +30,7 @@ export interface CustomizationItem {
 export interface CustomizationGroup {
   id: number;
   name?: string;
-  items?: CustomizationItem[];
+  options?: CustomOption[];
 }
 
 export interface CartItem {
@@ -39,9 +43,12 @@ export interface CartItem {
   product_type: "STANDARD" | "CUSTOM";
   selected_options?: CustomOption[];
   measurements?: Record<string, any>;
-  customizations?: Record<number, number>; // for backward compatibility
+  customizations?: Record<number, number>; // for backward compatibil
   configuration: Record<string, any>;
+  totalPrice: number;
 }
+// because if user reopens configurator later, it should not mutate cart item.
+// Cart must be immutable.
 
 export interface Group {
   id: number;
@@ -59,4 +66,43 @@ export interface Collection {
   tag?: string;
   span?: string;
   slug: string;
+  collections: [];
+}
+
+export type Unit = "cm" | "in";
+
+export interface Measurements {}
+
+export interface FittingData {
+  style: string;
+  fit: string;
+  buttons: string;
+  fabric: string;
+  fabricColor: string;
+  lapel: string;
+  lining: string;
+  buttonColor: string;
+  measurements: {
+    unit: Unit;
+    height: number;
+    chest: number;
+    waist: number;
+    hips: number;
+    inseam: number;
+    shoulder: number;
+  };
+}
+
+export interface StepProps {
+  data: FittingData;
+  onChange: (updates: Partial<FittingData>) => void;
+  basePrice?: number;
+  totalPrice?: number;
+  product: any;
+}
+
+export interface ConfigureProps {
+  slug: string;
+  isOpen?: boolean;
+  onClose?: () => void;
 }

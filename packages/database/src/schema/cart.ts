@@ -1,73 +1,58 @@
-import { integer, pgTable, serial, timestamp, uuid } from "drizzle-orm/pg-core";
-import { userMeasurements, usersTable } from "./user.js";
-import { productConfiguration, productItem } from "./products.js";
+import {
+  pgTable,
+  serial,
+  integer,
+  uuid,
+  timestamp,
+  varchar,
+  numeric,
+} from "drizzle-orm/pg-core";
+import { usersTable } from "./user.js";
+import { product, productConfiguration, productItem } from "./products.js";
 
-// // export const cartItem = pgTable("cart_item", {
-// //   id: uuid("id").primaryKey().defaultRandom(),
-// //   userId: text("user_id").notNull(),
-// //   productId: integer("product_id")
-// //     .references(() => product.id)
-// //     .notNull(),
-// //   // Nullable: Only filled for custom products
-// //   configurationId: uuid("configuration_id").references(
-// //     () => productConfiguration.id,
-// //   ),
-// //   quantity: integer("quantity").notNull().default(1),
-// //   priceAtEntry: numeric("price_at_entry", {
-// //     precision: 10,
-// //     scale: 2,
-// //   }).notNull(),
-// //   ...timestamps,
-// // });
-// import { pgTable, uuid, text, integer, timestamp } from "drizzle-orm/pg-core";
-// import { product, productConfiguration } from "./products";
-
-// // 1. THE HEADER: One per user
-// export const shoppingCart = pgTable("shopping_cart", {
-//   id: uuid("id").primaryKey().defaultRandom(),
-//   user_id: text("user_id").notNull().unique(), // One cart per user
-//   updated_at: timestamp("updated_at").defaultNow(),
-// });
-
-// // 2. THE ITEMS: Many per cart
-// export const shoppingCartItem = pgTable("shopping_cart_item", {
-//   id: uuid("id").primaryKey().defaultRandom(),
-//   cart_id: uuid("cart_id").references(() => shoppingCart.id, { onDelete: "cascade" }).notNull(),
-
-//   // The Product
-//   product_item_id: integer("product_item_id").references(() => product.id).notNull(),
-
-//   // The Customizations (Optional for standard items)
-//   configuration_id: uuid("configuration_id").references(() => productConfiguration.id),
-
-//   // The Fit (Optional)
-//   measurement_id: uuid("measurement_id"), // References your measurements table
-
-//   qty: integer("qty").notNull().default(1),
-//   created_at: timestamp("created_at").defaultNow(),
-// });
-
+// Shopping Cart
 export const shoppingCart = pgTable("shopping_cart", {
-  id: serial("id").primaryKey(),
-  user_id: uuid("user_id")
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id")
     .notNull()
     .references(() => usersTable.id),
-  updated_at: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Shopping Cart Item
 export const shoppingCartItem = pgTable("shopping_cart_item", {
-  id: serial("id").primaryKey(),
-  cart_id: integer("cart_id")
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  cartId: integer("cart_id")
     .notNull()
     .references(() => shoppingCart.id),
-  // Link to a Standard Item OR a Custom Configuration
-  product_item_id: integer("product_item_id")
+  productId: integer("product_id")
     .notNull()
-
-    .references(() => productItem.id),
-  configuration_id: uuid("configuration_id").references(
+    .references(() => product.id),
+  // For STANDARD products: points to specific SKU
+  productItemId: integer("product_item_id").references(() => productItem.id),
+  // For CUSTOM products: points to configuration
+  configurationId: integer("configuration_id").references(
     () => productConfiguration.id,
   ),
-  measurement_id: uuid("measurement_id").references(() => userMeasurements.id),
-  qty: integer("qty").notNull().default(1),
+  quantity: integer("qty").notNull().default(1),
+  price: numeric("price", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Cart Item (simplified version for new schema)
+export const cartItem = pgTable("cart_item", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id")
+    .references(() => usersTable.id)
+    .notNull(),
+  productId: integer("product_id")
+    .references(() => product.id)
+    .notNull(),
+  configurationId: integer("configuration_id").references(
+    () => productConfiguration.id,
+  ),
+  measurementProfileId: uuid("measurement_profile_id"),
+  quantity: integer("quantity").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });

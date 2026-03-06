@@ -1,117 +1,171 @@
-// GET /collections
-// GET /collections/:slug
-// GET /collections/:slug/products
-// routes/collections.route.ts
-import { Hono, Context } from "hono";
-import { asc, collection, db, eq, product, productCollection } from "@repo/db";
+import {
+  db,
+  collection,
+  product,
+  productCollection,
+  productCategory,
+} from "@repo/db";
+import { eq, isNull, and, inArray } from "@repo/db";
+import { Context, Hono } from "hono";
 
 export const collectionsHandler = new Hono()
-  // .get("/", async (c: Context) => {
-  //   try {
-  //     const collections = await db
-  //       .select()
-  //       .from(collection)
-  //       .orderBy(asc(collection.name));
-  //     return c.json({ success: true, collections });
-  //   } catch (error) {
-  //     console.error("Error fetching collections:", error);
-  //     return c.json({ error: "Failed to fetch collection" }, 500);
-  //   }
-  // })
+  // 1. List all collections (e.g. Wedding, Evening, Boardroom, Smart Casual)
   .get("/", async (c: Context) => {
     try {
-      const collections = await db.select().from(collection);
+      // Simple query to get all collections without complex joins
+      const collectionsData = await db.select().from(collection);
 
-      // Map DB fields to frontend grid structure
-      const mapped = collections.map((col, index: number) => ({
-        title: `The ${col.name}`, // Example: "The Boardroom"
-        subtitle: col.name === "Boardroom" ? "Power Suits" : "Collection", // Customize per collection
-        description: col.description,
+      // Filter to only include lifestyle collections (IDs 1-4: wedding, evening, boardroom, smart-casual)
+      // This excludes product categories that were incorrectly added to the collection table
+      const lifestyleCollections = collectionsData.filter(
+        (col) => col.id >= 1 && col.id <= 4,
+      );
+
+      // Map DB collections into the frontend Collection view model
+      const collections = lifestyleCollections.map((col, index) => ({
+        id: col.id,
+        slug: col.slug,
+        title: col.name,
+        subtitle: "Bespoke collection",
+        description:
+          col.description ||
+          `Explore our ${col.name.toLowerCase()} collection.`,
         image:
-          col.name === "Boardroom"
-            ? "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&q=80&fit=crop"
-            : "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&q=80&fit=crop", // fallback
-        tag: index === 0 ? "Bestseller" : undefined, // Example first one is tagged
-        span:
-          index === 0
-            ? "lg:col-span-2 lg:row-span-2"
-            : "lg:col-span-1 lg:row-span-1",
-        slug: col.slug, // Keep slug for navigation
+          col.image ||
+          "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=1200&q=80&auto=format&fit=crop",
+        tag: index === 0 ? "Featured" : undefined,
+        span: index === 0 ? "wide" : undefined,
       }));
 
-      return c.json({ success: true, collections: mapped });
-    } catch (err) {
-      console.error("Error fetching collections:", err);
+      return c.json({ success: true, collections });
+    } catch (error) {
+      console.error("Error fetching collections", error);
       return c.json(
-        { success: false, error: "Failed to fetch collections" },
+        {
+          success: false,
+          collections: [],
+          error: "Failed to fetch collections",
+        },
         500,
       );
     }
   })
-  // .get("/:slug/products", async (c: Context) => {
-  //   const slug = c.req.param("slug");
-  //   try {
-  //     // Find collection by slug
-  //     const col = await db
-  //       .select()
-  //       .from(collection)
-  //       .where(eq(collection.slug, slug))
-  //       .limit(1)
-  //       .then((r) => r[0]);
-  //     if (!col) return c.json({ error: "Collection not found" }, 404);
-  //     const productsInCollection = await db
-  //       .select()
-  //       .from(product)
-  //       .innerJoin(
-  //         productCollection,
-  //         eq(product.id, productCollection.product_id),
-  //       )
-  //       .where(eq(productCollection.collection_id, col.id))
-  //       .orderBy(asc(product.name));
 
-  //     return c.json({
-  //       success: true,
-  //       collection: col,
-  //       products: productsInCollection,
-  //     });
-  //   } catch (error) {
-  //     console.error("Error fetching products for collection:", error);
-  //     return c.json({ error: "Failed to fetch products for collection" });
-  //   }
-  // });
-
-  .get("/:slug/products", async (c: Context) => {
+  // 2. Get a specific collection and its products with proper joins
+  .get("/:slug", async (c: Context) => {
     const slug = c.req.param("slug");
+
     try {
-      // Find collection by slug
-      const col = await db
+      // First, get the collection
+      const collectionData = await db
         .select()
         .from(collection)
         .where(eq(collection.slug, slug))
-        .limit(1)
-        .then((r) => r[0]);
-      if (!col) return c.json({ error: "Collection not found" }, 404);
-      const productsInCollection = await db
-        .select({
-          id: product.id,
-          name: product.name,
-          slug: product.slug,
-          product_image: product.product_image,
-          base_price: product.base_price,
-          product_type: product.product_type,
-        })
+        .limit(1);
+
+      if (collectionData.length === 0) {
+        return c.json(
+          {
+            success: false,
+            collection: null,
+            products: [],
+            error: "Collection not found",
+          },
+          404,
+        );
+      }
+
+      const collectionItem = collectionData[0]!;
+
+      // Then get products linked to this collection with their categories
+      const productLinks = await db
+        .select()
         .from(productCollection)
-        .innerJoin(product, eq(productCollection.product_id, product.id))
-        .where(eq(productCollection.collection_id, col.id))
-        .orderBy(asc(product.name));
+        .where(eq(productCollection.collection_id, collectionItem.id));
+
+      // Get product details for each linked product, including product_type and category
+      const productIds = productLinks.map((link) => link.product_id);
+      let products: any[] = [];
+
+      if (productIds.length > 0) {
+        // Use a join to get product details with category name
+        // Temporarily exclude productType to debug
+        const productData = await db
+          .select({
+            id: product.id,
+            slug: product.slug,
+            name: product.name,
+            basePrice: product.basePrice,
+            mainImage: product.mainImage,
+            // productType: product.productType, // Temporarily commented out
+            categoryName: productCategory.name,
+          })
+          .from(product)
+          .innerJoin(
+            productCategory,
+            eq(product.categoryId, productCategory.id),
+          )
+          .where(inArray(product.id, productIds));
+
+        products = productData.map((p) => ({
+          id: p.id,
+          slug: p.slug,
+          name: p.name,
+          base_price: Number(p.basePrice),
+          product_image: p.mainImage,
+          product_type: "CUSTOM", // Default for now
+          category_name: p.categoryName,
+        }));
+      }
+
+      const collectionResponse = {
+        slug: collectionItem.slug,
+        name: collectionItem.name,
+        description:
+          collectionItem.description ||
+          `Explore our ${collectionItem.name.toLowerCase()} collection.`,
+        image:
+          collectionItem.image ||
+          "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=1200&q=80&auto=format&fit=crop",
+      };
 
       return c.json({
         success: true,
-        collection: col,
-        products: productsInCollection,
+        collection: collectionResponse,
+        products,
       });
     } catch (error) {
-      console.error("Error fetching products for collection:", error);
-      return c.json({ error: "Failed to fetch products for collection" });
+      console.error("Error fetching collection", error);
+      return c.json(
+        {
+          success: false,
+          collection: null,
+          products: [],
+          error: "Failed to fetch collection",
+        },
+        500,
+      );
     }
+  })
+
+  // 3. Get the specific product with all its builder options
+  .get("/:slug/:productSlug", async (c: Context) => {
+    const productSlug = c.req.param("productSlug");
+
+    const data = await db.query.product.findFirst({
+      where: eq(product.slug, productSlug),
+    });
+
+    if (!data) return c.json({ error: "Product not found" }, 404);
+
+    const responseProduct = {
+      id: data.id,
+      slug: data.slug,
+      name: data.name,
+      base_price: Number(data.basePrice),
+      product_image: data.mainImage,
+      product_type: "CUSTOM" as const,
+    };
+
+    return c.json(responseProduct);
   });

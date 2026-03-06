@@ -1,27 +1,5 @@
-import React from "react";
-import { motion } from "framer-motion";
-interface FittingData {
-  style: string;
-  fit: string;
-  buttons: string;
-  fabric: string;
-  fabricColor: string;
-  lapel: string;
-  lining: string;
-  buttonColor: string;
-  measurements: {
-    height: string;
-    chest: string;
-    waist: string;
-    hips: string;
-    inseam: string;
-    shoulder: string;
-  };
-}
-interface StepProps {
-  data: FittingData;
-  onChange: (updates: Partial<FittingData>) => void;
-}
+import { StepProps } from "@/lib/types";
+
 const styles = [
   {
     id: "single",

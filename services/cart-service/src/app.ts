@@ -8,14 +8,12 @@ import {
   isNull,
   orderItems,
   shopOrder,
-} from "@repo/db";
-import {
-  db,
   product,
   productConfiguration,
-  productItem,
   shoppingCart,
   shoppingCartItem,
+  productItem,
+  db,
 } from "@repo/db";
 import { getUser } from "@repo/auth";
 
@@ -41,7 +39,7 @@ app.post("/design/save", getUser, async (c: Context) => {
   const productData = await db.query.product.findFirst({
     where: eq(product.id, productId),
   });
-  if (!productData || productData.product_type !== "CUSTOM") {
+  if (!productData || productData.productType !== "CUSTOM") {
     return c.json({ error: "Invalid or non-customizable product" }, 400);
   }
 
@@ -58,14 +56,14 @@ app.post("/design/save", getUser, async (c: Context) => {
 
   // 3️⃣ Calculate final price
   const finalPrice =
-    Number(productData.base_price) +
-    dbOptions.reduce((sum, opt) => sum + Number(opt.price_delta), 0);
+    Number(productData.basePrice) +
+    dbOptions.reduce((sum, opt) => sum + Number(opt.priceDelta), 0);
 
   const snapshot = dbOptions.reduce((acc: Record<string, any>, opt) => {
-    acc[opt.group_id] = {
+    acc[opt.groupId] = {
       id: opt.id,
       label: opt.value,
-      price_impact: opt.price_delta,
+      price_impact: opt.priceDelta,
     };
     return acc;
   }, {});
@@ -74,11 +72,11 @@ app.post("/design/save", getUser, async (c: Context) => {
   const [newConfig] = await db
     .insert(productConfiguration)
     .values({
-      kinde_user_id: user.id,
-      product_id: productId,
-      selected_options: snapshot,
-      final_price: finalPrice.toString(),
-      createdAT: new Date(),
+      kindeUserId: user.id,
+      productId: productId,
+      selectedOptions: snapshot,
+      finalPrice: finalPrice.toString(),
+      createdAt: new Date(),
     })
     .returning();
 
@@ -86,12 +84,12 @@ app.post("/design/save", getUser, async (c: Context) => {
 
   // 5️⃣ Add configuration to cart automatically
   let cart = await db.query.shoppingCart.findFirst({
-    where: eq(shoppingCart.user_id, user.id),
+    where: eq(shoppingCart.userId, user.id),
   });
   if (!cart) {
     const [newCart] = await db
       .insert(shoppingCart)
-      .values({ user_id: user.id })
+      .values({ userId: user.id })
       .returning();
     cart = newCart;
   }
@@ -100,24 +98,24 @@ app.post("/design/save", getUser, async (c: Context) => {
 
   const existingItem = await db.query.shoppingCartItem.findFirst({
     where: and(
-      eq(shoppingCartItem.cart_id, cart!.id),
-      eq(shoppingCartItem.product_item_id, productId),
-      eq(shoppingCartItem.configuration_id, newConfig.id),
+      eq(shoppingCartItem.cartId, cart!.id),
+      eq(shoppingCartItem.productId, productId),
+      eq(shoppingCartItem.configurationId, newConfig.id),
     ),
   });
 
   if (existingItem) {
     await db
       .update(shoppingCartItem)
-      .set({ qty: existingItem.qty + safeQty })
+      .set({ quantity: existingItem.quantity + safeQty })
       .where(eq(shoppingCartItem.id, existingItem.id));
   } else {
     await db.insert(shoppingCartItem).values({
-      cart_id: cart!.id,
-      product_item_id: productId,
-      configuration_id: newConfig.id,
-      measurement_id: measurements ? JSON.stringify(measurements) : null,
-      qty: safeQty,
+      cartId: cart!.id,
+      productId: productId,
+      configurationId: newConfig.id,
+      price: finalPrice.toString(),
+      quantity: safeQty,
     });
   }
 
@@ -137,25 +135,25 @@ app.post("/add", getUser, async (c: Context) => {
   const userId = user.id;
 
   const body = await c.req.json<{
-    product_item_id: number;
-    configuration_id?: string;
-    measurement_id?: string;
+    productId: number;
+    configurationId?: string;
+    measurementId?: string;
     qty: number;
   }>();
 
   const safetyQty = Math.max(1, Number(body.qty) || 1);
 
-  const { product_item_id, configuration_id, measurement_id } = body;
+  const { productId, configurationId, measurementId } = body;
   // Find the user's cart or create one
   let cart = await db.query.shoppingCart.findFirst({
-    where: eq(shoppingCart.user_id, userId),
+    where: eq(shoppingCart.userId, userId),
   });
 
   if (!cart) {
     c.json({ error: "Cart not found" }, 400);
     const [newCart] = await db
       .insert(shoppingCart)
-      .values({ user_id: userId })
+      .values({ userId: userId })
       .returning();
     cart = newCart;
     return c.json(cart);
@@ -163,14 +161,11 @@ app.post("/add", getUser, async (c: Context) => {
   // Check if the same item (with configuration & measurement) exists
   const existingItem = await db.query.shoppingCartItem.findFirst({
     where: and(
-      eq(shoppingCartItem.cart_id, cart!.id),
-      eq(shoppingCartItem.product_item_id, product_item_id),
-      configuration_id
-        ? eq(shoppingCartItem.configuration_id, configuration_id)
-        : isNull(shoppingCartItem.configuration_id),
-      measurement_id
-        ? eq(shoppingCartItem.measurement_id, measurement_id)
-        : isNull(shoppingCartItem.measurement_id),
+      eq(shoppingCartItem.cartId, cart!.id),
+      eq(shoppingCartItem.productId, productId),
+      configurationId
+        ? eq(shoppingCartItem.configurationId, Number(configurationId))
+        : isNull(shoppingCartItem.configurationId),
     ),
   });
 
@@ -179,16 +174,16 @@ app.post("/add", getUser, async (c: Context) => {
 
     await db
       .update(shoppingCartItem)
-      .set({ qty: existingItem.qty + safetyQty })
+      .set({ quantity: existingItem.quantity + safetyQty })
       .where(eq(shoppingCartItem.id, existingItem.id));
   } else {
     // Insert new cart
     await db.insert(shoppingCartItem).values({
-      cart_id: cart!.id,
-      product_item_id,
-      configuration_id: configuration_id || null,
-      measurement_id: measurement_id || null,
-      qty: safetyQty,
+      cartId: cart!.id,
+      productId,
+      configurationId: configurationId ? Number(configurationId) : null,
+      price: "0.00", // Default price, should be calculated from product
+      quantity: safetyQty,
     });
   }
 
@@ -202,13 +197,13 @@ app.get("/cart", getUser, async (c: any) => {
   const userId = user.id;
 
   let cart = await db.query.shoppingCart.findFirst({
-    where: eq(shoppingCart.user_id, userId),
+    where: eq(shoppingCart.userId, userId),
   });
 
   if (!cart) {
     const inserted = await db
       .insert(shoppingCart)
-      .values({ user_id: userId })
+      .values({ userId: userId })
       .returning();
 
     cart = inserted[0];
@@ -225,25 +220,22 @@ app.get("/cart", getUser, async (c: any) => {
   const rows = await db
     .select({
       itemId: shoppingCartItem.id,
-      qty: shoppingCartItem.qty,
+      qty: shoppingCartItem.quantity,
       productName: product.name,
-      productImage: product.product_image,
+      productImage: product.productImage,
       skuPrice: productItem.price,
-      configuration: productConfiguration.selected_options,
-      configurationPrice: productConfiguration.final_price,
-      selectedOptions: productConfiguration.selected_options,
+      configuration: productConfiguration.selectedOptions,
+      configurationPrice: productConfiguration.finalPrice,
+      selectedOptions: productConfiguration.selectedOptions,
     })
     .from(shoppingCartItem)
     .leftJoin(
       productConfiguration,
-      eq(shoppingCartItem.configuration_id, productConfiguration.id),
+      eq(shoppingCartItem.configurationId, productConfiguration.id),
     )
-    .innerJoin(
-      productItem,
-      eq(shoppingCartItem.product_item_id, productItem.id),
-    )
-    .innerJoin(product, eq(productItem.product_id, product.id))
-    .where(eq(shoppingCartItem.cart_id, cart.id));
+    .innerJoin(productItem, eq(shoppingCartItem.productItemId, productItem.id))
+    .innerJoin(product, eq(productItem.productId, product.id))
+    .where(eq(shoppingCartItem.cartId, cart.id));
 
   let cartTotal = 0;
 
@@ -263,8 +255,8 @@ app.get("/cart", getUser, async (c: any) => {
       qty: row.qty,
       unit_price: unitPrice,
       total_price: totalPrice,
-      selectedOptions: row.selected_options ?? {},
-      measurements: row.measurement_id ? JSON.parse(row.measurement_id) : {},
+      selectedOptions: row.selectedOptions ?? {},
+      measurements: row.measurementId ? JSON.parse(row.measurementId) : {},
     };
   });
 
@@ -308,7 +300,7 @@ app.post("/checkout", getUser, async (c: Context) => {
     return c.json({ orderId: existingKey.orderId, reused: true });
   // 1️⃣ Load user's cart
   const cart = await db.query.shoppingCart.findFirst({
-    where: eq(shoppingCart.user_id, userId),
+    where: eq(shoppingCart.userId, userId),
   });
 
   if (!cart) return c.json({ error: "Cart not found" }, 400);
@@ -317,23 +309,19 @@ app.post("/checkout", getUser, async (c: Context) => {
   const cartItems = await db
     .select({
       itemId: shoppingCartItem.id,
-      qty: shoppingCartItem.qty,
-      productId: productItem.product_id,
+      qty: shoppingCartItem.quantity,
+      productId: productItem.productId,
       skuPrice: productItem.price,
-      configurationId: shoppingCartItem.configuration_id,
-      configurationPrice: productConfiguration.final_price,
-      selectedOptions: productConfiguration.selected_options,
-      measurement: shoppingCartItem.measurement_id,
+      configurationId: shoppingCartItem.configurationId,
+      configurationPrice: productConfiguration.finalPrice,
+      selectedOptions: productConfiguration.selectedOptions,
     })
     .from(shoppingCartItem)
     .leftJoin(
       productConfiguration,
-      eq(shoppingCartItem.configuration_id, productConfiguration.id),
+      eq(shoppingCartItem.configurationId, productConfiguration.id),
     )
-    .innerJoin(
-      productItem,
-      eq(shoppingCartItem.product_item_id, productItem.id),
-    );
+    .innerJoin(productItem, eq(shoppingCartItem.productItemId, productItem.id));
 
   if (cartItems.length === 0) return c.json({ error: "Cart is empty" }, 400);
 
@@ -352,7 +340,6 @@ app.post("/checkout", getUser, async (c: Context) => {
       .values({
         userId,
         total: total.toString(),
-        orderedItems: cartItems.length,
         status: "PENDING_PAYMENT",
         shipping_name: body.shipping.name,
         shipping_email: body.shipping.email,
@@ -371,12 +358,12 @@ app.post("/checkout", getUser, async (c: Context) => {
     // b) Insert order items
     await tx.insert(orderItems).values(
       cartItems.map((item) => ({
-        order_id: order.id,
-        product_id: item.productId,
-        configuration_id: item.configurationId ?? null,
+        orderId: order.id,
+        productNameSnapshot: "Product", // We need to get actual product name
+        priceAtPurchase: (item.configurationPrice ?? item.skuPrice).toString(),
+        unitPrice: (item.configurationPrice ?? item.skuPrice).toString(),
         quantity: item.qty,
-        base_price: (item.configurationPrice ?? item.skuPrice).toString(),
-        selected_options: JSON.stringify(item.selectedOptions ?? {}),
+        customizationSnapsot: item.selectedOptions ?? {},
       })),
     );
 
@@ -389,7 +376,7 @@ app.post("/checkout", getUser, async (c: Context) => {
     // c) Clear cart items
     await tx
       .delete(shoppingCartItem)
-      .where(eq(shoppingCartItem.cart_id, cart.id));
+      .where(eq(shoppingCartItem.cartId, cart.id));
 
     return order;
   });

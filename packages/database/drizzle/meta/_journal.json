@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1772285864566,
-      "tag": "0000_marvelous_molly_hayes",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1772361043352,
-      "tag": "0001_brainy_the_executioner",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1772361160413,
-      "tag": "0002_bizarre_chimera",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1772363410674,
-      "tag": "0003_useful_hex",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1772363416328,
-      "tag": "0004_crazy_warpath",
+      "when": 1772817308669,
+      "tag": "0000_dapper_vermin",
       "breakpoints": true
     }
   ]

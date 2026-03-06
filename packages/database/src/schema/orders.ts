@@ -1,5 +1,6 @@
 import {
   integer,
+  jsonb,
   numeric,
   pgTable,
   serial,
@@ -10,13 +11,11 @@ import {
 import { usersTable } from "./user.js";
 
 export const shopOrder = pgTable("shop_order", {
-  id: serial("id").primaryKey(),
-  userId: uuid("user_id")
-    .references(() => usersTable.id)
-    .notNull(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid("user_id").references(() => usersTable.id),
   total: numeric("total", { precision: 12, scale: 2 }).notNull(),
-  orderedItems: integer("ordered_items").notNull(),
-  orderDate: timestamp("order_date").defaultNow(),
+  // orderedItems: integer("ordered_items").notNull(),
+  // orderDate: timestamp("order_date").defaultNow(),
   status: varchar("status", { length: 64 }).notNull(),
 
   // Shipping snapshot
@@ -36,19 +35,36 @@ export const shopOrder = pgTable("shop_order", {
   shipping_country: varchar("shipping_country", { length: 64 }).notNull(),
 });
 
-// export const orderStatusTable = pgTable("order_status", {
-//   id: serial("id").primaryKey(),
-//   status: varchar("status", { length: 64 }).notNull(),
-// });
-
 export const orderItems = pgTable("order_items", {
-  id: serial("id").primaryKey(),
-  order_id: integer("order_id")
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  orderId: integer("order_id")
     .references(() => shopOrder.id)
     .notNull(),
-  product_id: integer("product_id").notNull(),
+  productNameSnapshot: varchar("product_name").notNull(),
+  skuSnapshot: varchar("sku"),
+  customizationSnapsot: jsonb("customization_snapshot"),
+  measurementSnapshot: jsonb("measurement_snapshot"),
+  priceAtPurchase: numeric("price_at_purchase", {
+    precision: 12,
+    scale: 2,
+  }).notNull(),
+  unitPrice: numeric("unit_price", { precision: 12, scale: 2 }).notNull(),
   quantity: integer("quantity").notNull(),
-  base_price: numeric("base_price", { precision: 12, scale: 2 }).notNull(),
-  // JSON snapshot of custom options(fabric size)
-  selected_options: varchar("selected_options", { length: 400 }),
+});
+
+export const orderMeasurements = pgTable("order_measurements", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  orderItemId: integer("order_item_id")
+    .references(() => orderItems.id)
+    .notNull(),
+
+  unit: varchar("unit", { length: 5 }).notNull(),
+
+  height: numeric("height", { precision: 5, scale: 2 }).notNull(),
+  chest: numeric("chest", { precision: 5, scale: 2 }).notNull(),
+  waist: numeric("waist", { precision: 5, scale: 2 }).notNull(),
+  hips: numeric("hips", { precision: 5, scale: 2 }).notNull(),
+  inseam: numeric("inseam", { precision: 5, scale: 2 }).notNull(),
+  shoulder: numeric("shoulder", { precision: 5, scale: 2 }).notNull(),
+  profile_name: varchar("profile_name", { length: 64 }),
 });

@@ -1,62 +1,4 @@
-import React from "react";
-interface FittingData {
-  style: string;
-  fit: string;
-  buttons: string;
-  fabric: string;
-  fabricColor: string;
-  lapel: string;
-  lining: string;
-  buttonColor: string;
-  measurements: {
-    height: string;
-    chest: string;
-    waist: string;
-    hips: string;
-    inseam: string;
-    shoulder: string;
-  };
-}
-interface StepProps {
-  data: FittingData;
-  onChange: (updates: Partial<FittingData>) => void;
-}
-const fabrics = [
-  {
-    id: "wool",
-    label: "Super 120s Wool",
-    origin: "Huddersfield, England",
-    description:
-      "The gold standard. Breathable, durable, and impeccably draping.",
-    price: "+£0",
-    texture: "bg-[#3a3a3a]",
-  },
-  {
-    id: "cashmere",
-    label: "Cashmere Blend",
-    origin: "Biella, Italy",
-    description: "Unrivalled softness. A touch of luxury in every fibre.",
-    price: "+£180",
-    texture: "bg-[#5c4a3a]",
-  },
-  {
-    id: "linen",
-    label: "Irish Linen",
-    origin: "Belfast, Ireland",
-    description:
-      "Effortlessly cool. Perfect for warmer climates and occasions.",
-    price: "+£60",
-    texture: "bg-[#c4b89a]",
-  },
-  {
-    id: "tweed",
-    label: "Harris Tweed",
-    origin: "Outer Hebrides, Scotland",
-    description: "Handwoven heritage. Character and warmth in every thread.",
-    price: "+£90",
-    texture: "bg-[#6b5a3e]",
-  },
-];
+import { StepProps } from "@/lib/types";
 const colors: {
   id: string;
   label: string;
@@ -103,7 +45,10 @@ const colors: {
     hex: "#f5f0eb",
   },
 ];
-export function StepFabric({ data, onChange }: StepProps) {
+export function StepFabric({ data, onChange, product }: StepProps) {
+  const fabricGroup = product.customizationGroups?.find(
+    (g: any) => g.name === "Fabric",
+  );
   return (
     <div className="space-y-10">
       {/* Fabric Selection */}
@@ -112,47 +57,56 @@ export function StepFabric({ data, onChange }: StepProps) {
           Choose Your Fabric
         </h3>
         <div className="grid grid-cols-2 gap-4">
-          {fabrics.map((f) => (
-            <button
-              key={f.id}
-              onClick={() =>
-                onChange({
-                  fabric: f.id,
-                })
-              }
-              className={`p-5 text-left border transition-all duration-200 ${data.fabric === f.id ? "border-[#c9a96e] bg-[#c9a96e]/8" : "border-[#2e2e2e] hover:border-[#c9a96e]/50"}`}
-            >
-              <div className="flex items-start gap-4">
-                <div
-                  className={`w-12 h-12 shrink-0 ${f.texture} border border-[#ffffff]/10`}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <div className="font-serif text-[#f5f0eb] text-sm font-semibold leading-snug">
-                      {f.label}
+          {fabricGroup?.options.map((opt: any, id: number) => {
+            // Map API fields to component expectations
+            const label = opt.name || opt.value || "";
+            const texture = opt.texture || "";
+            const origin = opt.metadata?.origin || opt.factoryCode || "";
+            const description = opt.metadata?.description || "";
+            const price = opt.priceDelta ? `+ £${opt.priceDelta}` : "";
+
+            return (
+              <button
+                key={opt.id}
+                onClick={() =>
+                  onChange({
+                    fabric: opt.value,
+                  })
+                }
+                className={`p-5 text-left border transition-all duration-200 ${data.fabric === opt.value ? "border-[#c9a96e] bg-[#c9a96e]/8" : "border-[#2e2e2e] hover:border-[#c9a96e]/50"}`}
+              >
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`w-12 h-12 shrink-0 ${texture} border border-[#ffffff]/10`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="font-serif text-[#f5f0eb] text-sm font-semibold leading-snug">
+                        {label}
+                      </div>
+                      <span className="text-[#c9a96e] text-[11px] font-medium whitespace-nowrap">
+                        {price}
+                      </span>
                     </div>
-                    <span className="text-[#c9a96e] text-[11px] font-medium whitespace-nowrap">
-                      {f.price}
+                    <div className="text-[#9a9490] text-[10px] tracking-[0.15em] uppercase mb-2">
+                      {origin}
+                    </div>
+                    <div className="text-[#9a9490] text-[11px] leading-relaxed">
+                      {description}
+                    </div>
+                  </div>
+                </div>
+                {data.fabric === opt.value && (
+                  <div className="mt-3 pt-3 border-t border-[#c9a96e]/20 flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-[#c9a96e] rounded-full" />
+                    <span className="text-[#c9a96e] text-[10px] tracking-[0.2em] uppercase">
+                      Selected
                     </span>
                   </div>
-                  <div className="text-[#9a9490] text-[10px] tracking-[0.15em] uppercase mb-2">
-                    {f.origin}
-                  </div>
-                  <div className="text-[#9a9490] text-[11px] leading-relaxed">
-                    {f.description}
-                  </div>
-                </div>
-              </div>
-              {data.fabric === f.id && (
-                <div className="mt-3 pt-3 border-t border-[#c9a96e]/20 flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 bg-[#c9a96e] rounded-full" />
-                  <span className="text-[#c9a96e] text-[10px] tracking-[0.2em] uppercase">
-                    Selected
-                  </span>
-                </div>
-              )}
-            </button>
-          ))}
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
