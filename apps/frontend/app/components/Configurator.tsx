@@ -49,35 +49,49 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
 
   useEffect(() => {
     async function init() {
-      if (!slug) return;
+      const productSlug = typeof slug === "string" ? slug : (slug as any).slug;
+      if (!productSlug) return;
       setLoading(true);
-      const res = await api.getProductBySlug(slug);
-      if (res.success) {
-        setProduct(res.product);
-        // Default: Select the first option for every group automatically
-        const defaults: Record<number, any> = {};
-        res.product.customizationGroups.forEach((group: any) => {
-          if (group.options?.length > 0) defaults[group.id] = group.options[0];
-        });
-        setSelections(defaults);
-      } else {
-        router.push("/collections");
+      try {
+        const res = await api.getProductBySlug(productSlug);
+        if (res?.success && res.product) {
+          setProduct(res.product);
+          // Default: Select the first option for every group automatically
+          const defaults: Record<number, any> = {};
+          res.product.customizationGroups.forEach((group: any) => {
+            if (group.options?.length > 0)
+              defaults[group.id] = group.options[0];
+          });
+          setSelections(defaults);
+        } else {
+          console.error("Product fetch failed", res);
+          router.push("/collections");
+        }
+      } catch (error) {
+        console.error("Configurator Init Error:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     init();
-  }, [slug]);
+  }, [slug, router]);
 
   // Dynamic Price Calculation
   const totalPrice = useMemo(() => {
     if (!product) return 0;
-    let extra = 0;
-    product.customizationGroups?.forEach((group: any) => {
-      const userValue = (fittingData as any)[group.name.toLowerCase()];
-      const match = group.options.find((opt: any) => opt.value === userValue);
-      if (match) extra += parseFloat(match.price_delta);
-    });
-    return parseFloat(product.base_price) + extra;
+
+    const base = parseFloat(product.base_price) || 0;
+    const extra = Object.values(selections).reduce((acc, opt) => {
+      return acc + (parseFloat(opt.price_delta || opt.priceDelta) || 0);
+    }, 0);
+    return base + extra;
+    // let extra = 0;
+    // product.customizationGroups?.forEach((group: any) => {
+    //   const userValue = (fittingData as any)[group.name.toLowerCase()];
+    //   const match = group.options.find((opt: any) => opt.value === userValue);
+    //   if (match) extra += parseFloat(match.price_delta);
+    // });
+    // return parseFloat(product.base_price) + extra;
   }, [product, fittingData]);
 
   const stepProps: StepProps = {
@@ -88,15 +102,6 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
     totalPrice: Number(totalPrice),
   };
 
-  // Logic: Steps = All DB Groups + 1 Final Measurement Step
-  const totalSteps = (product?.customizationGroups?.length || 0) + 1;
-  const isMeasurementStep =
-    currentStep === product?.customizationGroups?.length;
-  const handleMeasurementChange = (key: string, value: number) => {
-    const updated = { ...measurements, [key]: value };
-    setMeasurements(updated);
-    setGlobalMeasurements(updated); // Sync to persistence
-  };
   const handleAddToCart = () => {
     if (!product) return;
     const cartItem = {
@@ -127,7 +132,15 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
         LOADING STUDIO...
       </div>
     );
-
+  // Logic: Steps = All DB Groups + 1 Final Measurement Step
+  const totalSteps = (product?.customizationGroups?.length || 0) + 1;
+  const isMeasurementStep =
+    currentStep === product?.customizationGroups?.length;
+  const handleMeasurementChange = (key: string, value: number) => {
+    const updated = { ...measurements, [key]: value };
+    setMeasurements(updated);
+    setGlobalMeasurements(updated); // Sync to persistence
+  };
   const currentGroup = product?.customizationGroups[currentStep];
 
   return (
@@ -145,15 +158,21 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
         <div className="w-1/2 bg-[#151515] flex items-center justify-center p-12 relative">
           <AnimatePresence mode="wait">
             <motion.img
+              // key={currentStep}
+              // src={
+              //   typeof product?.product_image === "string"
+              //     ? product?.product_image
+              //     : product?.product_image?.default || ""
+              // }
+              // initial={{ opacity: 0, y: 20 }}
+              // animate={{ opacity: 1, y: 0 }}
+              // className="max-h-full object-contain"
               key={currentStep}
-              src={
-                typeof product?.product_image === "string"
-                  ? product?.product_image
-                  : product?.product_image?.default || ""
-              }
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-h-full object-contain"
+              src={product?.product_image?.default || product?.product_image}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              className="max-h-full object-contain z-10"
             />
           </AnimatePresence>
           <div className="absolute bottom-10 left-10">
@@ -161,7 +180,7 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
               Current Investment
             </p>
             <p className="text-3xl font-['Playfair_Display'] font-bold">
-              £{totalPrice.toFixed(2)}
+              £ {totalPrice.toFixed(2)}
             </p>
           </div>
         </div>
@@ -170,10 +189,18 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
         <div className="w-1/2 p-12 flex flex-col border-l border-white/5">
           <div className="flex-1 overflow-y-auto">
             {!isMeasurementStep ? (
-              <>
+              <div className="space-y-8">
                 <h2 className="text-xs uppercase tracking-[0.4em] text-[#c9a96e] mb-6">
                   Refine Your {currentGroup?.name}
                 </h2>
+                <header>
+                  <span className="text-[#c9a96e] text-[10px] uppercase tracking-[0.4em]">
+                    Step {currentStep + 1}
+                  </span>
+                  <h2 className="text-3xl font-serif text-white mt-2">
+                    {currentGroup?.name}
+                  </h2>
+                </header>
                 <div className="grid gap-4">
                   {currentGroup &&
                     currentGroup.options.map((option: any) => (
@@ -203,7 +230,7 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
                       </button>
                     ))}
                 </div>
-              </>
+              </div>
             ) : (
               <div className="space-y-8">
                 <h2 className="text-xs uppercase tracking-[0.4em] text-[#c9a96e]">
@@ -212,7 +239,7 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
                 {Object.keys(measurements).map((key) => (
                   <div key={key} className="border-b border-white/10 pb-2">
                     <label className="text-[10px] uppercase text-[#555] block">
-                      {key}
+                      {key} (cm)
                     </label>
                     <input
                       type="number"
@@ -244,7 +271,7 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
               }
               className="bg-[#c9a96e] text-black px-12 py-4 text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-[#b8985d] transition-colors"
             >
-              {isMeasurementStep ? "Complete Your Order" : "Continue"}{" "}
+              {isMeasurementStep ? "Add to Suit Bag" : "Continue"}{" "}
               <ArrowRightIcon size={14} />
             </button>
           </footer>

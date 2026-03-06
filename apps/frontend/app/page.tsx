@@ -8,7 +8,7 @@ import { ProductGrid } from "./components/ProductGrid";
 import { USPStrip } from "./components/USPStrip";
 import { CollectionGrid } from "./components/CollectionGrid";
 import { api } from "@/lib/api/api-client";
-import { BespokeConfigurator } from "./products/[slug]/configure/Configurator";
+import { BespokeConfigurator } from "./components/Configurator";
 import { Collection } from "@/lib/types";
 
 // interface Collection {

@@ -1,7 +1,13 @@
 import { api } from "@/lib/api/api-client";
-import { ArrowRightIcon, ChevronRight, Home } from "lucide-react";
+import {
+  ArrowRightIcon,
+  ChevronDownIcon,
+  ChevronRight,
+  Home,
+} from "lucide-react";
 import Link from "next/link";
 import { Metadata } from "next";
+import Sidebar from "@/app/components/Sidebar";
 
 export async function generateMetadata({
   params,
@@ -95,7 +101,7 @@ export default async function CollectionPage({
           />
           <div className="absolute inset-0 bg-linear-to-t from-[#0f0f0f] to-transparent" />
         </div>
-        <div className="relative max-w-7xl mx-auto w-full">
+        <div className="relative max-w-7xl mx-auto w-full flex flex-col items-center justify-center">
           <h1 className="text-6xl font-serif text-[#f5f0eb] mb-4">
             {collection.name}
           </h1>
@@ -105,57 +111,24 @@ export default async function CollectionPage({
 
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-10 flex flex-col lg:flex-row gap-10">
         {/* Collection Navigator Sidebar */}
-        <aside className="lg:w-1/4">
-          <div className="sticky top-24">
-            <h3 className="text-lg font-semibold text-[#f5f0eb] mb-4 pb-3 border-b border-white/10">
-              Collections
-            </h3>
-            <ul className="space-y-2">
-              {collections.map((col: any) => (
-                <li key={col.id}>
-                  <Link
-                    href={`/collections/${col.slug}`}
-                    className={`flex items-center justify-between py-3 px-4 rounded-lg transition-colors ${
-                      col.slug === slug
-                        ? "bg-[#c9a96e]/20 text-[#c9a96e] border border-[#c9a96e]/30"
-                        : "text-[#9a9490] hover:text-[#f5f0eb] hover:bg-white/5"
-                    }`}
-                  >
-                    <span>{col.title}</span>
-                    {col.slug === slug && (
-                      <ArrowRightIcon className="w-4 h-4" />
-                    )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-8 pt-6 border-t border-white/10">
-              <h4 className="text-sm font-medium text-[#f5f0eb] mb-3">
-                Featured Pieces
-              </h4>
-              <p className="text-sm text-[#9a9490]">
-                Discover our curated selection of
-                {collection.name.toLowerCase()} essentials.
-              </p>
-            </div>
-          </div>
-        </aside>
-
+        <>
+          <Sidebar />
+        </>
         {/* Product Grid */}
-        <section className="lg:w-3/4">
+        <section className="lg:w-3/4 flex flex-col items-center justify-center">
           <div className="mb-8">
-            <h2 className="text-3xl font-serif text-[#f5f0eb] mb-2">
+            <h2 className="text-3xl font-serif text-[#f5f0eb] mb-2 text-center">
               {products.length} Pieces
             </h2>
             <p className="text-[#9a9490]">
-              Explore our {collection.name.toLowerCase()} collection featuring{" "}
-              {products.filter((p: any) => p.product_type === "CUSTOM").length}{" "}
-              bespoke items and{" "}
-              {
+              Explore our {collection.name.toLowerCase()} collection featuring
+              {/* {products.filter((p: any) => p.product_type === "CUSTOM").length}{" "} */}
+              bespoke items
+              {/* {
                 products.filter((p: any) => p.product_type === "STANDARD")
                   .length
-              }{" "}
-              ready-to-wear pieces.
+              }
+              ready-to-wear pieces. */}
             </p>
           </div>
 
@@ -186,7 +159,7 @@ export default async function CollectionPage({
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-[#f5f0eb] group-hover:text-[#c9a96e] transition-colors">
+                    <h3 className="text-md font-medium text-[#f5f0eb] group-hover:text-[#c9a96e] transition-colors">
                       {product.name}
                     </h3>
                     <span className="text-sm text-[#9a9490]">
@@ -194,17 +167,19 @@ export default async function CollectionPage({
                     </span>
                   </div>
                   <p className="text-[#c9a96e] font-medium">
-                    From £{product.base_price}
+                    From £ {product.base_price.toFixed(2)}
                   </p>
-                  <div className="flex items-center text-sm text-[#9a9490]">
-                    <span className="inline-flex items-center">
+                  <div className="flex items-center justify-between text-sm text-[#9a9490] gap-3">
+                    <span className="inline-flex items-center gap-3">
                       {product.product_type === "CUSTOM"
                         ? "Custom Tailored"
                         : "Standard Sizing"}
                     </span>
-                    <span className="mx-2">•</span>
-                    <span>View Details</span>
-                    <ArrowRightIcon className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                    {/* <span className="mx-2">•</span> */}
+                    <span className="flex items-center gap-0">
+                      View Details
+                      <ArrowRightIcon className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </span>
                   </div>
                 </div>
               </Link>
