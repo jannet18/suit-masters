@@ -78,28 +78,65 @@ export function StepMeasurements({ data, onChange }: StepProps) {
       try {
         setLoading(true);
         const result = await api.getMeasurementDefinitions();
+        console.log("Measurement definitions API result:", result);
+
         if (result.success && result.definitions) {
           setMeasurementDefinitions(result.definitions);
 
           // Enhance fields with video URLs and descriptions from API
           const enhancedFields = baseFields.map((field) => {
             const definition = result.definitions.find(
-              (def: MeasurementDefinition) =>
-                def.bodyPart.toLowerCase() === field.key.toLowerCase() ||
-                def.displayName.toLowerCase().includes(field.key.toLowerCase()),
+              (def: MeasurementDefinition) => {
+                const bodyPartMatch =
+                  def.bodyPart?.toLowerCase() === field.key.toLowerCase();
+                const displayNameMatch = def.displayName
+                  ?.toLowerCase()
+                  .includes(field.key.toLowerCase());
+                const keyInDisplayName = field.key
+                  .toLowerCase()
+                  .includes(def.displayName?.toLowerCase() || "");
+
+                console.log(`Field ${field.key}:`, {
+                  bodyPart: def.bodyPart,
+                  displayName: def.displayName,
+                  bodyPartMatch,
+                  displayNameMatch,
+                  keyInDisplayName,
+                });
+
+                return bodyPartMatch || displayNameMatch || keyInDisplayName;
+              },
             );
 
-            return {
+            const enhancedField = {
               ...field,
               videoUrl: definition?.videoUrl || "",
               description: definition?.description || field.hint,
             };
+
+            console.log(`Enhanced field ${field.key}:`, {
+              hasVideoUrl: !!enhancedField.videoUrl,
+              videoUrl: enhancedField.videoUrl,
+              description: enhancedField.description,
+            });
+
+            return enhancedField;
           });
 
+          console.log("Enhanced fields:", enhancedFields);
           setFields(enhancedFields);
+        } else {
+          console.warn(
+            "No measurement definitions found in API response:",
+            result,
+          );
+          // Keep using base fields without video URLs
+          setFields(baseFields);
         }
       } catch (error) {
         console.error("Error fetching measurement definitions:", error);
+        // Keep using base fields on error
+        setFields(baseFields);
       } finally {
         setLoading(false);
       }

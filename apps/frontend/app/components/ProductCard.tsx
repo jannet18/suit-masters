@@ -44,7 +44,7 @@ export function ProductCard({ product, id }: ProductCardProps) {
       base_price: price,
       totalPrice: price,
       quantity: 1,
-      product_type: "STANDARD" as const,
+      product_type: productType as "STANDARD" | "CUSTOM",
       image_url: imageUrl,
       configuration: {}, // Empty configuration for standard products
       selected_options: [],
@@ -60,7 +60,7 @@ export function ProductCard({ product, id }: ProductCardProps) {
   };
 
   const isInCart = cart.some(
-    (item) => item.id === product.id && item.product_type === "STANDARD",
+    (item) => item.id === product.id && item.product_type === productType,
   );
 
   return (

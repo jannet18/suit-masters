@@ -3,25 +3,34 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api/api-client";
 import { useRouter } from "next/navigation";
+import { useCartStore } from "@/app/stores/useCartStore";
+import { ShoppingBag, Check } from "lucide-react";
 
 interface ProductPageProps {
-  params: { id: number };
+  params: { slug: string };
 }
 
 export default function ProductPage({ params }: ProductPageProps) {
-  const { id } = params;
+  const { slug } = params;
   const router = useRouter();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdded, setIsAdded] = useState(false);
+  const { addToCart, cart } = useCartStore();
 
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
       try {
-        const productResponse = await api.getProductById(id);
+        console.log("Fetching product with slug:", slug);
+        const productResponse = await api.getProductBySlug(slug);
+        console.log("Product API response:", productResponse);
 
         if (productResponse.success && productResponse.product) {
           setProduct(productResponse.product);
+          console.log("Product data set:", productResponse.product);
+        } else {
+          console.log("Product not found or API error:", productResponse);
         }
       } catch (error) {
         console.error("Error fetching product:", error);
@@ -31,7 +40,43 @@ export default function ProductPage({ params }: ProductPageProps) {
     }
 
     fetchData();
-  }, [id]);
+  }, [slug]);
+
+  const handleAddToCart = () => {
+    if (!product) return;
+
+    // Handle both string and object formats for product_image
+    const imageUrl =
+      typeof product.product_image === "string"
+        ? product.product_image
+        : product.product_image?.default ||
+          "https://images.unsplash.com/photo-1594938298603-c8148c4b4f5a?w=600&q=80&fit=crop";
+
+    const cartItem = {
+      id: product.id,
+      productId: product.id.toString(),
+      name: product.name,
+      base_price: product.base_price,
+      totalPrice: product.base_price,
+      quantity: 1,
+      product_type: product.product_type || "STANDARD",
+      image_url: imageUrl,
+      configuration: {},
+      selected_options: [],
+      measurements: {},
+      customizations: {},
+    };
+
+    addToCart(cartItem);
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 2000);
+  };
+
+  const isInCart = cart.some(
+    (item) =>
+      item.id === product?.id &&
+      item.product_type === (product?.product_type || "STANDARD"),
+  );
 
   if (loading) {
     return (
@@ -70,8 +115,10 @@ export default function ProductPage({ params }: ProductPageProps) {
           <div>
             <img
               src={
-                product?.product_image?.default ||
-                "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1200&q=80&auto=format&fit=crop"
+                typeof product?.product_image === "string"
+                  ? product.product_image
+                  : product?.product_image?.default ||
+                    "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1200&q=80&auto=format&fit=crop"
               }
               alt={product?.name}
               className="w-full h-auto rounded-lg"
@@ -115,19 +162,47 @@ export default function ProductPage({ params }: ProductPageProps) {
               )}
             </div>
 
-            <button
-              onClick={() => alert("Added to cart!")}
-              className="bg-[#c9a96e] text-[#0f0f0f] px-8 py-3 font-bold hover:bg-[#dfc08a] transition-colors w-full"
-            >
-              Add to Cart
-            </button>
+            {product?.product_type === "CUSTOM" ? (
+              <button
+                onClick={() =>
+                  router.push(`/products/${product.slug}/configure`)
+                }
+                className="bg-[#c9a96e] text-[#0f0f0f] px-8 py-3 font-bold hover:bg-[#dfc08a] transition-colors w-full flex items-center justify-center gap-2"
+              >
+                Start Customization
+              </button>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                disabled={isInCart || isAdded}
+                className={`flex items-center justify-center gap-2 px-8 py-3 font-bold transition-colors w-full ${
+                  isInCart || isAdded
+                    ? "bg-green-600 text-white"
+                    : "bg-[#c9a96e] text-[#0f0f0f] hover:bg-[#dfc08a]"
+                }`}
+              >
+                {isInCart || isAdded ? (
+                  <>
+                    <Check size={16} />
+                    {isInCart ? "In Cart" : "Added!"}
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag size={16} />
+                    Add to Bag
+                  </>
+                )}
+              </button>
+            )}
 
-            <button
-              onClick={() => router.push(`/products/${product.slug}`)}
-              className="mt-4 border border-[#c9a96e] text-[#c9a96e] px-8 py-3 font-bold hover:bg-[#c9a96e] hover:text-[#0f0f0f] transition-colors w-full"
-            >
-              Customize This Product
-            </button>
+            {product?.product_type === "STANDARD" && (
+              <button
+                onClick={() => router.push(`/collections`)}
+                className="mt-4 border border-[#c9a96e] text-[#c9a96e] px-8 py-3 font-bold hover:bg-[#c9a96e] hover:text-[#0f0f0f] transition-colors w-full"
+              >
+                View Similar Products
+              </button>
+            )}
           </div>
         </div>
 
@@ -139,24 +214,29 @@ export default function ProductPage({ params }: ProductPageProps) {
             <div>
               <h3 className="text-lg font-semibold mb-3">Category</h3>
               <p className="text-[#9a9490]">
-                ID: {product.category_id || "N/A"}
+                {product?.category?.name ||
+                  `ID: ${product?.category_id || "N/A"}`}
               </p>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-3">Fabric</h3>
               <p className="text-[#9a9490]">
-                ID: {product?.fabric_id || "N/A"}
+                {product?.fabric?.name || `ID: ${product?.fabric_id || "N/A"}`}
               </p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-3">Status</h3>
+              <h3 className="text-lg font-semibold mb-3">Product Type</h3>
               <p className="text-[#9a9490]">
-                {product?.is_active ? "Active" : "Inactive"}
+                {product?.product_type === "CUSTOM"
+                  ? "Bespoke Tailoring"
+                  : "Ready to Wear"}
               </p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-3">Slug</h3>
-              <p className="text-[#9a9490]">{product?.slug}</p>
+              <h3 className="text-lg font-semibold mb-3">Description</h3>
+              <p className="text-[#9a9490]">
+                {product?.description || "No description available."}
+              </p>
             </div>
           </div>
         </div>

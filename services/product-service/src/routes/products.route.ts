@@ -98,12 +98,15 @@ export const productsHandler = new Hono()
             name: group.name,
             isRequired: group.isRequired,
             displayOrder: group.displayOrder,
-            options: options.map((option) => ({
+            options: options.map((option: any) => ({
               id: option.id,
               name: option.name,
               value: option.value,
               priceDelta: Number(option.priceDelta),
               thumbnailUrl: option.thumbnailUrl,
+              imageUrl: (option as any).imageUrl || null,
+              texture: (option as any).texture || null,
+              metadata: (option as any).metadata || {},
               factoryCode: option.factoryCode,
             })),
           };

@@ -7,6 +7,7 @@ import {
   boolean,
   text,
   pgEnum,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 // Product type enum
@@ -74,6 +75,14 @@ export const customizationOption = pgTable("customization_option", {
     "0.00",
   ),
   thumbnailUrl: varchar("thumbnail_url", { length: 255 }),
+  imageUrl: varchar("image_url", { length: 255 }),
+  texture: varchar("texture", { length: 128 }),
+  metadata: jsonb("metadata").$type<{
+    origin?: string;
+    description?: string;
+    composition?: string;
+    weight?: string;
+  }>(),
   factoryCode: varchar("factory_code", { length: 32 }),
 });
 

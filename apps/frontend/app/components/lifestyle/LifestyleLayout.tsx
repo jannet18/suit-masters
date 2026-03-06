@@ -81,9 +81,9 @@ export function LifestyleLayout({
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-[#f5f0eb]">
+    <div className="min-h-screen w-full bg-[#0f0f0f] text-[#f5f0eb]">
       {/* Header with Lifestyle Branding */}
-      <header className="p-6 border-b border-white/10 flex justify-between items-center">
+      {/* <header className="p-6 border-b border-white/10 flex justify-between items-center">
         <div>
           <h1 className="font-['Playfair_Display'] text-3xl font-bold italic tracking-tight">
             Suit Masters
@@ -112,9 +112,9 @@ export function LifestyleLayout({
             </span>
           </button>
         </div>
-      </header>
+      </header> */}
 
-      <div className="flex h-[calc(100vh-80px)]">
+      <div className="flex">
         {/* Lifestyle Hero Area - Left Side */}
         <div className="w-2/5 relative overflow-hidden">
           <div
@@ -124,10 +124,9 @@ export function LifestyleLayout({
               filter: "blur(2px) brightness(0.7)",
             }}
           />
+          {/* <div className="absolute inset-0 bg-linear-to-r from-black/80 via-black/50 to-transparent" /> */}
 
-          <div className="absolute inset-0 bg-linear-to-r from-black/80 via-black/50 to-transparent" />
-
-          <div className="relative h-full p-12 flex flex-col justify-between">
+          <div className="relative h-full p-12 flex justify-between">
             {/* Editorial Content */}
             <div className="max-w-md">
               <div className="inline-flex items-center gap-2 bg-[#c9a96e]/10 border border-[#c9a96e]/20 px-4 py-2 rounded-full mb-6">

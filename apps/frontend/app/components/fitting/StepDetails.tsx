@@ -50,8 +50,8 @@ export function StepDetails({
             {liningGroup.options.map((l: any) => (
               <button
                 key={l.id}
-                onClick={() => onChange({ lapel: l.value })}
-                className={`p-5 text-center border transition-all ${data.lapel === l.value ? "border-[#c9a96e] bg-[#c9a96e]/8" : "border-[#2e2e2e]"}`}
+                onClick={() => onChange({ lining: l.value })}
+                className={`p-5 text-center border transition-all ${data.lining === l.value ? "border-[#c9a96e] bg-[#c9a96e]/8" : "border-[#2e2e2e]"}`}
               >
                 {/* Fallback to your beautiful SVGs based on value name */}
                 <div className="font-serif text-[#f5f0eb] text-sm font-medium">
@@ -75,8 +75,8 @@ export function StepDetails({
             {buttonGroup.options.map((l: any) => (
               <button
                 key={l.id}
-                onClick={() => onChange({ lapel: l.value })}
-                className={`p-5 text-center border transition-all ${data.lapel === l.value ? "border-[#c9a96e] bg-[#c9a96e]/8" : "border-[#2e2e2e]"}`}
+                onClick={() => onChange({ buttons: l.value })}
+                className={`p-5 text-center border transition-all ${data.buttons === l.value ? "border-[#c9a96e] bg-[#c9a96e]/8" : "border-[#2e2e2e]"}`}
               >
                 {/* Fallback to your beautiful SVGs based on value name */}
                 <div className="font-serif text-[#f5f0eb] text-sm font-medium">

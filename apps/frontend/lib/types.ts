@@ -98,7 +98,7 @@ export interface StepProps {
   onChange: (updates: Partial<FittingData>) => void;
   basePrice?: number;
   totalPrice?: number;
-  product?: any;
+  product: any;
 }
 
 export interface ConfigureProps {
