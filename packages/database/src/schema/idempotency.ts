@@ -1,7 +1,7 @@
 import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
 
 export const idempotencyKeys = pgTable("idempotency_keys", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   key: text("key").notNull().unique(),
   userId: integer("user_id").notNull(),
   orderId: integer("order_id"),

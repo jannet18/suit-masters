@@ -12,7 +12,7 @@ import { product, productConfiguration, productItem } from "./products.js";
 
 // Shopping Cart
 export const shoppingCart = pgTable("shopping_cart", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: uuid("user_id")
     .notNull()
     .references(() => usersTable.id),
@@ -22,7 +22,7 @@ export const shoppingCart = pgTable("shopping_cart", {
 
 // Shopping Cart Item
 export const shoppingCartItem = pgTable("shopping_cart_item", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   cartId: integer("cart_id")
     .notNull()
     .references(() => shoppingCart.id),
@@ -42,7 +42,7 @@ export const shoppingCartItem = pgTable("shopping_cart_item", {
 
 // Cart Item (simplified version for new schema)
 export const cartItem = pgTable("cart_item", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: uuid("user_id")
     .references(() => usersTable.id)
     .notNull(),

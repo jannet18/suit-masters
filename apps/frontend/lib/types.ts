@@ -66,6 +66,7 @@ export interface Collection {
   tag?: string;
   span?: string;
   slug: string;
+  collections: [];
 }
 
 export type Unit = "cm" | "in";

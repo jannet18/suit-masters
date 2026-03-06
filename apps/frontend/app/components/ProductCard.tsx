@@ -13,11 +13,14 @@ interface ProductCardProps {
     base_price: number;
     product_image: string | { default: string };
     product_type?: "STANDARD" | "CUSTOM";
+    tag?: string;
+    colors?: string;
+    hoverImage?: string;
   };
-  index?: number;
+  id?: number;
 }
 
-export function ProductCard({ product, index }: ProductCardProps) {
+export function ProductCard({ product, id }: ProductCardProps) {
   // Handle both string and object formats for product_image
   const imageUrl =
     typeof product.product_image === "string"
@@ -61,18 +64,18 @@ export function ProductCard({ product, index }: ProductCardProps) {
   );
 
   return (
-    <div className="group relative overflow-hidden">
+    <div className="group relative overflow-hidden rounded-md w-full">
       {/* Product Image */}
       <div className="aspect-3/4 overflow-hidden bg-[#151515]">
         <img
           src={imageUrl}
           alt={productName}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 rounded-md"
         />
       </div>
 
       {/* Dynamic Overlay */}
-      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded-md">
         {productType === "CUSTOM" ? (
           <Link
             href={`/products/${slug}/configure`}
@@ -84,7 +87,7 @@ export function ProductCard({ product, index }: ProductCardProps) {
           <button
             onClick={handleAddToCart}
             disabled={isInCart || isAdded}
-            className={`flex items-center gap-2 px-6 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors ${
+            className={`flex items-center gap-2 px-6 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors hover:bg-[#c9a96e] ${
               isInCart || isAdded
                 ? "bg-green-600 text-white"
                 : "bg-[#c9a96e] text-black hover:bg-white"

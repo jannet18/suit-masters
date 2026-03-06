@@ -11,7 +11,7 @@ import {
 import { usersTable } from "./user.js";
 
 export const shopOrder = pgTable("shop_order", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: uuid("user_id").references(() => usersTable.id),
   total: numeric("total", { precision: 12, scale: 2 }).notNull(),
   // orderedItems: integer("ordered_items").notNull(),
@@ -36,7 +36,7 @@ export const shopOrder = pgTable("shop_order", {
 });
 
 export const orderItems = pgTable("order_items", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   orderId: integer("order_id")
     .references(() => shopOrder.id)
     .notNull(),
@@ -53,7 +53,7 @@ export const orderItems = pgTable("order_items", {
 });
 
 export const orderMeasurements = pgTable("order_measurements", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   orderItemId: integer("order_item_id")
     .references(() => orderItems.id)
     .notNull(),

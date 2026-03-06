@@ -1,5 +1,14 @@
 import { relations } from "drizzle-orm";
-import { boolean, numeric, pgTable, uuid, varchar } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  numeric,
+  pgTable,
+  uuid,
+  varchar,
+  text,
+  serial,
+  integer,
+} from "drizzle-orm/pg-core";
 import { timestamps } from "./shared.js";
 
 // IDENTITY & MEASUREMENTS
@@ -31,6 +40,17 @@ export const userMeasurements = pgTable("user_measurements", {
 
   isDefault: boolean("is_default").default(false),
 
+  ...timestamps,
+});
+
+// Measurement definitions for video guides (Indochino-style)
+export const measurementDefinitions = pgTable("measurement_definitions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  bodyPart: varchar("body_part", { length: 64 }).notNull().unique(),
+  displayName: varchar("display_name", { length: 128 }).notNull(),
+  description: text("description"),
+  videoUrl: text("video_url"),
+  displayOrder: integer("display_order").default(0),
   ...timestamps,
 });
 export const siteUserRelations = relations(usersTable, ({ many }) => ({

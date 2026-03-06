@@ -9,12 +9,12 @@ import { relations } from "drizzle-orm";
 import { timestamps } from "./shared.js";
 
 export const paymentsTypeTable = pgTable("payments_type", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("value", { length: 64 }).notNull(),
 });
 
 export const paymentMethodTable = pgTable("payment_method", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   payment_type_id: integer("payment_type_id")
     .notNull()
     .references(() => paymentsTypeTable.id),

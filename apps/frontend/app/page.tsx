@@ -9,35 +9,36 @@ import { USPStrip } from "./components/USPStrip";
 import { CollectionGrid } from "./components/CollectionGrid";
 import { api } from "@/lib/api/api-client";
 import { BespokeConfigurator } from "./products/[slug]/configure/Configurator";
+import { Collection } from "@/lib/types";
 
-interface Collection {
-  id: number;
-  title: string;
-  subtitle: string;
-  description: string;
-  image: string;
-  tag?: string;
-  span?: string;
-  slug: string;
-}
+// interface Collection {
+//   id: number;
+//   title: string;
+//   subtitle: string;
+//   description: string;
+//   image: string;
+//   tag?: string;
+//   span?: string;
+//   slug: string;
+// }
 
-export default function Home() {
+export default function Home({ collections }: Collection) {
   const [fittingOpen, setFittingOpen] = useState(false);
-  const [collections, setCollections] = useState<Collection[]>([]);
+  // const [collections, setCollections] = useState<Collection[]>([]);
 
-  useEffect(() => {
-    async function fetchCollections() {
-      const data = await api.getCollections();
-      if (data.success) setCollections(data.collections);
-    }
-    fetchCollections();
-  }, []);
+  // useEffect(() => {
+  //   async function fetchCollections() {
+  //     const data = await api.getCollections();
+  //     if (data.success) setCollections(data?.collections);
+  //   }
+  //   fetchCollections();
+  // }, []);
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
-      <main>
+      <main className="relative">
         <HeroSection onOpenFitting={() => setFittingOpen(true)} />
+        <CollectionGrid currentSlug="" />
         <USPStrip />
-        <CollectionGrid collections={collections} />
         <ProductGrid />
         <EditorialBanner onOpenFitting={() => setFittingOpen(true)} />
         <Testimonials />

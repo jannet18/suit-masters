@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api/api-client";
 import { useCartStore } from "@/app/stores/useCartStore";
 import { ConfigureProps, FittingData, StepProps } from "@/lib/types";
+import { LifestyleLayout } from "@/app/components/lifestyle/LifestyleLayout";
 
 const initialFittingData: FittingData = {
   style: "",
@@ -130,29 +131,16 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
   const currentGroup = product?.customizationGroups[currentStep];
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] flex flex-col text-[#f5f0eb]">
-      {/* Header with Progress */}
-      <header className="p-6 border-b border-white/10 flex justify-between items-center">
-        <div>
-          <h1 className="font-serif text-2xl font-bold italic">Suit Masters</h1>
-          <p className="text-[10px] uppercase tracking-widest text-[#c9a96e]">
-            {product?.name} / Step {currentStep + 1}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {Array.from({ length: totalSteps }).map((_, i) => (
-            <div
-              key={i}
-              className={`h-1 w-6 rounded-full transition-colors ${i <= currentStep ? "bg-[#c9a96e]" : "bg-white/10"}`}
-            />
-          ))}
-        </div>
-        <button onClick={() => router.back()}>
-          <XIcon size={20} />
-        </button>
-      </header>
-
-      <div className="flex-1 flex overflow-hidden">
+    <LifestyleLayout
+      productName={product?.name || "Custom Suit"}
+      currentStep={currentStep}
+      totalSteps={totalSteps}
+      selections={selections}
+      onSelectionChange={setSelections}
+      onClose={() => router.back()}
+    >
+      {/* Configuration Content - Right Side */}
+      <div className="h-full flex">
         {/* Visualizer Panel */}
         <div className="w-1/2 bg-[#151515] flex items-center justify-center p-12 relative">
           <AnimatePresence mode="wait">
@@ -162,7 +150,7 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
                 typeof product?.product_image === "string"
                   ? product?.product_image
                   : product?.product_image?.default || ""
-              } // In real world, swap with selection image
+              }
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="max-h-full object-contain"
@@ -170,9 +158,11 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
           </AnimatePresence>
           <div className="absolute bottom-10 left-10">
             <p className="text-[#c9a96e] text-xs uppercase tracking-widest mb-1">
-              Current Price
+              Current Investment
             </p>
-            <p className="text-3xl font-serif">£{totalPrice.toFixed(2)}</p>
+            <p className="text-3xl font-['Playfair_Display'] font-bold">
+              £{totalPrice.toFixed(2)}
+            </p>
           </div>
         </div>
 
@@ -182,7 +172,7 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
             {!isMeasurementStep ? (
               <>
                 <h2 className="text-xs uppercase tracking-[0.4em] text-[#c9a96e] mb-6">
-                  Select {currentGroup?.name}
+                  Refine Your {currentGroup?.name}
                 </h2>
                 <div className="grid gap-4">
                   {currentGroup &&
@@ -195,7 +185,7 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
                             [currentGroup.id]: option,
                           })
                         }
-                        className={`p-6 border text-left flex justify-between items-center transition-all ${selections[currentGroup.id]?.id === option.id ? "border-[#c9a96e] bg-[#c9a96e]/5" : "border-white/10"}`}
+                        className={`p-6 border text-left flex justify-between items-center transition-all ${selections[currentGroup.id]?.id === option.id ? "border-[#c9a96e] bg-[#c9a96e]/5" : "border-white/10 hover:border-white/30"}`}
                       >
                         <div>
                           <span className="font-medium">{option.value}</span>
@@ -217,7 +207,7 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
             ) : (
               <div className="space-y-8">
                 <h2 className="text-xs uppercase tracking-[0.4em] text-[#c9a96e]">
-                  Measurements (cm)
+                  Your Perfect Fit
                 </h2>
                 {Object.keys(measurements).map((key) => (
                   <div key={key} className="border-b border-white/10 pb-2">
@@ -242,9 +232,9 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
             <button
               disabled={currentStep === 0}
               onClick={() => setCurrentStep((s) => s - 1)}
-              className="flex items-center gap-2 text-xs uppercase tracking-widest disabled:opacity-30"
+              className="flex items-center gap-2 text-xs uppercase tracking-widest disabled:opacity-30 hover:text-[#c9a96e] transition-colors"
             >
-              <ArrowLeftIcon size={14} /> Back
+              <ArrowLeftIcon size={14} /> Previous
             </button>
             <button
               onClick={
@@ -254,12 +244,12 @@ export function BespokeConfigurator({ slug, isOpen, onClose }: ConfigureProps) {
               }
               className="bg-[#c9a96e] text-black px-12 py-4 text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-[#b8985d] transition-colors"
             >
-              {isMeasurementStep ? "Add to Wardrobe" : "Next Detail"}{" "}
+              {isMeasurementStep ? "Complete Your Order" : "Continue"}{" "}
               <ArrowRightIcon size={14} />
             </button>
           </footer>
         </div>
       </div>
-    </div>
+    </LifestyleLayout>
   );
 }

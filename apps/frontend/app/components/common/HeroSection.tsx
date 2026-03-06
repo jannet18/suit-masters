@@ -4,6 +4,8 @@ import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 interface HeroSectionProps {
   onOpenFitting?: () => void;
 }
@@ -15,6 +17,7 @@ export function HeroSection({ onOpenFitting }: HeroSectionProps) {
   });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "25%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  const router = useRouter();
   return (
     <section
       ref={ref}
@@ -134,12 +137,12 @@ export function HeroSection({ onOpenFitting }: HeroSectionProps) {
                   className="group-hover:translate-x-1 transition-transform duration-200"
                 />
               </Link>
-              <button
-                onClick={onOpenFitting}
+              <Link
+                href="/configure"
                 className="inline-flex items-center gap-3 border border-[#f5f0eb]/30 text-[#f5f0eb] px-8 py-4 text-xs tracking-[0.2em] uppercase font-semibold hover:border-[#c9a96e] hover:text-[#c9a96e] transition-all duration-300"
               >
                 Book a Fitting
-              </button>
+              </Link>
             </motion.div>
           </div>
         </div>

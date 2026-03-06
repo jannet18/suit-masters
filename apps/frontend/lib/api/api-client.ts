@@ -1,10 +1,22 @@
-import { URLSearchParams } from "url";
-
+// import { URLSearchParams } from "url";
+// const BASE_URL =
+//   process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || "http://localhost:3001/api";
+// const SERVICES = {
+//   cart: process.env.NEXT_PUBLIC_CART_SERVICE_URL || "http://localhost:3001/api",
+//   product: BASE_URL,
+//   order:
+//     process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:3001/api",
+//   payment:
+//     process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL || "http://localhost:3001/api",
+// };
 const SERVICES = {
-  cart: process.env.NEXT_PUBLIC_CART_SERVICE_URL,
-  product: process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL,
-  order: process.env.NEXT_PUBLIC_ORDER_SERVICE_URL,
-  payment: process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL,
+  cart: process.env.NEXT_PUBLIC_CART_SERVICE_URL || "http://localhost:3001/api",
+  product:
+    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || "http://localhost:3001/api",
+  order:
+    process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:3001/api",
+  payment:
+    process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL || "http://localhost:3001/api",
 };
 
 export const api = {
@@ -32,8 +44,16 @@ export const api = {
       const filteredParams = Object.fromEntries(
         Object.entries(params || {}).filter(([_, v]) => v != null),
       );
-      const queryString = new URLSearchParams(filteredParams).toString();
-      const res = await fetch(`${SERVICES.product}/products?${queryString}`);
+      // Manually construct query string to avoid URLSearchParams issues
+      const queryParts = [];
+      for (const [key, value] of Object.entries(filteredParams)) {
+        queryParts.push(
+          `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`,
+        );
+      }
+      const queryString =
+        queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+      const res = await fetch(`${SERVICES.product}/products${queryString}`);
       return res.ok ? res.json() : { success: false, products: [] };
     } catch (error) {
       console.log("Error fetching products: ", error);
@@ -53,6 +73,39 @@ export const api = {
     } catch (error) {
       console.log("Error fetching product: ", error);
       return { success: false, product: null };
+    }
+  },
+
+  // --- Categories ---
+  getCategories: async () => {
+    try {
+      const res = await fetch(`${SERVICES.product}/categories`);
+      if (res.ok) {
+        return res.json();
+      } else {
+        console.log("Failed to fetch categories: ", res.statusText);
+        return { success: false, categories: [] };
+      }
+    } catch (error) {
+      console.log("Error fetching categories: ", error);
+      return { success: false, categories: [] };
+    }
+  },
+
+  getProductsByCategory: async (slug: string) => {
+    try {
+      const res = await fetch(
+        `${SERVICES.product}/categories/${slug}/products`,
+      );
+      if (res.ok) {
+        return res.json();
+      } else {
+        console.log("Failed to fetch products by category: ", res.statusText);
+        return { success: false, category: null, products: [] };
+      }
+    } catch (error) {
+      console.log("Error fetching products by category: ", error);
+      return { success: false, category: null, products: [] };
     }
   },
 
@@ -161,6 +214,26 @@ export const api = {
     } catch (error) {
       console.log("Error creating bespoke order: ", error);
       return { success: false, order: null };
+    }
+  },
+
+  // --- Measurement Definitions ---
+  getMeasurementDefinitions: async () => {
+    try {
+      const res = await fetch(`${SERVICES.product}/measurements/definitions`);
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      } else {
+        console.log(
+          "Failed to fetch measurement definitions: ",
+          res.statusText,
+        );
+        return { success: false, definitions: [] };
+      }
+    } catch (error) {
+      console.log("Error fetching measurement definitions: ", error);
+      return { success: false, definitions: [] };
     }
   },
 };

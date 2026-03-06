@@ -14,7 +14,7 @@ export const productTypeEnum = pgEnum("product_type", ["STANDARD", "CUSTOM"]);
 
 // Product Category
 export const productCategory = pgTable("product_category", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 128 }).notNull(),
   slug: varchar("slug", { length: 128 }).unique().notNull(),
   parentId: integer("parent_id"), // Self-reference for sub-categories
@@ -22,7 +22,7 @@ export const productCategory = pgTable("product_category", {
 
 // Fabric
 export const fabric = pgTable("fabric", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 128 }).notNull(),
   sku: varchar("sku", { length: 64 }).unique().notNull(),
   composition: varchar("composition", { length: 255 }),
@@ -34,7 +34,7 @@ export const fabric = pgTable("fabric", {
 
 // Product
 export const product = pgTable("product", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   categoryId: integer("category_id")
     .references(() => productCategory.id)
     .notNull(),
@@ -53,7 +53,7 @@ export const product = pgTable("product", {
 
 // Customization Group
 export const customizationGroup = pgTable("customization_group", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   categoryId: integer("category_id")
     .references(() => productCategory.id)
     .notNull(),
@@ -64,7 +64,7 @@ export const customizationGroup = pgTable("customization_group", {
 
 // Customization Option
 export const customizationOption = pgTable("customization_option", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   groupId: integer("group_id")
     .references(() => customizationGroup.id)
     .notNull(),
@@ -79,7 +79,7 @@ export const customizationOption = pgTable("customization_option", {
 
 // Product Configuration (for custom products)
 export const productConfiguration = pgTable("product_configuration", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   productId: integer("product_id")
     .references(() => product.id)
     .notNull(),
@@ -91,7 +91,7 @@ export const productConfiguration = pgTable("product_configuration", {
 
 // For backward compatibility with existing code
 export const productItem = pgTable("product_item", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   productId: integer("product_id")
     .references(() => product.id)
     .notNull(),
