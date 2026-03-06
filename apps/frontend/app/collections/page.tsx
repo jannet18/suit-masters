@@ -20,18 +20,18 @@ interface CollectionProps {
   id?: number;
 }
 
-export function Page({ product, id }: CollectionProps) {
+export default function Page({ product, id }: CollectionProps) {
   // Handle both string and object formats for product_image
   const imageUrl =
-    typeof product.product_image === "string"
-      ? product.product_image
-      : product.product_image?.default ||
+    typeof product?.product_image === "string"
+      ? product?.product_image
+      : product?.product_image?.default ||
         "https://images.unsplash.com/photo-1594938298603-c8148c4b4f5a?w=600&q=80&fit=crop";
 
-  const productName = product.name || "Bespoke Suit";
-  const price = product.base_price || 0;
-  const slug = product.slug || "";
-  const productType = product.product_type || "CUSTOM";
+  const productName = product?.name || "Bespoke Suit";
+  const price = product?.base_price || 0;
+  const slug = product?.slug || "";
+  const productType = product?.product_type || "CUSTOM";
 
   const { addToCart, cart } = useCartStore();
   const [isAdded, setIsAdded] = useState(false);
@@ -60,7 +60,7 @@ export function Page({ product, id }: CollectionProps) {
   };
 
   const isInCart = cart.some(
-    (item) => item.id === product.id && item.product_type === "STANDARD",
+    (item) => item.id === product?.id && item?.product_type === "STANDARD",
   );
 
   return (
