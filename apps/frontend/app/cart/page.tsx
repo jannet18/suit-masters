@@ -10,7 +10,7 @@ export default function CartPage() {
 
   if (cart.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto p-6 text-center">
+      <div className="max-w-4xl mx-auto p-6 flex items-center justify-center">
         <h1 className="text-2xl font-semibold mb-4">Your cart is empty</h1>
         <p className="text-gray-500">Add some products to get started.</p>
       </div>
@@ -18,7 +18,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-center justify-items-center">
       {/* CART ITEMS */}
       <div className="col-span-1 space-y-6">
         {cart.map((item, idx) => (

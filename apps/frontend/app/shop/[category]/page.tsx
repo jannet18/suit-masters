@@ -19,7 +19,7 @@ export default async function CategoryPage({
   const products = data.success ? data.products : [];
 
   return (
-    <div className="p-10 bg-[#0f0f0f] min-h-screen">
+    <div className="p-10 bg-[#0f0f0f] min-h-screen flex items-center justify-center">
       {query && (
         <h2 className="mb-6 text-xl text-[#f5f0eb]">
           Results for <span className="font-bold text-[#c9a96e]">{query}</span>

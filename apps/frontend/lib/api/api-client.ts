@@ -12,7 +12,7 @@
 const SERVICES = {
   cart: process.env.NEXT_PUBLIC_CART_SERVICE_URL || "http://localhost:3001/api",
   product:
-    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || "http://localhost:3001/api",
+    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || "http://localhost:4000",
   order:
     process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:3001/api",
   payment:
@@ -214,6 +214,29 @@ export const api = {
     } catch (error) {
       console.log("Error creating bespoke order: ", error);
       return { success: false, order: null };
+    }
+  },
+
+  // --- Search Suggestions ---
+  getSearchSuggestions: async (query: string, limit: number = 5) => {
+    try {
+      if (!query || query.trim().length < 2) {
+        return { success: true, suggestions: [] };
+      }
+
+      const res = await fetch(
+        `${SERVICES.product}/products/suggestions?q=${encodeURIComponent(query)}&limit=${limit}`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      } else {
+        console.log("Failed to fetch search suggestions: ", res.statusText);
+        return { success: false, suggestions: [] };
+      }
+    } catch (error) {
+      console.log("Error fetching search suggestions: ", error);
+      return { success: false, suggestions: [] };
     }
   },
 

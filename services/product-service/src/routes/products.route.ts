@@ -63,6 +63,78 @@ export const productsHandler = new Hono()
       return c.json({ success: false, products: [] }, 500);
     }
   })
+  // Search suggestions for autocomplete
+  .get("/suggestions", async (c) => {
+    const searchQuery = c.req.query("q");
+    const limit = parseInt(c.req.query("limit") || "5");
+
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      return c.json({
+        success: true,
+        suggestions: [],
+        message: "Query too short",
+      });
+    }
+
+    try {
+      // Search across multiple fields for better suggestions
+      const products = await db.query.product.findMany({
+        where: (p, { or, ilike }) => {
+          return or(
+            ilike(p.name, `%${searchQuery}%`),
+            ilike(p.description, `%${searchQuery}%`),
+            ilike(p.slug, `%${searchQuery}%`),
+          );
+        },
+        limit: Math.min(limit, 10), // Max 10 suggestions
+        orderBy: (p, { desc }) => [desc(p.id)], // Most recent first
+      });
+
+      // Format suggestions for autocomplete
+      const suggestions = products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        price: Number(p.basePrice),
+        image: p.mainImage || p.productImage || "",
+        type: "product" as const,
+      }));
+
+      // Also get category suggestions
+      const categories = await db.query.productCategory.findMany({
+        where: (cat, { or, ilike }) => {
+          return or(
+            ilike(cat.name, `%${searchQuery}%`),
+            ilike(cat.slug, `%${searchQuery}%`),
+          );
+        },
+        limit: Math.min(3, limit), // Max 3 category suggestions
+      });
+
+      const categorySuggestions = categories.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        type: "category" as const,
+      }));
+
+      return c.json({
+        success: true,
+        suggestions: [...suggestions, ...categorySuggestions],
+        query: searchQuery,
+      });
+    } catch (error) {
+      console.error("Error fetching search suggestions", error);
+      return c.json(
+        {
+          success: false,
+          suggestions: [],
+          error: "Failed to fetch suggestions",
+        },
+        500,
+      );
+    }
+  })
   .get("/:slug", async (c) => {
     const slug = c.req.param("slug");
 

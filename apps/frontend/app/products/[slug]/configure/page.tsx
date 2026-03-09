@@ -1,6 +1,5 @@
 import { BespokeConfigurator } from "../../../components/Configurator";
 import { api } from "@/lib/api/api-client";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -22,18 +21,3 @@ export default async function ConfigureProductPage({ params }: PageProps) {
     </div>
   );
 }
-
-// export default async function ConfigureProductPage({ params }: PageProps) {
-//   const { slug } = await params;
-
-//   // Fetch product data to pass to configurator
-//   const res = await api.getProductBySlug(slug);
-
-//   if (!res || !res.success || !res.product) {
-//     return (
-//       <div>
-//         <BespokeConfigurator slug={res?.product} />;
-//       </div>
-//     );
-//   }
-// }

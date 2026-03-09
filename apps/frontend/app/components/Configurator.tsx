@@ -795,9 +795,9 @@ export function BespokeConfigurator({ slug }: ConfigureProps) {
       quantity: 1,
       product_type: "CUSTOM" as const,
       image_url:
-        typeof product.product_image === "string"
-          ? product.product_image
-          : product.product_image?.default || "",
+        typeof product?.product_image === "string"
+          ? product?.product_image
+          : product?.product_image?.default || "",
       selected_options: selectedOptions,
       configuration: {
         selections: selectedOptions,
@@ -852,7 +852,7 @@ export function BespokeConfigurator({ slug }: ConfigureProps) {
   if (loading)
     return (
       <div className="h-screen bg-[#0f0f0f] flex items-center justify-center text-[#c9a96e]">
-        LOADING ATELIER...
+        LOADING...
       </div>
     );
 
@@ -907,10 +907,10 @@ export function BespokeConfigurator({ slug }: ConfigureProps) {
           </AnimatePresence>
           <div className="absolute bottom-16 left-16">
             <span className="text-[#c9a96e] text-[10px] tracking-[0.5em] uppercase">
-              Commission Investment
+              Total Cost
             </span>
             <h2 className="text-4xl font-serif mt-2">
-              £{totalPrice.toFixed(2)}
+              £ {totalPrice.toFixed(2)}
             </h2>
           </div>
         </section>

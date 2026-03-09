@@ -41,10 +41,7 @@ export function Navbar({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleNavigateToConfigure = ({
-    user,
-    activeProductSlug,
-  }: NavbarProps) => {
+  const handleNavigateToConfigure = ({ activeProductSlug }: NavbarProps) => {
     setMenuOpen(false);
     if (activeProductSlug) {
       router.push(`/products/${activeProductSlug}/configure`);
@@ -87,19 +84,19 @@ export function Navbar({
             {/* Left Nav */}
             <nav className="hidden lg:flex items-center gap-8">
               <a
-                href="/collection/suits"
+                href="/categories/suits"
                 className="gold-underline text-[#9a9490] hover:text-[#f5f0eb] text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200"
               >
                 Suits
               </a>
               <a
-                href="/collection/blazers"
+                href="/categries/blazers"
                 className="gold-underline text-[#9a9490] hover:text-[#f5f0eb] text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200"
               >
                 Blazers
               </a>
               <a
-                href="/collection/shirts"
+                href="/categories/shirts"
                 className="gold-underline text-[#9a9490] hover:text-[#f5f0eb] text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200"
               >
                 Shirts
@@ -211,9 +208,7 @@ export function Navbar({
                 transition={{
                   delay: 6 * 0.07,
                 }}
-                onClick={(e) =>
-                  handleNavigateToConfigure({ user, activeProductSlug })
-                }
+                onClick={() => router.push("/lifestyle")}
                 className="font-serif text-3xl text-[#c9a96e] hover:text-[#dfc08a] transition-colors duration-200 border-b border-[#2e2e2e] pb-4 text-left flex items-center gap-3"
               >
                 <ScissorsIcon size={24} />
