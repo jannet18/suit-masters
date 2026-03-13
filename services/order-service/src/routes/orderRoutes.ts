@@ -318,6 +318,10 @@ import {
   idempotencyKeys, // Ensure this matches your schema export
 } from "@repo/db";
 import { eq, and, desc } from "@repo/db";
+import {
+  emailService,
+  type OrderConfirmationData,
+} from "../services/emailService.js";
 
 export const orderRoutes = new Hono<AuthContext>();
 
@@ -373,13 +377,13 @@ orderRoutes.post("/", async (c) => {
       return c.json({ error: "Cart is empty" }, 400);
     }
 
+    // Calculate total before transaction for email
+    const totalAmount = userCartItems.reduce((acc, item) => {
+      return acc + Number(item.finalPrice) * item.qty;
+    }, 0);
+
     // 3. Transactional Checkout
     const createdOrder = await db.transaction(async (tx) => {
-      // Calculate total
-      const totalAmount = userCartItems.reduce((acc, item) => {
-        return acc + Number(item.finalPrice) * item.qty;
-      }, 0);
-
       // Create the Shop Order
       const [newOrder] = await tx
         .insert(shopOrder)
@@ -426,6 +430,58 @@ orderRoutes.post("/", async (c) => {
 
       return newOrder;
     });
+
+    // Send order confirmation email (fire and forget - don't block response)
+    try {
+      const emailData: OrderConfirmationData = {
+        orderId: createdOrder.id,
+        customerName: shipping.name,
+        customerEmail: shipping.email,
+        orderDate: new Date().toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        totalAmount: `$${totalAmount.toFixed(2)}`,
+        items: userCartItems.map((item) => ({
+          name: "Custom Suit",
+          quantity: item.qty,
+          price: `$${Number(item.finalPrice).toFixed(2)}`,
+          customization: item.selectedOptions
+            ? JSON.stringify(item.selectedOptions)
+            : undefined,
+        })),
+        shippingAddress: {
+          name: shipping.name,
+          addressLine1: shipping.addressLine1,
+          addressLine2: shipping.addressLine2,
+          city: shipping.city,
+          region: shipping.region,
+          postalCode: shipping.postalCode,
+          country: shipping.country,
+        },
+        estimatedDeliveryDate: new Date(
+          Date.now() + 14 * 24 * 60 * 60 * 1000,
+        ).toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        tailorNotes:
+          "Your custom suit measurements have been received. Our master tailors will begin crafting your suit within 24 hours.",
+      };
+
+      // Send email asynchronously (don't await - fire and forget)
+      emailService.sendOrderConfirmation(emailData).catch((err) => {
+        console.error("Failed to send order confirmation email:", err);
+        // Don't fail the order if email fails
+      });
+    } catch (emailError) {
+      console.error("Error preparing email data:", emailError);
+      // Don't fail the order if email preparation fails
+    }
 
     return c.json({ orderId: createdOrder.id, reused: false }, 201);
   } catch (error) {

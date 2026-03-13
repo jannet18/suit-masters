@@ -7,32 +7,10 @@ import { Testimonials } from "./components/common/Testimonials";
 import { ProductGrid } from "./components/ProductGrid";
 import { USPStrip } from "./components/USPStrip";
 import { CollectionGrid } from "./components/CollectionGrid";
-import { api } from "@/lib/api/api-client";
-import { BespokeConfigurator } from "./components/Configurator";
-import { Collection } from "@/lib/types";
 
-// interface Collection {
-//   id: number;
-//   title: string;
-//   subtitle: string;
-//   description: string;
-//   image: string;
-//   tag?: string;
-//   span?: string;
-//   slug: string;
-// }
-
-export default function Home({ collections }: Collection) {
+export default function Home() {
   const [fittingOpen, setFittingOpen] = useState(false);
-  // const [collections, setCollections] = useState<Collection[]>([]);
 
-  // useEffect(() => {
-  //   async function fetchCollections() {
-  //     const data = await api.getCollections();
-  //     if (data.success) setCollections(data?.collections);
-  //   }
-  //   fetchCollections();
-  // }, []);
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
       <main className="relative">
@@ -44,10 +22,6 @@ export default function Home({ collections }: Collection) {
         <Testimonials />
         <Newsletter />
       </main>
-      {/* <BespokeConfigurator
-        isOpen={fittingOpen}
-        onClose={() => setFittingOpen(false)}
-      /> */}
     </div>
   );
 }
