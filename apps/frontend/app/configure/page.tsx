@@ -1,7 +1,19 @@
 import { redirect } from "next/navigation";
 import { api } from "@/lib/api/api-client";
 
-export default async function ConfigurePage() {
+interface PageProps {
+  searchParams?: { slug?: string };
+}
+
+export default async function ConfigurePage({ searchParams }: PageProps) {
+  const slug = searchParams?.slug;
+
+  // If a slug is provided, redirect directly to that product's configure page
+  if (slug) {
+    redirect(`/products/${slug}/configure`);
+  }
+
+  // Otherwise, fall back to the original behavior (first product)
   try {
     // Fetch available products
     const result = await api.getProducts();
