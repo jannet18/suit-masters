@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState, Suspense } from "react";
 import { EditorialBanner } from "./components/common/EditorialBanner";
 import { HeroSection } from "./components/common/HeroSection";
 import { Newsletter } from "./components/common/Newsletter";
@@ -17,7 +17,13 @@ export default function Home() {
         <HeroSection onOpenFitting={() => setFittingOpen(true)} />
         <CollectionGrid currentSlug="" />
         <USPStrip />
-        <ProductGrid />
+        <Suspense
+          fallback={
+            <div className="py-24 bg-[#1a1a1a]">Loading products...</div>
+          }
+        >
+          <ProductGrid />
+        </Suspense>
         <EditorialBanner onOpenFitting={() => setFittingOpen(true)} />
         <Testimonials />
         <Newsletter />

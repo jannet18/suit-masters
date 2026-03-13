@@ -3,6 +3,8 @@
 import { useRef } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { ArrowRightIcon } from "lucide-react";
+import Link from "next/link"
+
 interface EditorialBannerProps {
   onOpenFitting?: () => void;
 }
@@ -125,8 +127,9 @@ export function EditorialBanner({ onOpenFitting }: EditorialBannerProps) {
               </div>
             </div>
 
-            <button
-              onClick={onOpenFitting}
+            <Link
+              // onClick={onOpenFitting}
+              href="/lifestyle"
               className="group inline-flex items-center gap-3 bg-[#c9a96e] text-[#0f0f0f] px-8 py-4 text-xs tracking-[0.25em] uppercase font-bold hover:bg-[#dfc08a] transition-colors duration-300 w-fit"
             >
               Start Your Fitting
@@ -134,7 +137,7 @@ export function EditorialBanner({ onOpenFitting }: EditorialBannerProps) {
                 size={14}
                 className="group-hover:translate-x-0.5 transition-transform duration-200"
               />
-            </button>
+            </Link>
           </motion.div>
         </div>
       </div>

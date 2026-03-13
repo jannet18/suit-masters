@@ -80,7 +80,7 @@ export function Newsletter() {
               className="py-6"
             >
               <div className="text-[#c9a96e] font-serif text-2xl mb-2">
-                Welcome to Elevé.
+                Welcome to Suit Masters.
               </div>
               <p className="text-[#9a9490] text-sm">
                 Check your inbox for your exclusive welcome offer.

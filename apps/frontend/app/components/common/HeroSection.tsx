@@ -138,7 +138,7 @@ export function HeroSection({ onOpenFitting }: HeroSectionProps) {
                 />
               </Link>
               <Link
-                href="/configure"
+                href="/lifestyle"
                 className="inline-flex items-center gap-3 border border-[#f5f0eb]/30 text-[#f5f0eb] px-8 py-4 text-xs tracking-[0.2em] uppercase font-semibold hover:border-[#c9a96e] hover:text-[#c9a96e] transition-all duration-300"
               >
                 Book a Fitting

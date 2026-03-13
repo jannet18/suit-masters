@@ -10,7 +10,7 @@ interface SearchSuggestion {
   slug: string;
   price?: number;
   image?: string;
-  type: "product" | "category";
+  type: "product" | "category" | "collection";
 }
 
 const SearchBar = () => {
@@ -181,7 +181,7 @@ const SearchBar = () => {
           value={value}
           id="search"
           placeholder="Search suits, blazers, accessories..."
-          className="rounded-l-md focus-visible:ring-0 focus-visible:ring-transparent focus-visible:ring-offset-0 bg-transparent dark:bg-transparent border border-gray-300 dark:border-gray-700 focus:border-[#c9a96e] dark:focus:border-[#c9a96e] w-full pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c9a96e] dark:focus:ring-[#c9a96e] transition-colors"
+          className="rounded-md focus-visible:ring-0 focus-visible:ring-transparent focus-visible:ring-offset-0 bg-transparent dark:bg-transparent border border-gray-300 dark:border-gray-700 focus:border-[#c9a96e] dark:focus:border-[#c9a96e] w-full pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c9a96e] dark:focus:ring-[#c9a96e] transition-colors"
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={() => value.length >= 2 && setShowSuggestions(true)}
@@ -194,16 +194,16 @@ const SearchBar = () => {
             onClick={onClear}
             aria-label="Clear search"
           >
-            <X className="w-4 h-4" />
+            {!value ? <Search className="size-4" /> : <X className="w-4 h-4" />}
           </button>
         )}
-        <button
+        {/* <button
           type="submit"
           className="w-10 h-9.5 flex items-center justify-center border border-gray-300 dark:border-gray-700 border-l-0 rounded-r-md focus-visible:ring-0 focus-visible:ring-transparent focus-visible:ring-offset-0 bg-transparent p-0 ml-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           aria-label="Search"
         >
           <Search className="size-4" />
-        </button>
+        </button> */}
       </form>
 
       {/* Search Suggestions Dropdown */}

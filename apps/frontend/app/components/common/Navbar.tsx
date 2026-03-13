@@ -84,22 +84,44 @@ export function Navbar({
             {/* Left Nav */}
             <nav className="hidden lg:flex items-center gap-8">
               <a
-                href="/categories/suits"
-                className="gold-underline text-[#9a9490] hover:text-[#f5f0eb] text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200"
+                href="/?category=suits"
+                className={`gold-underline text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200 ${
+                  activeProductSlug === "suits" || slug === "suits"
+                    ? "text-[#c9a96e] border-b border-[#c9a96e]"
+                    : "text-[#9a9490] hover:text-[#f5f0eb]"
+                }`}
               >
                 Suits
               </a>
               <a
-                href="/categries/blazers"
-                className="gold-underline text-[#9a9490] hover:text-[#f5f0eb] text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200"
+                href="/?category=blazers"
+                className={`gold-underline text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200 ${
+                  activeProductSlug === "blazers" || slug === "blazers"
+                    ? "text-[#c9a96e] border-b border-[#c9a96e]"
+                    : "text-[#9a9490] hover:text-[#f5f0eb]"
+                }`}
               >
                 Blazers
               </a>
               <a
-                href="/categories/shirts"
-                className="gold-underline text-[#9a9490] hover:text-[#f5f0eb] text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200"
+                href="/?category=shirts"
+                className={`gold-underline text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200 ${
+                  activeProductSlug === "shirts" || slug === "shirts"
+                    ? "text-[#c9a96e] border-b border-[#c9a96e]"
+                    : "text-[#9a9490] hover:text-[#f5f0eb]"
+                }`}
               >
                 Shirts
+              </a>
+              <a
+                href="/?category=trousers"
+                className={`gold-underline text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200 ${
+                  activeProductSlug === "trousers" || slug === "trousers"
+                    ? "text-[#c9a96e] border-b border-[#c9a96e]"
+                    : "text-[#9a9490] hover:text-[#f5f0eb]"
+                }`}
+              >
+                Trousers
               </a>
               <button
                 onClick={(e) =>
@@ -189,7 +211,7 @@ export function Navbar({
               ].map((item, i) => (
                 <Link
                   key={item}
-                  href={`/collection/${item.toLocaleLowerCase()}`}
+                  href={`/?category=${item.toLocaleLowerCase()}`}
                   onClick={() => setMenuOpen(false)}
                   className="font-serif text-3xl text-[#f5f0eb] hover:text-[#c9a96e] transition-colors duration-200 border-b border-[#2e2e2e] pb-4"
                 >
