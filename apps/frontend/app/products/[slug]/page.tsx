@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { api } from "@/lib/api/api-client";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/app/stores/useCartStore";
 import { ShoppingBag, Check } from "lucide-react";
 
 interface ProductPageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export default function ProductPage({ params }: ProductPageProps) {
-  const { slug } = params;
+  const resolvedParams = use(params);
+  const slug = resolvedParams.slug;
   const router = useRouter();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -19,11 +20,12 @@ export default function ProductPage({ params }: ProductPageProps) {
   const { addToCart, cart } = useCartStore();
 
   useEffect(() => {
+    if (!slug) return;
     async function fetchData() {
       setLoading(true);
       try {
         console.log("Fetching product with slug:", slug);
-        const productResponse = await api.getProductBySlug(slug);
+        const productResponse = await api.getProductBySlug(slug.toLowerCase());
         console.log("Product API response:", productResponse);
 
         if (productResponse.success && productResponse.product) {

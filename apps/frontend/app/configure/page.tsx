@@ -1,41 +1,41 @@
-import { redirect } from "next/navigation";
-import { api } from "@/lib/api/api-client";
+// import { redirect } from "next/navigation";
+// import { api } from "@/lib/api/api-client";
 
-interface PageProps {
-  searchParams?: { slug?: string };
-}
+// interface PageProps {
+//   searchParams?: { slug?: string };
+// }
 
-export default async function ConfigurePage({ searchParams }: PageProps) {
-  const slug = searchParams?.slug;
+// export default async function ConfigurePage({ searchParams }: PageProps) {
+//   const slug = searchParams?.slug;
 
-  // If a slug is provided, redirect directly to that product's configure page
-  if (slug) {
-    redirect(`/products/${slug}/configure`);
-  }
+//   // If a slug is provided, redirect directly to that product's configure page
+//   if (slug) {
+//     redirect(`/products/${slug}/configure`);
+//   }
 
-  // Otherwise, fall back to the original behavior (first product)
-  try {
-    // Fetch available products
-    const result = await api.getProducts();
+//   // Otherwise, fall back to the original behavior (first product)
+//   try {
+//     // Fetch available products
+//     const result = await api.getProducts();
 
-    if (result.success && result.products && result.products.length > 0) {
-      // Find the first product that has a slug
-      const firstProduct = result.products[0];
-      if (firstProduct.slug) {
-        // Redirect to the first product's configure page
-        redirect(`/products/${firstProduct.slug}/configure`);
-      }
-    }
+//     if (result.success && result.products && result.products.length > 0) {
+//       // Find the first product that has a slug
+//       const firstProduct = result.products[0];
+//       if (firstProduct.slug) {
+//         // Redirect to the first product's configure page
+//         redirect(`/products/${firstProduct.slug}/configure`);
+//       }
+//     }
 
-    // If no products found or no slug, redirect to home page
-    // Alternatively, we could show an error page
-    redirect("/");
-  } catch (error) {
-    console.error("Error fetching products for configure page:", error);
-    // Fallback to home page on error
-    redirect("/");
-  }
+//     // If no products found or no slug, redirect to home page
+//     // Alternatively, we could show an error page
+//     redirect("/");
+//   } catch (error) {
+//     console.error("Error fetching products for configure page:", error);
+//     // Fallback to home page on error
+//     redirect("/");
+//   }
 
-  // This return statement won't be reached due to redirect
-  return null;
-}
+//   // This return statement won't be reached due to redirect
+//   return null;
+// }
