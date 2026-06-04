@@ -7,6 +7,7 @@ import { configHandler } from "./routes/config.route.js";
 import { collectionsHandler } from "./routes/collection.routes.js";
 import { measurementsHandler } from "./routes/measurements.routes.js";
 import { categoryRoutes } from "./routes/categories.routes.js";
+import { errorHandler, notFoundHandler } from "@repo/error-handling";
 
 type Bindings = {
   DATABASE_URL: string;
@@ -33,14 +34,21 @@ app.use("*", cors());
 app.route("/products", productsHandler);
 app.route("/categories", categoryRoutes);
 app.route("/collections", collectionsHandler);
+// Measurement definitions (video guides) are public
 app.route("/measurements", measurementsHandler);
 
 // --- 3. Protected Routes ---
 // Only logged-in users can save custom configurations or see private prices
 app.use("/config/*", getUser);
 app.route("/config", configHandler);
+// Measurement profiles (user-specific data) require auth
+app.use("/measurements/profiles*", getUser);
 
 // --- 4. Health Check ---
 app.get("/health", (c) => c.json({ status: "ok", service: "product-service" }));
+
+// --- 5. Error Handling ---
+app.onError(errorHandler);
+app.notFound(notFoundHandler);
 
 export default app;

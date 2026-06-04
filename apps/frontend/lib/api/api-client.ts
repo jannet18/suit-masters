@@ -138,7 +138,11 @@ export const api = {
   // --- Orders ---
   getOrders: async (data: any, token: string) => {
     try {
-      const res = await fetch(`${SERVICES.order}/orders`);
+      const res = await fetch(`${SERVICES.order}/orders`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (res.ok) {
         return res.json();
       } else {
@@ -152,7 +156,7 @@ export const api = {
   },
   createOrder: async (data: any, token: string) => {
     try {
-      const res = await fetch(`${SERVICES.order}/checkout`, {
+      const res = await fetch(`${SERVICES.order}/orders`, {
         method: "POST",
         body: JSON.stringify(data),
         headers: {

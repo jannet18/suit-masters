@@ -6,6 +6,7 @@ import { ThemeProvider } from "./providers/theme-provider";
 import { AuthProvider } from "./providers/AuthProvider";
 import { ToastContainer } from "react-toastify";
 import { Footer } from "./components/common/Footer";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,10 +29,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        suppressHydrationWarning
       >
         <Header />
         <ThemeProvider

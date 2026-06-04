@@ -4,18 +4,19 @@ import {
   numeric,
   pgTable,
   serial,
+  text,
   timestamp,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./user.js";
+import { timestamps } from "./shared.js";
+import { product, fabric } from "./products.js";
 
 export const shopOrder = pgTable("shop_order", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: uuid("user_id").references(() => usersTable.id),
   total: numeric("total", { precision: 12, scale: 2 }).notNull(),
-  // orderedItems: integer("ordered_items").notNull(),
-  // orderDate: timestamp("order_date").defaultNow(),
   status: varchar("status", { length: 64 }).notNull(),
 
   // Shipping snapshot
@@ -33,6 +34,15 @@ export const shopOrder = pgTable("shop_order", {
     length: 16,
   }).notNull(),
   shipping_country: varchar("shipping_country", { length: 64 }).notNull(),
+
+  // Tailoring-specific fields
+  estimated_delivery_date: timestamp("estimated_delivery_date"),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  tailor_notes: text("tailor_notes"),
+  priority_level: varchar("priority_level", { length: 20 }).default("standard"),
+
+  // Timestamps
+  ...timestamps,
 });
 
 export const orderItems = pgTable("order_items", {
@@ -50,6 +60,12 @@ export const orderItems = pgTable("order_items", {
   }).notNull(),
   unitPrice: numeric("unit_price", { precision: 12, scale: 2 }).notNull(),
   quantity: integer("quantity").notNull(),
+
+  // Foreign key references for data integrity
+  productId: integer("product_id").references(() => product.id),
+  fabricId: integer("fabric_id").references(() => fabric.id),
+  measurementProfileId: uuid("measurement_profile_id"),
+  styleType: varchar("style_type", { length: 50 }),
 });
 
 export const orderMeasurements = pgTable("order_measurements", {

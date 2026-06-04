@@ -1,3 +1,12 @@
+import { Resend } from "resend";
+
+declare const process: {
+  env: {
+    NODE_ENV?: string;
+    RESEND_API_KEY?: string;
+  };
+};
+
 /**
  * Simple email service for order confirmations and notifications
  * In production, integrate with SendGrid, Resend, or similar services
@@ -37,6 +46,14 @@ export interface OrderConfirmationData {
 
 export class EmailService {
   private isProduction = process.env.NODE_ENV === "production";
+  private resend: Resend | null = null;
+
+  constructor() {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (this.isProduction && apiKey) {
+      this.resend = new Resend(apiKey);
+    }
+  }
 
   /**
    * Send order confirmation email
@@ -62,13 +79,16 @@ export class EmailService {
         return true;
       }
 
-      // In production, integrate with actual email service
-      // Example with Resend:
-      // const resend = new Resend(process.env.RESEND_API_KEY);
-      // await resend.emails.send({
-      //   from: 'orders@suitmasters.com',
-      //   ...emailOptions
-      // });
+      // In production, send via Resend
+      if (this.resend) {
+        await this.resend.emails.send({
+          from: "Suit Masters <orders@suitmasters.com>",
+          to: emailOptions.to,
+          subject: emailOptions.subject,
+          html: emailOptions.html,
+          text: emailOptions.text,
+        });
+      }
 
       console.log(
         `✅ Order confirmation email sent to ${data.customerEmail} for order #${data.orderId}`,
@@ -108,7 +128,14 @@ export class EmailService {
         return true;
       }
 
-      // Production email sending logic here
+      if (this.resend) {
+        await this.resend.emails.send({
+          from: "Suit Masters <orders@suitmasters.com>",
+          to: email,
+          subject,
+          html,
+        });
+      }
       return true;
     } catch (error) {
       console.error("Failed to send order status email:", error);

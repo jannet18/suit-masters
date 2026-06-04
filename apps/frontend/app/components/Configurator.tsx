@@ -101,79 +101,97 @@ export function BespokeConfigurator({ slug }: ConfigureProps) {
     return parseFloat(product.base_price) || 0;
   }, [product, fittingData]);
 
+  /** Look up a customization option by its value field across all groups */
+  const findOptionByValue = (value: string) => {
+    if (!product?.customizationGroups) return null;
+    for (const group of product.customizationGroups) {
+      const found = group.options?.find((opt: any) => opt.value === value);
+      if (found) return { option: found, group };
+    }
+    return null;
+  };
+
   const handleAddToCart = () => {
     if (!product) return;
 
     // Convert fittingData selections to selected_options format
+    // using real DB option IDs from product.customizationGroups
     const selectedOptions: any[] = [];
 
     // Map style selection
     if (fittingData.style) {
+      const match = findOptionByValue(fittingData.style);
       selectedOptions.push({
-        id: Date.now() + 1,
-        group_id: 1, // Style group ID
+        id: match?.option.id ?? Date.now() + 1,
+        group_id: match?.group.id ?? 1,
         label: fittingData.style,
-        price_impact: "0",
+        price_impact: match?.option.priceDelta?.toString() ?? "0",
       });
     }
 
     // Map fabric selection
     if (fittingData.fabric) {
+      const match = findOptionByValue(fittingData.fabric);
       selectedOptions.push({
-        id: Date.now() + 2,
-        group_id: 2, // Fabric group ID
+        id: match?.option.id ?? Date.now() + 2,
+        group_id: match?.group.id ?? 2,
         label: fittingData.fabric,
-        price_impact: "0",
+        price_impact: match?.option.priceDelta?.toString() ?? "0",
       });
     }
 
     // Map fabric color selection
     if (fittingData.fabricColor) {
+      const match = findOptionByValue(fittingData.fabricColor);
       selectedOptions.push({
-        id: Date.now() + 3,
-        group_id: 3, // Color group ID
+        id: match?.option.id ?? Date.now() + 3,
+        group_id: match?.group.id ?? 3,
         label: fittingData.fabricColor,
-        price_impact: "0",
+        price_impact: match?.option.priceDelta?.toString() ?? "0",
       });
     }
 
     // Map lapel selection
     if (fittingData.lapel) {
+      const match = findOptionByValue(fittingData.lapel);
       selectedOptions.push({
-        id: Date.now() + 4,
-        group_id: 4, // Lapel group ID
+        id: match?.option.id ?? Date.now() + 4,
+        group_id: match?.group.id ?? 4,
         label: fittingData.lapel,
-        price_impact: "0",
+        price_impact: match?.option.priceDelta?.toString() ?? "0",
       });
     }
 
     // Map lining selection
     if (fittingData.lining) {
+      const match = findOptionByValue(fittingData.lining);
       selectedOptions.push({
-        id: Date.now() + 5,
-        group_id: 5, // Lining group ID
+        id: match?.option.id ?? Date.now() + 5,
+        group_id: match?.group.id ?? 5,
         label: fittingData.lining,
-        price_impact: "0",
+        price_impact: match?.option.priceDelta?.toString() ?? "0",
       });
     }
 
     // Map buttons selection
     if (fittingData.buttons) {
+      const match = findOptionByValue(fittingData.buttons);
       selectedOptions.push({
-        id: Date.now() + 6,
-        group_id: 6, // Buttons group ID
+        id: match?.option.id ?? Date.now() + 6,
+        group_id: match?.group.id ?? 6,
         label: `${fittingData.buttons}-button`,
-        price_impact: "0",
+        price_impact: match?.option.priceDelta?.toString() ?? "0",
       });
     }
 
     // Map button color selection
     if (fittingData.buttonColor) {
+      const match = findOptionByValue(fittingData.buttonColor);
       selectedOptions.push({
-        id: Date.now() + 7,
-        group_id: 7, // Button color group ID
+        id: match?.option.id ?? Date.now() + 7,
+        group_id: match?.group.id ?? 7,
         label: fittingData.buttonColor,
-        price_impact: "0",
+        price_impact: match?.option.priceDelta?.toString() ?? "0",
       });
     }
 

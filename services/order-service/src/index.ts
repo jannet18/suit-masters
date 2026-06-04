@@ -3,6 +3,7 @@ import { serve } from "@hono/node-server";
 import { orderRoutes } from "./routes/orderRoutes.js";
 import { getUser } from "@repo/auth";
 import { cors } from "hono/cors";
+import { errorHandler, notFoundHandler } from "@repo/error-handling";
 
 export const app = new Hono();
 
@@ -19,6 +20,10 @@ app.use(
 app.get("/health", (c) => c.json({ status: "order-service ok" }));
 orderRoutes.use("*", getUser as any);
 app.route("/orders", orderRoutes);
+
+// Error handling
+app.onError(errorHandler);
+app.notFound(notFoundHandler);
 
 serve(
   {

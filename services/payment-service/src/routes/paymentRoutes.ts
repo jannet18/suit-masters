@@ -95,8 +95,13 @@ import { db, eq, shopOrder } from "@repo/db";
 import { Hono } from "hono";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2022-11-15" as any,
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+if (!STRIPE_SECRET_KEY) {
+  throw new Error("STRIPE_SECRET_KEY environment variable is required");
+}
+
+const stripe = new Stripe(STRIPE_SECRET_KEY, {
+  apiVersion: "2024-11-20.acacia" as any,
 });
 export const paymentRoutes = new Hono();
 
@@ -144,16 +149,18 @@ paymentRoutes.post("/webhook", async (c) => {
     return c.text("Missing signature", 400);
   }
 
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error("STRIPE_WEBHOOK_SECRET is not configured");
+    return c.text("Webhook not configured", 500);
+  }
+
   const body = await c.req.text();
 
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!,
-    );
+    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err) {
     console.error("Webhook signature verification failed", err);
     return c.text("Invalid signature", 400);

@@ -16,6 +16,7 @@ import {
   db,
 } from "@repo/db";
 import { getUser } from "@repo/auth";
+import { errorHandler, notFoundHandler } from "repo/error-handling";
 
 // Define a typed user object to satisfy TypeScript
 type AuthUser = {
@@ -25,15 +26,54 @@ type AuthUser = {
   [key: string]: any;
 };
 
+interface DesignSaveRequest {
+  productId: number;
+  selections: Record<string, number>;
+  measurements?: Record<string, string>;
+  qty?: number;
+}
+
+interface AddToCartRequest {
+  productId: number;
+  configurationId?: string;
+  measurementId?: string;
+  qty: number;
+}
+
+interface CustomizationOptionRow {
+  id: number;
+  groupId: string;
+  value: string;
+  priceDelta: string;
+}
+
+interface SelectedOptionSnapshot {
+  id: number;
+  label: string;
+  price_impact: string | number;
+}
+
+interface CartItemRow {
+  itemId: number;
+  qty: number;
+  productName: string | null;
+  productImage: string | null;
+  skuPrice: string | null;
+  configuration?: Record<string, any> | null;
+  configurationPrice?: string | null;
+  selectedOptions?: Record<string, any> | null;
+  configurationId?: number | null;
+  measurementId?: string | null;
+}
+
 const app = new Hono();
+
+// Health check
+app.get("/health", (c) => c.json({ status: "ok", service: "cart-service" }));
+
 app.post("/design/save", getUser, async (c: Context) => {
   const user = c.get("user") as AuthUser;
-  const { productId, selections, measurements, qty } = await c.req.json<{
-    productId: number;
-    selections: Record<string, number>;
-    measurements?: Record<string, string>;
-    qty?: number;
-  }>();
+  const { productId, selections, measurements, qty } = await c.req.json<DesignSaveRequest>();
 
   // 1️⃣ Validate product
   const productData = await db.query.product.findFirst({
@@ -44,11 +84,11 @@ app.post("/design/save", getUser, async (c: Context) => {
   }
 
   // 2️⃣ Validate selected options
-  const optionIds = Object.values(selections);
-  const dbOptions = await db
+  const optionIds = Object.values(selections) as number[];
+  const dbOptions = (await db
     .select()
     .from(customizationOption)
-    .where(inArray(customizationOption.id, optionIds));
+    .where(inArray(customizationOption.id, optionIds))) as CustomizationOptionRow[];
 
   if (dbOptions.length !== optionIds.length) {
     return c.json({ error: "One or more selected options are invalid" }, 400);
@@ -57,9 +97,9 @@ app.post("/design/save", getUser, async (c: Context) => {
   // 3️⃣ Calculate final price
   const finalPrice =
     Number(productData.basePrice) +
-    dbOptions.reduce((sum, opt) => sum + Number(opt.priceDelta), 0);
+    dbOptions.reduce<number>((sum, opt) => sum + Number(opt.priceDelta), 0);
 
-  const snapshot = dbOptions.reduce((acc: Record<string, any>, opt) => {
+  const snapshot = dbOptions.reduce<Record<string, SelectedOptionSnapshot>>((acc, opt) => {
     acc[opt.groupId] = {
       id: opt.id,
       label: opt.value,
@@ -134,12 +174,7 @@ app.post("/add", getUser, async (c: Context) => {
   const user = c.get("user") as AuthUser;
   const userId = user.id;
 
-  const body = await c.req.json<{
-    productId: number;
-    configurationId?: string;
-    measurementId?: string;
-    qty: number;
-  }>();
+  const body = await c.req.json<AddToCartRequest>();
 
   const safetyQty = Math.max(1, Number(body.qty) || 1);
 
@@ -150,13 +185,11 @@ app.post("/add", getUser, async (c: Context) => {
   });
 
   if (!cart) {
-    c.json({ error: "Cart not found" }, 400);
     const [newCart] = await db
       .insert(shoppingCart)
       .values({ userId: userId })
       .returning();
     cart = newCart;
-    return c.json(cart);
   }
   // Check if the same item (with configuration & measurement) exists
   const existingItem = await db.query.shoppingCartItem.findFirst({
@@ -217,7 +250,7 @@ app.get("/cart", getUser, async (c: any) => {
   }
 
   // Join cart items with product & configuration details
-  const rows = await db
+  const rows = (await db
     .select({
       itemId: shoppingCartItem.id,
       qty: shoppingCartItem.quantity,
@@ -233,13 +266,13 @@ app.get("/cart", getUser, async (c: any) => {
       productConfiguration,
       eq(shoppingCartItem.configurationId, productConfiguration.id),
     )
-    .innerJoin(productItem, eq(shoppingCartItem.productItemId, productItem.id))
-    .innerJoin(product, eq(productItem.productId, product.id))
-    .where(eq(shoppingCartItem.cartId, cart.id));
+    .leftJoin(productItem, eq(shoppingCartItem.productItemId, productItem.id))
+    .leftJoin(product, eq(productItem.productId, product.id))
+    .where(eq(shoppingCartItem.cartId, cart.id))) as CartItemRow[];
 
   let cartTotal = 0;
 
-  const items = rows.map((row: any) => {
+  const items = rows.map((row: CartItemRow) => {
     const unitPrice = row.configurationPrice ?? row.skuPrice;
 
     const totalPrice = Number(unitPrice) * row.qty;
@@ -267,138 +300,8 @@ app.get("/cart", getUser, async (c: any) => {
   });
 });
 
-app.post("/checkout", getUser, async (c: Context) => {
-  const user = c.get("user") as AuthUser;
-  const userId = user.id;
-
-  const body = await c.req.json<{
-    shipping: {
-      name: string;
-      email: string;
-      phone: string;
-      address_line1: string;
-      address_line2?: string;
-      city: string;
-      region: string;
-      postal_code: string;
-      country: string;
-    };
-  }>();
-
-  const idempotencyKey = c.req.header("Idempotency-Key");
-  if (!idempotencyKey) return c.json({ error: "Missing Idempotency-Key" }, 400);
-
-  // Check if key already used
-  const existingKey = await db.query.idempotencyKeys.findFirst({
-    where: and(
-      eq(idempotencyKeys.key, idempotencyKey),
-      eq(idempotencyKeys.userId, Number(userId)),
-    ),
-  });
-
-  if (existingKey)
-    return c.json({ orderId: existingKey.orderId, reused: true });
-  // 1️⃣ Load user's cart
-  const cart = await db.query.shoppingCart.findFirst({
-    where: eq(shoppingCart.userId, userId),
-  });
-
-  if (!cart) return c.json({ error: "Cart not found" }, 400);
-
-  // 2️⃣ Load cart items with configuration prices if available
-  const cartItems = await db
-    .select({
-      itemId: shoppingCartItem.id,
-      qty: shoppingCartItem.quantity,
-      productId: productItem.productId,
-      skuPrice: productItem.price,
-      configurationId: shoppingCartItem.configurationId,
-      configurationPrice: productConfiguration.finalPrice,
-      selectedOptions: productConfiguration.selectedOptions,
-    })
-    .from(shoppingCartItem)
-    .leftJoin(
-      productConfiguration,
-      eq(shoppingCartItem.configurationId, productConfiguration.id),
-    )
-    .innerJoin(productItem, eq(shoppingCartItem.productItemId, productItem.id));
-
-  if (cartItems.length === 0) return c.json({ error: "Cart is empty" }, 400);
-
-  // 3️⃣ Calculate total securely
-  let total = 0;
-  for (const item of cartItems) {
-    const unitPrice = item.configurationPrice ?? item.skuPrice;
-    total += Number(unitPrice) * item.qty;
-  }
-
-  // 4️⃣ Create order with transaction
-  const createdOrder = await db.transaction(async (tx) => {
-    // a) Insert order
-    const [order] = await tx
-      .insert(shopOrder)
-      .values({
-        userId,
-        total: total.toString(),
-        status: "PENDING_PAYMENT",
-        shipping_name: body.shipping.name,
-        shipping_email: body.shipping.email,
-        shipping_phone: body.shipping.phone,
-        shipping_address_line1: body.shipping.address_line1,
-        shipping_address_line2: body.shipping.address_line2 ?? null,
-        shipping_city: body.shipping.city,
-        shipping_region: body.shipping.region,
-        shipping_postal_code: body.shipping.postal_code,
-        shipping_country: body.shipping.country,
-      })
-      .returning();
-
-    if (!order) throw new Error("Order creation failed");
-
-    // b) Insert order items
-    await tx.insert(orderItems).values(
-      cartItems.map((item) => ({
-        orderId: order.id,
-        productNameSnapshot: "Product", // We need to get actual product name
-        priceAtPurchase: (item.configurationPrice ?? item.skuPrice).toString(),
-        unitPrice: (item.configurationPrice ?? item.skuPrice).toString(),
-        quantity: item.qty,
-        customizationSnapsot: item.selectedOptions ?? {},
-      })),
-    );
-
-    // Save idempotency key
-    await tx.insert(idempotencyKeys).values({
-      userId: Number(userId),
-      key: idempotencyKey,
-      orderId: order.id,
-    });
-    // c) Clear cart items
-    await tx
-      .delete(shoppingCartItem)
-      .where(eq(shoppingCartItem.cartId, cart.id));
-
-    return order;
-  });
-  // prepare order summary with full product info + snapshot
-  const orderSummaryItems = cartItems.map((item) => ({
-    productId: item.productId,
-    // name: item.productName ??,
-    // image: item.productImage,
-    configurationId: item.configurationId,
-    quantity: item.qty,
-    price: item.configurationPrice ?? item.skuPrice,
-    total_price: Number(item.configurationPrice ?? item.skuPrice) * item.qty,
-    selectedOption: item.selectedOptions ?? {},
-    // measurement: item.measurement_id ? JSON.parse(item.measurement_id) : {},
-  }));
-  return c.json({
-    success: true,
-    orderId: createdOrder.id,
-    total,
-    items: orderSummaryItems,
-    message: "Order created successfully! Payment pending.",
-  });
-});
+// Error handling
+app.onError(errorHandler);
+app.notFound(notFoundHandler);
 
 export default app;

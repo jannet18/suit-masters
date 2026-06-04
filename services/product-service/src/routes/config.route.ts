@@ -63,11 +63,12 @@ export const configHandler = new Hono().post(
       {} as Record<string, any>,
     );
 
-    // 6. Save to Neon
+    // 6. Save to Neon with user association
     const [newConfig] = await db
       .insert(productConfiguration)
       .values({
         productId: productId,
+        kindeUserId: user.id,
         selectedOptions: snapshot,
         finalPrice: finalPrice.toString(),
         createdAt: new Date(),

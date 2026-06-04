@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from "uuid";
 import { stripePromise } from "../../lib/stripe";
 import { getCurrentUser } from "../../lib/auth";
 import { useCartStore } from "../stores/useCartStore";
+import { getShippingCost, getTaxRate } from "../../lib/utils";
 import { Loader2, ArrowLeft, MapPin, Package, CreditCard } from "lucide-react";
 
 function CheckoutClient() {
@@ -32,7 +33,35 @@ function CheckoutClient() {
   });
   const [step, setStep] = useState<"shipping" | "payment">("shipping");
   const { cart, getTotal } = useCartStore();
-  const total = getTotal();
+  const subtotal = getTotal(); // already in pounds (divided by 100)
+
+  // Map full country name to ISO code for shipping/tax calculations
+  const countryToCode: Record<string, string> = {
+    "United Kingdom": "GB",
+    "United States": "US",
+    Canada: "CA",
+    Australia: "AU",
+    Germany: "DE",
+    France: "FR",
+    Italy: "IT",
+    Spain: "ES",
+    Netherlands: "NL",
+    Switzerland: "CH",
+    Sweden: "SE",
+    Norway: "NO",
+    Denmark: "DK",
+    Japan: "JP",
+    "United Arab Emirates": "AE",
+    Singapore: "SG",
+  };
+
+  const countryCode = countryToCode[shippingData.country] || "GB";
+  const subtotalInCents = Math.round(subtotal * 100); // convert back to pence for utility
+  const shippingCostInCents = getShippingCost(countryCode, subtotalInCents);
+  const shippingCostInPounds = shippingCostInCents / 100;
+  const taxRate = getTaxRate(countryCode);
+  const taxAmount = subtotal * taxRate;
+  const orderTotal = subtotal + shippingCostInPounds + taxAmount;
 
   useEffect(() => {
     async function checkAuth() {
@@ -89,7 +118,7 @@ function CheckoutClient() {
         body: JSON.stringify({
           shipping: shippingData,
           cartItems: cart,
-          totalAmount: total,
+          totalAmount: subtotal,
         }),
       });
 
@@ -101,7 +130,7 @@ function CheckoutClient() {
       const intentResponse = await fetch("/api/payments/create-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, amount: total }),
+        body: JSON.stringify({ orderId, amount: orderTotal }),
       });
 
       const { clientSecret, error: intentError } = await intentResponse.json();
@@ -461,7 +490,7 @@ function CheckoutClient() {
                           Processing...
                         </>
                       ) : (
-                        `Pay £${total.toFixed(2)}`
+                        `Pay £${orderTotal.toFixed(2)}`
                       )}
                     </button>
                   </div>
@@ -493,7 +522,7 @@ function CheckoutClient() {
                       </p>
                     </div>
                     <p className="font-mono">
-                      £{(item.totalPrice * item.quantity).toFixed(2)}
+                      £{((item.totalPrice * item.quantity) / 100).toFixed(2)}
                     </p>
                   </div>
                 ))}
@@ -502,19 +531,23 @@ function CheckoutClient() {
               <div className="border-t border-white/10 pt-4 space-y-3">
                 <div className="flex justify-between">
                   <span className="text-[#9a9490]">Subtotal</span>
-                  <span className="font-mono">£{total.toFixed(2)}</span>
+                  <span className="font-mono">£{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#9a9490]">Shipping</span>
-                  <span className="font-mono">£0.00</span>
+                  <span className="font-mono">
+                    {shippingCostInPounds > 0
+                      ? `£${shippingCostInPounds.toFixed(2)}`
+                      : "FREE"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#9a9490]">Tax</span>
-                  <span className="font-mono">£{(total * 0.2).toFixed(2)}</span>
+                  <span className="font-mono">£{taxAmount.toFixed(2)}</span>
                 </div>
                 <div className="border-t border-white/10 pt-3 flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="font-mono">£{(total * 1.2).toFixed(2)}</span>
+                  <span className="font-mono">£{orderTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>

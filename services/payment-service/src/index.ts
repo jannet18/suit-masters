@@ -2,6 +2,7 @@ import { Context, Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { paymentRoutes } from "./routes/paymentRoutes.js";
 import { cors } from "hono/cors";
+import { errorHandler, notFoundHandler } from "@repo/error-handling";
 
 const app = new Hono();
 const port = Number(process.env.PORT) || 4002;
@@ -23,6 +24,10 @@ app.get("/health", (c: Context) =>
 // });
 
 app.route("/payments", paymentRoutes);
+
+// Error handling
+app.onError(errorHandler);
+app.notFound(notFoundHandler);
 serve(
   {
     fetch: app.fetch,
