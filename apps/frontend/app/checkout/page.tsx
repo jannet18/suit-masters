@@ -10,10 +10,40 @@ import {
 } from "@stripe/react-stripe-js";
 import { v4 as uuidv4 } from "uuid";
 import { stripePromise } from "../../lib/stripe";
-import { getCurrentUser } from "../../lib/auth";
+// import { getCurrentUser } from "../../lib/auth";
 import { useCartStore } from "../stores/useCartStore";
 import { getShippingCost, getTaxRate } from "../../lib/utils";
-import { Loader2, ArrowLeft, MapPin, Package, CreditCard } from "lucide-react";
+import { Loader2, ArrowLeft, MapPin, Package, CreditCard, AlertCircle } from "lucide-react";
+import {useKindeBrowserClient} from "@kinde-oss/kinde-auth-nextjs";
+
+/** Client-side validation for shipping form fields */
+function validateShipping(data: {
+  fullName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  country: string;
+}): string[] {
+  const errors: string[] = [];
+  if (!data.fullName.trim()) errors.push("Full name is required");
+  if (data.fullName.length > 255) errors.push("Full name must be under 255 characters");
+  if (!/^[a-zA-Z\s\-'.]+$/.test(data.fullName)) errors.push("Full name contains invalid characters");
+
+  if (!data.email.trim()) errors.push("Email is required");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errors.push("Invalid email address");
+
+  if (!data.phone.trim()) errors.push("Phone number is required");
+  if (!/^[\+]?[\d\s\-\(\)]+$/.test(data.phone)) errors.push("Phone number contains invalid characters");
+
+  if (!data.address.trim()) errors.push("Address is required");
+  if (!data.city.trim()) errors.push("City is required");
+  if (!data.postalCode.trim()) errors.push("Postal code is required");
+  if (!data.country.trim()) errors.push("Country is required");
+
+  return errors;
+}
 
 function CheckoutClient() {
   const router = useRouter();
@@ -21,7 +51,8 @@ function CheckoutClient() {
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const {user, isAuthenticated, isLoading} = useKindeBrowserClient();
+  // const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [shippingData, setShippingData] = useState({
     fullName: "",
     email: "",
@@ -32,8 +63,19 @@ function CheckoutClient() {
     country: "United Kingdom",
   });
   const [step, setStep] = useState<"shipping" | "payment">("shipping");
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const { cart, getTotal } = useCartStore();
   const subtotal = getTotal(); // already in pounds (divided by 100)
+  const [couponCode, setCouponCode] = useState("");
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    id: number;
+    name: string;
+    code: string;
+    type: string;
+    discount: number;
+  } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   // Map full country name to ISO code for shipping/tax calculations
   const countryToCode: Record<string, string> = {
@@ -61,30 +103,81 @@ function CheckoutClient() {
   const shippingCostInPounds = shippingCostInCents / 100;
   const taxRate = getTaxRate(countryCode);
   const taxAmount = subtotal * taxRate;
-  const orderTotal = subtotal + shippingCostInPounds + taxAmount;
+  const discountAmount = appliedCoupon?.discount || 0;
+  const freeShipping = appliedCoupon?.type === "free_shipping";
+  const effectiveShippingCost = freeShipping ? 0 : shippingCostInPounds;
+  const orderTotal = subtotal - discountAmount + effectiveShippingCost + taxAmount;
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    try {
+      const res = await fetch("/api/promotions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: couponCode,
+          subtotal,
+        }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setAppliedCoupon(data.promotion);
+        setCouponError(null);
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(data.error || "Invalid coupon code");
+      }
+    } catch {
+      setCouponError("Failed to validate coupon");
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError(null);
+  };
+
 
   useEffect(() => {
-    async function checkAuth() {
-      const user = await getCurrentUser();
-      if (!user) {
-        // Redirect to sign up page if not authenticated
-        router.push("/api/auth/login?redirect=/checkout");
-        return;
-      }
-      setIsAuthenticated(true);
-
-      // Pre-fill shipping data with user info if available
-      if (user) {
-        setShippingData((prev) => ({
-          ...prev,
-          fullName: user.name || "",
-          email: user.email || "",
-        }));
-      }
+    if (!isLoading && !isAuthenticated) {
+      router.push("/api/auth/login?redirect=/checkout");
     }
+    if (user){
+      setShippingData((prev) => ({
+        ...prev,
+        fullName: `${user.given_name || ""} ${user.family_name || ""}`.trim(),
+      email: user.email || "",
+      }))
+    }
+  }, [isLoading, isAuthenticated, router]);
 
-    checkAuth();
-  }, [router]);
+  // useEffect(() => {
+  //   async function checkAuth() {
+  //     const user = await getCurrentUser();
+  //     if (!user) {
+  //       // Redirect to sign up page if not authenticated
+  //       router.push("/api/auth/login?redirect=/checkout");
+  //       return;
+  //     }
+  //     setIsAuthenticated(true);
+
+  //     // Pre-fill shipping data with user info if available
+  //     if (user) {
+  //       setShippingData((prev) => ({
+  //         ...prev,
+  //         fullName: user.name || "",
+  //         email: user.email || "",
+  //       }));
+  //     }
+  //   }
+
+  //   checkAuth();
+  // }, [router]);
 
   useEffect(() => {
     // Redirect if cart is empty
@@ -93,12 +186,19 @@ function CheckoutClient() {
     }
   }, [cart, isAuthenticated, router]);
 
-  const handleShippingSubmit = (e: React.FormEvent) => {
+  const handleShippingSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const errors = validateShipping(shippingData);
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    setValidationErrors([]);
     setStep("payment");
   };
 
-  const processCheckout = async () => {
+  const processCheckout = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) e.preventDefault();
     if (!stripe || !elements) return;
 
     setIsProcessing(true);
@@ -138,6 +238,9 @@ function CheckoutClient() {
 
       // STEP 3: Confirm Payment with Stripe
       // Elements handles the UI; this call triggers the actual bank transaction
+        if (!orderId) {
+        throw new Error("Order creation failed. Unable to proceed to payment.");
+      }
       const { error: stripeError, paymentIntent } = await stripe.confirmPayment(
         {
           elements,
@@ -162,6 +265,7 @@ function CheckoutClient() {
         },
       );
 
+    
       if (stripeError) {
         throw new Error(stripeError.message);
       }
@@ -179,12 +283,13 @@ function CheckoutClient() {
     }
   };
 
-  if (isAuthenticated === null) {
+  if (isLoading ||isAuthenticated === null) {
+
     return (
-      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center m-26">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-[#c9a96e] mx-auto mb-4" />
-          <p className="text-[#f5f0eb]">Checking authentication...</p>
+          <p className="text-[#f5f0eb]">Loading...</p>
         </div>
       </div>
     );
@@ -269,6 +374,20 @@ function CheckoutClient() {
                 <h2 className="text-2xl font-serif font-bold mb-6">
                   Shipping Information
                 </h2>
+
+                {validationErrors.length > 0 && (
+                  <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle size={16} className="text-red-400" />
+                      <p className="text-red-300 font-medium text-sm">Please fix the following errors:</p>
+                    </div>
+                    <ul className="list-disc list-inside text-red-300 text-sm space-y-1">
+                      {validationErrors.map((error, idx) => (
+                        <li key={idx}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -480,7 +599,7 @@ function CheckoutClient() {
                     </button>
 
                     <button
-                      onClick={processCheckout}
+                      onClick={(e) => processCheckout(e)}
                       disabled={isProcessing}
                       className="bg-[#c9a96e] text-black px-8 py-3 font-bold uppercase tracking-widest hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -528,16 +647,69 @@ function CheckoutClient() {
                 ))}
               </div>
 
+              {/* Coupon Code Input */}
+              <div className="border-t border-white/10 pt-4 mb-4">
+                <label className="block text-sm text-[#9a9490] mb-2">
+                  Have a coupon code?
+                </label>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between bg-green-900/20 border border-green-700 rounded px-3 py-2">
+                    <div>
+                      <span className="text-green-400 font-mono text-sm font-bold">
+                        {appliedCoupon.code}
+                      </span>
+                      <span className="text-green-300 text-xs ml-2">
+                        -{appliedCoupon.type === "percentage"
+                          ? `${appliedCoupon.discount}%`
+                          : `£${appliedCoupon.discount.toFixed(2)}`}
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="text-red-400 text-xs hover:text-red-300"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      placeholder="Enter code"
+                      className="flex-1 bg-white/5 border border-white/10 px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#c9a96e]"
+                    />
+                    <button
+                      onClick={handleApplyCoupon}
+                      disabled={couponLoading || !couponCode.trim()}
+                      className="px-4 py-2 bg-white/10 text-sm hover:bg-white/20 transition-colors disabled:opacity-50"
+                    >
+                      {couponLoading ? "..." : "Apply"}
+                    </button>
+                  </div>
+                )}
+                {couponError && (
+                  <p className="text-red-400 text-xs mt-1">{couponError}</p>
+                )}
+              </div>
+
               <div className="border-t border-white/10 pt-4 space-y-3">
                 <div className="flex justify-between">
                   <span className="text-[#9a9490]">Subtotal</span>
                   <span className="font-mono">£{subtotal.toFixed(2)}</span>
                 </div>
+                {appliedCoupon && discountAmount > 0 && (
+                  <div className="flex justify-between text-green-400">
+                    <span>Discount ({appliedCoupon.code})</span>
+                    <span className="font-mono">-£{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-[#9a9490]">Shipping</span>
                   <span className="font-mono">
-                    {shippingCostInPounds > 0
-                      ? `£${shippingCostInPounds.toFixed(2)}`
+                    {effectiveShippingCost > 0
+                      ? `£${effectiveShippingCost.toFixed(2)}`
                       : "FREE"}
                   </span>
                 </div>
@@ -559,6 +731,13 @@ function CheckoutClient() {
 }
 
 export default function CheckoutPage() {
+  // if (!stripePromise) {
+  //   return (
+  //     <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center text-white">
+  //       <p>Configuration Error: Payment system failed to initialize. Please check your environment variables.</p>
+  //     </div>
+  //   );
+  // }
   return (
     <Elements stripe={stripePromise}>
       <CheckoutClient />

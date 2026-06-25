@@ -105,7 +105,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-[#f5f0eb]">
+    <div className="min-h-screen bg-[#0f0f0f] text-[#f5f0eb] pt-24">
       <header className="p-6 border-b border-[#2e2e2e]">
         <button onClick={() => router.push("/")} className="text-[#c9a96e]">
           ← Back to Home

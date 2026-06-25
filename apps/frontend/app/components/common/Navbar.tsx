@@ -84,7 +84,7 @@ export function Navbar({
             {/* Left Nav */}
             <nav className="hidden lg:flex items-center gap-8">
               <a
-                href="/?category=suits"
+                href="/shop/suits"
                 className={`gold-underline text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200 ${
                   activeProductSlug === "suits" || slug === "suits"
                     ? "text-[#c9a96e] border-b border-[#c9a96e]"
@@ -94,7 +94,7 @@ export function Navbar({
                 Suits
               </a>
               <a
-                href="/?category=blazers"
+                href="/shop/blazers"
                 className={`gold-underline text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200 ${
                   activeProductSlug === "blazers" || slug === "blazers"
                     ? "text-[#c9a96e] border-b border-[#c9a96e]"
@@ -104,7 +104,7 @@ export function Navbar({
                 Blazers
               </a>
               <a
-                href="/?category=shirts"
+                href="/shop/shirts"
                 className={`gold-underline text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200 ${
                   activeProductSlug === "shirts" || slug === "shirts"
                     ? "text-[#c9a96e] border-b border-[#c9a96e]"
@@ -114,7 +114,7 @@ export function Navbar({
                 Shirts
               </a>
               <a
-                href="/?category=trousers"
+                href="/shop/trousers"
                 className={`gold-underline text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200 ${
                   activeProductSlug === "trousers" || slug === "trousers"
                     ? "text-[#c9a96e] border-b border-[#c9a96e]"
@@ -211,7 +211,7 @@ export function Navbar({
               ].map((item, i) => (
                 <Link
                   key={item}
-                  href={`/?category=${item.toLocaleLowerCase()}`}
+                  href={`/shop/${item.toLocaleLowerCase()}`}
                   onClick={() => setMenuOpen(false)}
                   className="font-serif text-3xl text-[#f5f0eb] hover:text-[#c9a96e] transition-colors duration-200 border-b border-[#2e2e2e] pb-4"
                 >

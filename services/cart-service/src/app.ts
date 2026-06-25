@@ -16,7 +16,7 @@ import {
   db,
 } from "@repo/db";
 import { getUser } from "@repo/auth";
-import { errorHandler, notFoundHandler } from "repo/error-handling";
+import { errorHandler, notFoundHandler } from "@repo/error-handling";
 
 // Define a typed user object to satisfy TypeScript
 type AuthUser = {
@@ -88,7 +88,7 @@ app.post("/design/save", getUser, async (c: Context) => {
   const dbOptions = (await db
     .select()
     .from(customizationOption)
-    .where(inArray(customizationOption.id, optionIds))) as CustomizationOptionRow[];
+    .where(inArray(customizationOption.id, optionIds))) as unknown as CustomizationOptionRow[];
 
   if (dbOptions.length !== optionIds.length) {
     return c.json({ error: "One or more selected options are invalid" }, 400);
@@ -170,16 +170,77 @@ app.post("/design/save", getUser, async (c: Context) => {
  * Add an item to the user's shopping cart
  */
 
+// app.post("/add", getUser, async (c: Context) => {
+//   const user = c.get("user") as AuthUser;
+//   const userId = user.id;
+
+//   const body = await c.req.json<AddToCartRequest>();
+
+//   const safetyQty = Math.max(1, Number(body.qty) || 1);
+
+//   const { productId, configurationId, measurementId } = body;
+//   // Find the user's cart or create one
+//   let cart = await db.query.shoppingCart.findFirst({
+//     where: eq(shoppingCart.userId, userId),
+//   });
+
+//   if (!cart) {
+//     const [newCart] = await db
+//       .insert(shoppingCart)
+//       .values({ userId: userId })
+//       .returning();
+//     cart = newCart;
+//   }
+//   // Check if the same item (with configuration & measurement) exists
+//   const existingItem = await db.query.shoppingCartItem.findFirst({
+//     where: and(
+//       eq(shoppingCartItem.cartId, cart!.id),
+//       eq(shoppingCartItem.productId, productId),
+//       configurationId
+//         ? eq(shoppingCartItem.configurationId, Number(configurationId))
+//         : isNull(shoppingCartItem.configurationId),
+//     ),
+//   });
+
+//   if (existingItem) {
+//     // Increase quantity
+
+//     await db
+//       .update(shoppingCartItem)
+//       .set({ quantity: existingItem.quantity + safetyQty })
+//       .where(eq(shoppingCartItem.id, existingItem.id));
+//   } else {
+//     // Insert new cart
+//     await db.insert(shoppingCartItem).values({
+//       cartId: cart!.id,
+//       productId,
+//       configurationId: configurationId ? Number(configurationId) : null,
+//       price: "0.00", // Default price, should be calculated from product
+//       quantity: safetyQty,
+//     });
+//   }
+
+//   return c.json({ success: true });
+// });
+
+
 app.post("/add", getUser, async (c: Context) => {
+  try {
   const user = c.get("user") as AuthUser;
   const userId = user.id;
+  const {productId, qty} = await c.req.json<{ productId: number; qty: number }>();
+  const safetyQty = Math.max(1, Number(qty) || 1);
 
-  const body = await c.req.json<AddToCartRequest>();
+  // Fetch master item details to secure pricing
+  const ProductData = await db.query.product.findFirst({
+    where: eq(product.id, productId),
+  });
 
-  const safetyQty = Math.max(1, Number(body.qty) || 1);
+  if (!ProductData) {
+    return c.json({ error: "Product not found" }, 404);
+  }
 
-  const { productId, configurationId, measurementId } = body;
-  // Find the user's cart or create one
+  // Find or create user's cart
   let cart = await db.query.shoppingCart.findFirst({
     where: eq(shoppingCart.userId, userId),
   });
@@ -191,41 +252,40 @@ app.post("/add", getUser, async (c: Context) => {
       .returning();
     cart = newCart;
   }
-  // Check if the same item (with configuration & measurement) exists
+
+  // Check if the same item exists in the cart
   const existingItem = await db.query.shoppingCartItem.findFirst({
     where: and(
       eq(shoppingCartItem.cartId, cart!.id),
       eq(shoppingCartItem.productId, productId),
-      configurationId
-        ? eq(shoppingCartItem.configurationId, Number(configurationId))
-        : isNull(shoppingCartItem.configurationId),
+      isNull(shoppingCartItem.configurationId), // Standard products have no configuration
     ),
   });
-
-  if (existingItem) {
-    // Increase quantity
-
+if(existingItem) {
     await db
       .update(shoppingCartItem)
       .set({ quantity: existingItem.quantity + safetyQty })
       .where(eq(shoppingCartItem.id, existingItem.id));
   } else {
-    // Insert new cart
     await db.insert(shoppingCartItem).values({
       cartId: cart!.id,
       productId,
-      configurationId: configurationId ? Number(configurationId) : null,
-      price: "0.00", // Default price, should be calculated from product
+      configurationId: null, // No configuration for standard products
+      price: ProductData.basePrice.toString(),
       quantity: safetyQty,
     });
   }
-
-  return c.json({ success: true });
+   return c.json({ success: true, message: "Item added to cart" });
+} catch (error) {
+    console.error("Failed to add item to cart:", error);
+    return c.json({ error: "Failed to add item to cart" }, 500);
+  }
 });
+
 /**
  * Get current user's cart
  */
-app.get("/cart", getUser, async (c: any) => {
+app.get("/cart", getUser, async (c: Context) => {
   const user = c.get("user") as AuthUser;
   const userId = user.id;
 
@@ -234,12 +294,12 @@ app.get("/cart", getUser, async (c: any) => {
   });
 
   if (!cart) {
-    const inserted = await db
+    const [inserted] = await db
       .insert(shoppingCart)
       .values({ userId: userId })
       .returning();
 
-    cart = inserted[0];
+    cart = inserted;
   }
   if (!cart) {
     return c.json({
@@ -257,17 +317,16 @@ app.get("/cart", getUser, async (c: any) => {
       productName: product.name,
       productImage: product.productImage,
       skuPrice: productItem.price,
-      configuration: productConfiguration.selectedOptions,
+      configurationId: shoppingCartItem.configurationId,
       configurationPrice: productConfiguration.finalPrice,
       selectedOptions: productConfiguration.selectedOptions,
     })
     .from(shoppingCartItem)
+    .innerJoin(product, eq(shoppingCartItem.productId, product.id))
     .leftJoin(
       productConfiguration,
       eq(shoppingCartItem.configurationId, productConfiguration.id),
     )
-    .leftJoin(productItem, eq(shoppingCartItem.productItemId, productItem.id))
-    .leftJoin(product, eq(productItem.productId, product.id))
     .where(eq(shoppingCartItem.cartId, cart.id))) as CartItemRow[];
 
   let cartTotal = 0;
@@ -297,6 +356,224 @@ app.get("/cart", getUser, async (c: any) => {
     cart_id: cart.id,
     items,
     cart_total: cartTotal,
+  });
+});
+
+/**
+ * Remove an item from the user's shopping cart
+ */
+app.delete("/remove/:itemId", getUser, async (c: Context) => {
+  const user = c.get("user") as AuthUser;
+  const itemId = Number(c.req.param("itemId"));
+
+  const cart = await db.query.shoppingCart.findFirst({
+    where: eq(shoppingCart.userId, user.id),
+  });
+
+  if (!cart) {
+    return c.json({ success: false, error: "Cart not found" }, 404);
+  }
+
+  // Verify the item belongs to this user's cart
+  const item = await db.query.shoppingCartItem.findFirst({
+    where: and(
+      eq(shoppingCartItem.id, itemId),
+      eq(shoppingCartItem.cartId, cart.id),
+    ),
+  });
+
+  if (!item) {
+    return c.json({ success: false, error: "Item not found in cart" }, 404);
+  }
+
+  await db.delete(shoppingCartItem).where(eq(shoppingCartItem.id, itemId));
+
+  return c.json({ success: true, message: "Item removed from cart" });
+});
+
+/**
+ * Update quantity of a cart item
+ */
+app.put("/update/:itemId", getUser, async (c: Context) => {
+  const user = c.get("user") as AuthUser;
+  const itemId = Number(c.req.param("itemId"));
+  const { quantity } = await c.req.json<{ quantity: number }>();
+
+  if (!quantity || quantity < 1) {
+    return c.json({ success: false, error: "Quantity must be at least 1" }, 400);
+  }
+
+  const cart = await db.query.shoppingCart.findFirst({
+    where: eq(shoppingCart.userId, user.id),
+  });
+
+  if (!cart) {
+    return c.json({ success: false, error: "Cart not found" }, 404);
+  }
+
+  const item = await db.query.shoppingCartItem.findFirst({
+    where: and(
+      eq(shoppingCartItem.id, itemId),
+      eq(shoppingCartItem.cartId, cart.id),
+    ),
+  });
+
+  if (!item) {
+    return c.json({ success: false, error: "Item not found in cart" }, 404);
+  }
+
+  await db
+    .update(shoppingCartItem)
+    .set({ quantity })
+    .where(eq(shoppingCartItem.id, itemId));
+
+  return c.json({ success: true, message: "Cart item updated" });
+});
+
+/**
+ * Clear all items from the user's cart
+ */
+app.delete("/clear", getUser, async (c: Context) => {
+  const user = c.get("user") as AuthUser;
+
+  const cart = await db.query.shoppingCart.findFirst({
+    where: eq(shoppingCart.userId, user.id),
+  });
+
+  if (!cart) {
+    return c.json({ success: true, message: "Cart already empty" });
+  }
+
+  await db.delete(shoppingCartItem).where(eq(shoppingCartItem.cartId, cart.id));
+
+  return c.json({ success: true, message: "Cart cleared" });
+});
+
+/**
+ * POST /sync
+ * Merge a local (client-side) cart with the server cart.
+ * Used when a user logs in and we need to merge their localStorage cart
+ * with any items already in their server cart.
+ */
+app.post("/sync", getUser, async (c: Context) => {
+  const user = c.get("user") as AuthUser;
+  const { items } = await c.req.json<{
+    items: Array<{
+      id: number;
+      name: string;
+      base_price: number;
+      image_url: string;
+      product_type: string;
+      quantity: number;
+      selected_options?: Array<{ id: number; group_id: number; label: string; price_impact: string }>;
+      configuration?: Record<string, any>;
+      totalPrice: number;
+    }>;
+  }>();
+
+  if (!items || items.length === 0) {
+    return c.json({ success: true, message: "Nothing to sync", items: [] });
+  }
+
+  // Find or create user's server cart
+  let cart = await db.query.shoppingCart.findFirst({
+    where: eq(shoppingCart.userId, user.id),
+  });
+
+  if (!cart) {
+    const [newCart] = await db
+      .insert(shoppingCart)
+      .values({ userId: user.id })
+      .returning();
+    cart = newCart;
+  }
+
+  let mergedCount = 0;
+
+  // For each local item, check if it already exists in the server cart
+  for (const localItem of items) {
+    // For CUSTOM products with selected_options, we need to save the configuration first
+    if (localItem.product_type === "CUSTOM" && localItem.selected_options?.length) {
+      // Save configuration
+      const snapshot = localItem.selected_options.reduce(
+        (acc: Record<string, any>, opt: any) => {
+          acc[opt.group_id] = {
+            id: opt.id,
+            label: opt.label,
+            price_impact: opt.price_impact,
+          };
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
+
+      const [newConfig] = await db
+        .insert(productConfiguration)
+        .values({
+          kindeUserId: user.id,
+          productId: localItem.id,
+          selectedOptions: snapshot,
+          finalPrice: localItem.totalPrice.toString(),
+          createdAt: new Date(),
+        })
+        .returning();
+
+      if (newConfig) {
+        // Check if item already exists
+        const existingItem = await db.query.shoppingCartItem.findFirst({
+          where: and(
+            eq(shoppingCartItem.cartId, cart!.id),
+            eq(shoppingCartItem.productId, localItem.id),
+            eq(shoppingCartItem.configurationId, newConfig.id),
+          ),
+        });
+
+        if (existingItem) {
+          await db
+            .update(shoppingCartItem)
+            .set({ quantity: existingItem.quantity + localItem.quantity })
+            .where(eq(shoppingCartItem.id, existingItem.id));
+        } else {
+          await db.insert(shoppingCartItem).values({
+            cartId: cart!.id,
+            productId: localItem.id,
+            configurationId: newConfig.id,
+            price: localItem.totalPrice.toString(),
+            quantity: localItem.quantity,
+          });
+        }
+        mergedCount++;
+      }
+    } else {
+      // For STANDARD products, add directly
+      const existingItem = await db.query.shoppingCartItem.findFirst({
+        where: and(
+          eq(shoppingCartItem.cartId, cart!.id),
+          eq(shoppingCartItem.productId, localItem.id),
+        ),
+      });
+
+      if (existingItem) {
+        await db
+          .update(shoppingCartItem)
+          .set({ quantity: existingItem.quantity + localItem.quantity })
+          .where(eq(shoppingCartItem.id, existingItem.id));
+      } else {
+        await db.insert(shoppingCartItem).values({
+          cartId: cart!.id,
+          productId: localItem.id,
+          price: localItem.base_price.toString(),
+          quantity: localItem.quantity,
+        });
+      }
+      mergedCount++;
+    }
+  }
+
+  return c.json({
+    success: true,
+    message: `Synced ${mergedCount} items to server cart`,
+    mergedCount,
   });
 });
 

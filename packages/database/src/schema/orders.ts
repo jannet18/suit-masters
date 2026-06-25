@@ -35,6 +35,10 @@ export const shopOrder = pgTable("shop_order", {
   }).notNull(),
   shipping_country: varchar("shipping_country", { length: 64 }).notNull(),
 
+  // Tracking
+  tracking_number: varchar("tracking_number", { length: 128 }),
+  tracking_carrier: varchar("tracking_carrier", { length: 64 }),
+
   // Tailoring-specific fields
   estimated_delivery_date: timestamp("estimated_delivery_date"),
   currency: varchar("currency", { length: 3 }).default("USD"),

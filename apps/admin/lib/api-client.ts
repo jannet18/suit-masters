@@ -122,6 +122,8 @@ export const adminApi = {
   updateOrderStatus: async (
     id: string,
     status: string,
+    trackingNumber?: string,
+    trackingCarrier?: string,
     token?: string,
   ): Promise<{ success: boolean; order: AdminOrder | null }> => {
     try {
@@ -131,10 +133,14 @@ export const adminApi = {
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
+      const body: Record<string, string> = { status };
+      if (trackingNumber) body.trackingNumber = trackingNumber;
+      if (trackingCarrier) body.trackingCarrier = trackingCarrier;
+
       const res = await fetch(`${SERVICES.order}/orders/${id}/status`, {
-        method: "PATCH",
+        method: "PUT",
         headers,
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         return res.json();

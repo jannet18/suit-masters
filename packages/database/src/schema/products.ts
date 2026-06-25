@@ -1,6 +1,5 @@
 import {
   pgTable,
-  serial,
   varchar,
   integer,
   numeric,

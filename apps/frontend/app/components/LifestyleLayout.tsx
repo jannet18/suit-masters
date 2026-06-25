@@ -315,7 +315,7 @@ export function LifestyleLayout({
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: `url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1600&q=80&auto=format&fit=crop')`,
+              backgroundImage: `url('https://plus.unsplash.com/premium_vector-1750786789338-9ca74d66b567?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8YmxhYWNrJTIwYW5kJTIwZ29sZCUyMGJhY2tncm91bmR8ZW58MHx8MHx8fDA%3D')`,
               filter: "blur(2px) brightness(0.7)",
             }}
           />
@@ -323,11 +323,12 @@ export function LifestyleLayout({
 
           <div className="relative h-full">
             {/* Editorial Content */}
-            <div className="">
-              <div className="inline-flex items-center gap-2 bg-[#c9a96e]/10 border border-[#c9a96e]/20 px-4 py-2 rounded-full mb-6">
+            <div className="relative z-10 p-8">
+              {/* <div className="inline-flex items-center gap-2 bg-[#c9a96e]/10 border border-[#c9a96e]/20 px-4 py-2 rounded-full mb-6"> */}
+              <div className="">
                 <Sparkles size={14} className="text-[#c9a96e]" />
                 <span className="text-xs uppercase tracking-widest text-[#c9a96e]">
-                  Curated Experience
+                 Curated Experience
                 </span>
               </div>
 

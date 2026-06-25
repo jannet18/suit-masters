@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, Package, Truck } from "lucide-react";
@@ -29,7 +29,7 @@ interface Order {
   items: OrderItem[];
 }
 
-export default function OrderConfirmationPage() {
+function OrderConfirmationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("id");
@@ -99,6 +99,7 @@ export default function OrderConfirmationPage() {
           </Link>
         </div>
       </div>
+      
     );
   }
 
@@ -253,5 +254,22 @@ export default function OrderConfirmationPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function OrderConfirmationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin w-10 h-10 border-2 border-[#c9a96e] border-t-transparent rounded-full mx-auto mb-4" />
+            <p className="text-[#9a9490]">Loading your order...</p>
+          </div>
+        </div>
+      }
+    >
+      <OrderConfirmationContent />
+    </Suspense>
   );
 }

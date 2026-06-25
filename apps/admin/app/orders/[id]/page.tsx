@@ -7,10 +7,14 @@ import Link from "next/link";
 
 const ORDER_STATUSES = [
   "pending",
+  "confirmed",
   "processing",
+  "in_production",
+  "quality_check",
   "shipped",
-  "completed",
+  "delivered",
   "cancelled",
+  "refunded",
 ] as const;
 
 export default function OrderDetailPage() {
@@ -20,6 +24,8 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [trackingCarrier, setTrackingCarrier] = useState("");
 
   useEffect(() => {
     async function fetchOrder() {
@@ -46,15 +52,36 @@ export default function OrderDetailPage() {
       const result = await adminApi.updateOrderStatus(
         params.id as string,
         selectedStatus,
+        trackingNumber || undefined,
+        trackingCarrier || undefined,
       );
-      if (result.success && result.order) {
-        setOrder(result.order);
+      if (result.success) {
+        // Refresh the order to show updated status
+        const updated = await adminApi.getOrderById(params.id as string);
+        if (updated.success && updated.order) {
+          setOrder(updated.order);
+        }
       }
     } catch (error) {
       console.error("Failed to update order status:", error);
     } finally {
       setUpdating(false);
     }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const colorMap: Record<string, string> = {
+      pending: "bg-yellow-100 text-yellow-800",
+      confirmed: "bg-blue-100 text-blue-800",
+      processing: "bg-indigo-100 text-indigo-800",
+      in_production: "bg-cyan-100 text-cyan-800",
+      quality_check: "bg-amber-100 text-amber-800",
+      shipped: "bg-purple-100 text-purple-800",
+      delivered: "bg-green-100 text-green-800",
+      cancelled: "bg-red-100 text-red-800",
+      refunded: "bg-orange-100 text-orange-800",
+    };
+    return colorMap[status] || "bg-gray-100 text-gray-800";
   };
 
   if (loading) {
@@ -108,22 +135,12 @@ export default function OrderDetailPage() {
                 <dt className="text-sm text-gray-500">Status</dt>
                 <dd>
                   <span
-                    className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                      order.status === "pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : order.status === "processing"
-                          ? "bg-blue-100 text-blue-800"
-                          : order.status === "shipped"
-                            ? "bg-purple-100 text-purple-800"
-                            : order.status === "completed"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                    }`}
+                    className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(order.status)}`}
                   >
-                    {order.status}
-                    </span>
+                    {order.status.replace(/_/g, " ")}
+                  </span>
                 </dd>
-                </div>
+              </div>
               <div>
                 <dt className="text-sm text-gray-500">Total</dt>
                 <dd className="font-medium">
@@ -204,11 +221,48 @@ export default function OrderDetailPage() {
                 >
                   {ORDER_STATUSES.map((status) => (
                     <option key={status} value={status}>
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                      {status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                     </option>
                   ))}
                 </select>
               </div>
+
+              {/* Tracking fields — shown when status is shipped or later */}
+              {(selectedStatus === "shipped" || selectedStatus === "delivered") && (
+                <>
+                  <div>
+                    <label className="block text-sm text-gray-500 mb-2">
+                      Tracking Number
+                    </label>
+                    <input
+                      type="text"
+                      value={trackingNumber}
+                      onChange={(e) => setTrackingNumber(e.target.value)}
+                      placeholder="e.g. RM123456789GB"
+                      className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-500 mb-2">
+                      Carrier
+                    </label>
+                    <select
+                      value={trackingCarrier}
+                      onChange={(e) => setTrackingCarrier(e.target.value)}
+                      className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select carrier</option>
+                      <option value="Royal Mail">Royal Mail</option>
+                      <option value="DHL">DHL</option>
+                      <option value="FedEx">FedEx</option>
+                      <option value="UPS">UPS</option>
+                      <option value="USPS">USPS</option>
+                      <option value="DPD">DPD</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </>
+              )}
 
               <button
                 onClick={handleStatusUpdate}
@@ -224,7 +278,7 @@ export default function OrderDetailPage() {
                   Timeline
                 </h3>
                 <div className="space-y-3">
-                  {ORDER_STATUSES.map((status, idx) => {
+                  {ORDER_STATUSES.map((status) => {
                     const currentIdx = ORDER_STATUSES.indexOf(
                       order.status as (typeof ORDER_STATUSES)[number],
                     );
@@ -247,7 +301,7 @@ export default function OrderDetailPage() {
                               : "text-gray-400"
                           }`}
                         >
-                          {status.charAt(0).toUpperCase() + status.slice(1)}
+                          {status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                         </span>
                       </div>
                     );

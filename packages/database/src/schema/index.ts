@@ -8,6 +8,7 @@ export * from "./promotions.js";
 export * from "./collection.js";
 export * from "./idempotency.js";
 export * from "./relations.js";
+export * from "./refunds.js";
 
 // Re-export drizzle-orm for convenience
 export * from "drizzle-orm";

@@ -1,4 +1,4 @@
-import { SessionManager } from "@kinde-oss/kinde-typescript-sdk";
+import { SessionManager, type GeneratePortalUrlParams } from "@kinde-oss/kinde-typescript-sdk";
 import { type Context } from "hono";
 export declare const kindeClient: {
     handleRedirectToApp: (sessionManager: SessionManager, callbackURL: URL) => Promise<void>;

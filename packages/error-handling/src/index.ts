@@ -9,6 +9,16 @@
  *   app.onError(errorHandler);
  */
 
+// Avoid relying on Node.js type definitions in consumers of this package.
+// Provide a minimal declaration for the subset of process.env we use.
+declare const process: {
+  env: {
+    SERVICE_NAME?: string;
+    NODE_ENV?: string;
+    [key: string]: string | undefined;
+  };
+};
+
 export enum ErrorSeverity {
   LOW = "low",
   MEDIUM = "medium",

@@ -1,14 +1,18 @@
 import { Hono } from "hono";
 import { db } from "@repo/db";
 import { userMeasurements } from "@repo/db/schema";
-import { asc, eq, and } from "drizzle-orm";
+import { asc, eq, and } from "@repo/db";
 
 type AuthUser = { id: string };
+
+type Variables = {
+  user: AuthUser;
+};
 
 // Measurement definitions routes
 // - GET /measurements/definitions -> returns all measurement definitions with video URLs
 
-export const measurementsHandler = new Hono()
+export const measurementsHandler = new Hono<{ Variables: Variables }>()
   // --- Public: measurement definitions (video guides) ---
   .get("/definitions", async (c) => {
     try {

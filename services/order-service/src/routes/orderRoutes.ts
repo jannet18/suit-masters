@@ -1,312 +1,3 @@
-// import { Hono } from "hono";
-// import type { AuthContext } from "@repo/auth";
-// import {
-//   db,
-//   orderItem,
-//   productConfiguration,
-//   productItem,
-//   shopOrder,
-//   CartItem,
-//   idempotencyKey,
-// } from "@repo/db";
-// import { eq, and, desc } from "@repo/db";
-
-// export const orderRoutes = new Hono<AuthContext>();
-
-// /**
-//  * POST /orders
-//  * Protected route — user must be logged in
-//  * Checkout user's cart and create order with idempotency
-//  */
-// orderRoutes.post("/", async (c) => {
-//   try {
-//     const user = c.get("user");
-//     const userId = user?.id ?? null;
-
-//     // Get Idempotency Key
-//     const idempotencyKey = c.req.header("Idempotency-Key");
-//     if (!idempotencyKey) {
-//       return c.json({ error: "Missing Idempotency-Key" }, 400);
-//     }
-
-//     // Check if key already used
-//     const existingKey = await db.query.idempotencyKeys.findFirst({
-//       where: (keys, { and, eq }) =>
-//         and(
-//           eq(keys.key, idempotencyKey),
-//           eq(keys.userId, Number(userId) ?? -1),
-//         ),
-//     });
-
-//     if (existingKey) {
-//       return c.json({
-//         orderId: existingKey.orderId,
-//         reused: true,
-//       });
-//     }
-
-//     const { shipping } = await c.req.json();
-//     if (!shipping) {
-//       return c.json({ error: "Shipping info required" }, 400);
-//     }
-//     // 1 Check for existing unpaid order
-//     // const existingPendingOrder = await db.query.shopOrder.findFirst({
-//     //   where: (orders, { and, eq }) =>
-//     //     and(eq(orders.userId, userId), eq(orders.status, "PENDING_PAYMENT")),
-//     // });
-//     // if (existingPendingOrder) {
-//     //   return c.json({ orderId: existingPendingOrder.id, reused: true });
-//     // }
-//     // 2 Load user's cart
-//     const cart = await db.query.cartItem.findFirst({
-//       where: (cart, { eq }) => eq(cart.userId, userId),
-//     });
-
-//     if (!cart) {
-//       return c.json({ error: "Cart not found" }, 400);
-//     }
-
-//     // 3 Load cart items with pricing
-//     const cartItems = await db
-//       .select({
-//         id: cartItem.id,
-//         qty: cartItem.qty,
-//         skuPrice: productItem.price,
-//         configurationPrice: productConfiguration.finalPrice,
-//         productId: productItem.product_id,
-//         selectedOptions: productConfiguration.selectedOptions,
-//         configurationId: cartItem.configuration_id,
-//       })
-//       .from(cartItem)
-//       .leftJoin(
-//         productConfiguration,
-//         eq(cartItem.configuration_id, productConfiguration.id),
-//       )
-//       .innerJoin(productItem, eq(cartItem.product_item_id, productItem.id))
-//       .where(eq(cartItem.cart_id, cart.id));
-
-//     if (cartItems.length === 0) {
-//       return c.json({ error: "Cart is empty" }, 400);
-//     }
-
-//     // 4 Securely calculate total from DB
-//     let total = 0;
-
-//     for (const item of cartItems) {
-//       const unitPrice = item.configurationPrice ?? item.skuPrice;
-//       total += Number(unitPrice) * item.qty;
-//     }
-
-//     // 5 Create order inside transaction
-//     const createdOrder = await db.transaction(async (tx) => {
-//       const total = cartItems.reduce((acc, item) => {
-//         const price = item.configurationPrice ?? item.skuPrice;
-//         return acc + Number(price) * item.qty;
-//       }, 0);
-
-//       const [newOrder] = await tx
-//         .insert(shopOrder)
-//         .values({
-//           userId,
-//           total: total.toString(),
-//           orderedItems: cartItems.length,
-//           status: "PENDING_PAYMENT",
-//           shipping_name: shipping.name,
-//           shipping_email: shipping.email,
-//           shipping_phone: shipping.phone,
-//           shipping_address_line1: shipping.addressLine1,
-//           shipping_address_line2: shipping.addressLine2 ?? null,
-//           shipping_city: shipping.city,
-//           shipping_region: shipping.region,
-//           shipping_postal_code: shipping.postalCode,
-//           shipping_country: shipping.country,
-//         })
-//         .returning();
-
-//       if (!newOrder) throw new Error("Order creation failed");
-
-//       // 6 Move cart items → orderItems
-//       await tx.insert(orderItem).values(
-//         cartItems.map((item) => ({
-//           order_id: newOrder.id,
-//           product_id: item.productId,
-//           configuration_id: item.configurationId ?? null,
-//           quantity: item.qty,
-//           base_price: (item.configurationPrice ?? item.skuPrice).toString(),
-//           selected_options: JSON.stringify(item.selectedOptions ?? {}),
-//         })),
-//       );
-
-//       // insert used idempotency key for auditing
-//       await tx.insert(idempotencyKey).values({
-//         key: idempotencyKey,
-//         userId: Number(userId),
-//         orderId: newOrder.id,
-//         createdAt: new Date(),
-//       });
-//       // 7 Clear cart
-//       await tx.delete(cartItem).where(eq(cartItem.cart_id, cart.id));
-
-//       return newOrder;
-//     });
-
-//     return c.json({ orderId: createdOrder.id, reused: false }, 201);
-//   } catch (error) {
-//     console.error(error);
-//     return c.json({ error: "Failed to create order" }, 500);
-//   }
-// });
-
-// // orderRoutes.post("/", async (c) => {
-// //   try {
-// //     const user = c.get("user");
-// //     const userId = Number(user?.id) ?? null;
-
-// //     // --- IDEMPOTENCY CHECK ---
-// //     const idempotencyKey = c.req.header("Idempotency-Key");
-// //     if (!idempotencyKey)
-// //       return c.json({ error: "Missing Idempotency-Key" }, 400);
-
-// //     const existingKey = await db.query.idempotencyKeys.findFirst({
-// //       where: (keys, { and, eq }) =>
-// //         and(eq(keys.key, idempotencyKey), eq(keys.userId, userId)),
-// //     });
-// //     if (existingKey)
-// //       return c.json({ orderId: existingKey.orderId, reused: true });
-
-// //     // --- PAYLOAD VALIDATION ---
-// //     const { shipping } = await c.req.json();
-// //     if (!shipping) return c.json({ error: "Shipping info required" }, 400);
-
-// //     // --- DATA FETCHING ---
-// //     const cart = await db.query.shoppingCart.findFirst({
-// //       where: (cart, { eq }) => eq(cart.user_id, userId),
-// //     });
-// //     if (!cart) return c.json({ error: "Cart not found" }, 400);
-
-// //     const cartItems = await db
-// //       .select({
-// //         id: shoppingCartItem.id,
-// //         qty: shoppingCartItem.qty,
-// //         skuPrice: productItem.price,
-// //         // CRITICAL: We prioritize the custom configuration price for bespoke items
-// //         configurationPrice: productConfiguration.final_price,
-// //         productId: productItem.product_id,
-// //         selectedOptions: productConfiguration.selected_options,
-// //         configurationId: shoppingCartItem.configuration_id,
-// //       })
-// //       .from(shoppingCartItem)
-// //       .leftJoin(
-// //         productConfiguration,
-// //         eq(shoppingCartItem.configuration_id, productConfiguration.id),
-// //       )
-// //       .innerJoin(
-// //         productItem,
-// //         eq(shoppingCartItem.product_item_id, productItem.id),
-// //       )
-// //       .where(eq(shoppingCartItem.cart_id, cart.id));
-
-// //     if (cartItems.length === 0) return c.json({ error: "Cart is empty" }, 400);
-
-// //     // --- TRANSACTION ---
-// //     const createdOrder = await db.transaction(async (tx) => {
-// //       // 1. Calculate Total
-// //       const total = cartItems.reduce((acc, item) => {
-// //         const price = item.configurationPrice ?? item.skuPrice;
-// //         return acc + Number(price) * item.qty;
-// //       }, 0);
-
-// //       // 2. Create Order
-// //       const [newOrder] = await tx
-// //         .insert(shopOrder)
-// //         .values({
-// //           userId: userId as string,
-// //           total: total.toFixed(2),
-// //           status: "PENDING_PAYMENT",
-// //           shipping_name: shipping.name,
-// //           shipping_email: shipping.email,
-// //           shipping_city: shipping.city,
-// //           shipping_country: shipping.country,
-// //           shipping_phone: shipping.phone,
-// //           shipping_address_line1: shipping.address1,
-// //           shipping_region: shipping.region,
-// //           shipping_postal_code: shipping.postalCode,
-// //           // ... other shipping fields
-// //         })
-// //         .returning();
-
-// //       // 3. Snapshot configurations into orderItems
-// //       // This is vital: if a user deletes their configuration later, the order stays intact
-// //       await tx.insert(orderItems).values(
-// //         cartItems.map((item) => ({
-// //           order_id: newOrder.id,
-// //           product_id: item.productId,
-// //           configuration_id: item.configurationId,
-// //           quantity: item.qty,
-// //           base_price: (
-// //             item.configurationPrice ??
-// //             item.skuPrice ??
-// //             0
-// //           ).toString(),
-// //           // Snapshotting options as JSONB ensures the tailor always sees what was ordered
-// //           selected_options: item.selectedOptions,
-// //           final_price:
-// //         })),
-// //       );
-
-// //       // 4. Record Idempotency
-// //       await tx.insert(idempotencyKeys).values({
-// //         key: idempotencyKey,
-// //         userId: userId,
-// //         orderId: newOrder.id,
-// //       });
-
-// //       // 5. Cleanup Cart
-// //       await tx
-// //         .delete(shoppingCartItem)
-// //         .where(eq(shoppingCartItem.cart_id, cart.id));
-
-// //       return newOrder;
-// //     });
-
-// //     return c.json({ orderId: createdOrder.id, reused: false }, 201);
-// //   } catch (error) {
-// //     return c.json({ error: "Checkout failed" }, 500);
-// //   }
-// // });
-// /**
-//  * GET /orders
-//  * Fetch all orders for the current user
-//  */
-// orderRoutes.get("/", async (c) => {
-//   const user = c.get("user");
-//   const userId = user.id;
-
-//   const orders = await db.query.shopOrder.findMany({
-//     where: (orders: any, { eq }: any) => eq(orders.userId, userId),
-//     orderBy: (orders: any, { desc }: any) => [desc(orders.orderDate)],
-//   });
-//   return c.json({ orders });
-// });
-// /**
-//  * GET /orders/:orderId
-//  * Fetch a single order for the current user
-//  */
-// orderRoutes.get("/:orderId", async (c) => {
-//   const user = c.get("user");
-//   const userId = user.id;
-//   const orderId = Number(c.req.param("orderId"));
-
-//   const order = await db.query.shopOrder.findFirst({
-//     where: (orders: any, { and, eq }: any) =>
-//       and(eq(orders.id, orderId), eq(orders.userId, userId)),
-//   });
-//   if (!order) {
-//     return c.json({ error: "Order not found" }, 404);
-//   }
-//   return c.json(order);
-// });
-
 import { Hono } from "hono";
 import type { AuthContext } from "@repo/auth";
 import {
@@ -316,8 +7,9 @@ import {
   shopOrder,
   cartItem, // Updated from CartItem/shoppingCartItem
   idempotencyKeys, // Ensure this matches your schema export
+  productItem,
 } from "@repo/db";
-import { eq, and, desc } from "@repo/db";
+import { eq, and, desc, sql } from "@repo/db";
 import {
   emailService,
   type OrderConfirmationData,
@@ -341,154 +33,358 @@ orderRoutes.post("/", async (c) => {
       return c.json({ error: "Missing Idempotency-Key" }, 400);
     }
 
-    // 1. Check Idempotency
+    const {shipping} = await c.req.json()
+    if(!shipping) {
+      return c.json({ error: "Shipping details required" }, 400);
+    }
+
+    // 1. Transaction enclosed validation & stock reservation
+    let userCartItems: Array<{
+      id: number;
+      qty: number;
+      configurationId: number | null;
+      productId: number;
+      finalPrice: string | number;
+      selectedOptions?: unknown | null;
+    }> = [];
+    let totalAmount = 0;
+
     const existingKey = await db.query.idempotencyKeys.findFirst({
       where: (table: any, { and, eq }: any) =>
         and(eq(table.key, idempotencyKeyStr), eq(table.userId, userId)),
     });
 
     if (existingKey) {
-      return c.json({ orderId: existingKey.orderId, reused: true });
+      return c.json({ orderId: existingKey.orderId, reused: true }, 200);
     }
 
-    const { shipping } = await c.req.json();
-    if (!shipping) {
-      return c.json({ error: "Shipping info required" }, 400);
-    }
+    const createdOrder = await db.transaction(async (tx) => {
+      // We join productConfiguration to get the 'Build' price and options
+      userCartItems = await db
+        .select({
+          id: cartItem.id,
+          qty: cartItem.quantity,
+          configurationId: cartItem.configurationId,
+          productId: cartItem.productId,
+          finalPrice: productConfiguration.finalPrice,
+          selectedOptions: productConfiguration.selectedOptions,
+        })
+        .from(cartItem)
+        .innerJoin(
+          productConfiguration,
+          eq(cartItem.configurationId, productConfiguration.id),
+        )
+        .where(eq(cartItem.userId, userId));
 
-    // 2. Load Cart Items
-    // We join productConfiguration to get the 'Build' price and options
-    const userCartItems = await db
-      .select({
-        id: cartItem.id,
-        qty: cartItem.quantity,
-        configurationId: cartItem.configurationId,
-        finalPrice: productConfiguration.finalPrice,
-        selectedOptions: productConfiguration.selectedOptions,
-      })
-      .from(cartItem)
-      .innerJoin(
-        productConfiguration,
-        eq(cartItem.configurationId, productConfiguration.id),
-      )
-      .where(eq(cartItem.userId, userId));
+    if (userCartItems.length === 0) throw new Error("Cart is empty");
 
-    if (userCartItems.length === 0) {
-      return c.json({ error: "Cart is empty" }, 400);
+    // Verify and lock rows for standard items
+    for (const item of userCartItems) {
+      // Check if any productItem exists for this product (standard items have SKUs)
+      const stockItems = await tx.execute(sql`SELECT id, stoclk FROM product_item WHERE product_id = ${item.productId} FOR UPDATE`)
+      
+      const totalAvalableStock = stockItems.rows.reduce((sum: number, row: any) => sum + (row.stock ?? 0), 0);
+      if (totalAvalableStock < item.qty) {
+        throw new Error(`Insufficient stock for product ${item.productId}. Available: ${totalAvalableStock}, requested: ${item.qty}`);
+      }
     }
 
     // Calculate total before transaction for email
-    const totalAmount = userCartItems.reduce((acc, item) => {
+    totalAmount = userCartItems.reduce((acc, item) => {
       return acc + Number(item.finalPrice) * item.qty;
     }, 0);
 
-    // 3. Transactional Checkout
-    const createdOrder = await db.transaction(async (tx) => {
-      // Create the Shop Order
-      const [newOrder] = await tx
-        .insert(shopOrder)
-        .values({
-          userId,
-          total: totalAmount.toFixed(2),
-          status: "pending", // Matches our orderStatusEnum
-          shipping_name: shipping.name,
-          shipping_email: shipping.email,
-          shipping_phone: shipping.phone,
-          shipping_address_line1: shipping.addressLine1,
-          shipping_address_line2: shipping.addressLine2,
-          shipping_city: shipping.city,
-          shipping_region: shipping.region,
-          shipping_postal_code: shipping.postalCode,
-          shipping_country: shipping.country,
-        })
-        .returning();
+    // Create the Shop Order
+    const [newOrder] = await tx
+      .insert(shopOrder)
+      .values({
+        userId,
+        total: totalAmount.toFixed(2),
+        status: "pending", // Matches our orderStatusEnum
+        shipping_name: shipping.name,
+        shipping_email: shipping.email,
+        shipping_phone: shipping.phone,
+        shipping_address_line1: shipping.addressLine1,
+        shipping_address_line2: shipping.addressLine2,  
+      shipping_city: shipping.city,
+      shipping_region: shipping.region,
+      shipping_postal_code: shipping.postalCode,
+      shipping_country: shipping.country,
+    })
+    .returning();
 
-      if (!newOrder) {
-        throw new Error("Order creation failed: No row returned");
-      }
-      // Create Order Items (Snapshots)
-      await tx.insert(orderItems).values(
-        userCartItems.map((item) => ({
-          orderId: newOrder.id,
-          productNameSnapshot: "Custom Suit Item", // You can join 'product' to get the actual name
-          unitPrice: item.finalPrice,
-          priceAtPurchase: item.finalPrice,
-          quantity: item.qty,
-          customizationSnapsot: item.selectedOptions,
-        })),
-      );
-
-      // Record Idempotency
-      await tx.insert(idempotencyKeys).values({
-        key: idempotencyKeyStr,
-        userId: Number(userId),
-        orderId: newOrder.id,
-      });
-
-      // Clear Cart
-      await tx.delete(cartItem).where(eq(cartItem.userId, userId));
-
-      return newOrder;
-    });
-
-    // Send order confirmation email (fire and forget - don't block response)
-    try {
-      const emailData: OrderConfirmationData = {
-        orderId: createdOrder.id,
-        customerName: shipping.name,
-        customerEmail: shipping.email,
-        orderDate: new Date().toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
-        totalAmount: `$${totalAmount.toFixed(2)}`,
-        items: userCartItems.map((item) => ({
-          name: "Custom Suit",
-          quantity: item.qty,
-          price: `$${Number(item.finalPrice).toFixed(2)}`,
-          customization: item.selectedOptions
-            ? JSON.stringify(item.selectedOptions)
-            : undefined,
-        })),
-        shippingAddress: {
-          name: shipping.name,
-          addressLine1: shipping.addressLine1,
-          addressLine2: shipping.addressLine2,
-          city: shipping.city,
-          region: shipping.region,
-          postalCode: shipping.postalCode,
-          country: shipping.country,
-        },
-        estimatedDeliveryDate: new Date(
-          Date.now() + 14 * 24 * 60 * 60 * 1000,
-        ).toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
-        tailorNotes:
-          "Your custom suit measurements have been received. Our master tailors will begin crafting your suit within 24 hours.",
-      };
-
-      // Send email asynchronously (don't await - fire and forget)
-      emailService.sendOrderConfirmation(emailData).catch((err) => {
-        console.error("Failed to send order confirmation email:", err);
-        // Don't fail the order if email fails
-      });
-    } catch (emailError) {
-      console.error("Error preparing email data:", emailError);
-      // Don't fail the order if email preparation fails
+    if (!newOrder) {
+      throw new Error("Order creation failed: No row returned");
     }
 
-    return c.json({ orderId: createdOrder.id, reused: false }, 201);
-  } catch (error) {
-    console.error(error);
-    return c.json({ error: "Checkout failed" }, 500);
+    // Create Order Items (Snapshots)
+    await tx.insert(orderItems).values(
+      userCartItems.map((item) => ({
+        orderId: newOrder.id,
+        productNameSnapshot: "Custom Suit Item", // You can join 'product' to get the actual name
+        unitPrice: String(item.finalPrice),
+        priceAtPurchase: String(item.finalPrice),
+        quantity: item.qty,
+        customizationSnapsot: item.selectedOptions,
+      })),
+    );
+
+    // Record Idempotency
+    await tx.insert(idempotencyKeys).values({
+      key: idempotencyKeyStr,
+      userId: Number(userId),
+      orderId: newOrder.id,
+    });
+
+    // Decrement inventory for STANDARD products (stock-tracked items)
+    for (const item of userCartItems) {
+      const stockItems = await tx
+        .select()
+        .from(productItem)
+        .where(eq(productItem.productId, item.productId));
+
+      if (stockItems.length > 0) {
+        // Decrement stock proportionally across available SKUs
+        let remaining = item.qty;
+        for (const si of stockItems) {
+          if (remaining <= 0) break;
+          const decrement = Math.min(si.stock ?? 0, remaining);
+          await tx
+            .update(productItem)
+            .set({ stock: (si.stock ?? 0) - decrement })
+            .where(eq(productItem.id, si.id));
+          remaining -= decrement;
+        }
+        if (remaining > 0) {
+          throw new Error(
+            `Inventory insufficient during checkout for product`,
+          );
+        }
+      }
+    }
+
+    // Clear Cart
+    await tx.delete(cartItem).where(eq(cartItem.userId, userId));
+
+    return newOrder;
+  });
+
+  // Send order confirmation email (fire and forget - don't block response)
+  try {
+    const emailData: OrderConfirmationData = {
+      orderId: createdOrder.id,
+      customerName: shipping.name,
+      customerEmail: shipping.email,
+      orderDate: new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      totalAmount: `$${totalAmount.toFixed(2)}`,
+      items: userCartItems.map((item) => ({
+        name: "Custom Suit",
+        quantity: item.qty,
+        price: `$${Number(item.finalPrice).toFixed(2)}`,
+        customization: item.selectedOptions
+          ? JSON.stringify(item.selectedOptions)
+          : undefined,
+      })),
+      shippingAddress: {
+        name: shipping.name,
+        addressLine1: shipping.addressLine1,
+        addressLine2: shipping.addressLine2,
+        city: shipping.city,
+        region: shipping.region,
+        postalCode: shipping.postalCode,
+        country: shipping.country,
+      },
+      estimatedDeliveryDate: new Date(
+        Date.now() + 14 * 24 * 60 * 60 * 1000,
+      ).toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      tailorNotes:
+        "Your custom suit measurements have been received. Our master tailors will begin crafting your suit within 24 hours.",
+    };
+
+    // Send email asynchronously (don't await - fire and forget)
+    emailService.sendOrderConfirmation(emailData).catch((err) => {
+      console.error("Failed to send order confirmation email:", err);
+      // Don't fail the order if email fails
+    });
+  } catch (emailError) {
+    console.error("Error preparing email data:", emailError);
+    // Don't fail the order if email preparation fails
   }
-});
+
+  return c.json({ orderId: createdOrder.id, reused: false }, 201);
+} catch (error) {
+  console.error(error);
+  return c.json({ error: "Failed to create order" }, 500);
+}   
+})
+
+//         .select()
+//         .from(productItem)
+//         .where(eq(productItem.productId, item.productId));
+
+//       // If the product has stock-tracked items, verify availability
+//       if (stockItems.length > 0) {
+//         const totalStock = stockItems.reduce((sum, si) => sum + (si.stock ?? 0), 0);
+//         if (totalStock < item.qty) {
+//           return c.json(
+//             {
+//               error: `Insufficient stock for product. Available: ${totalStock}, requested: ${item.qty}`,
+//             },
+//             400,
+//           );
+//         }
+//       }
+//     }
+
+//     // Calculate total before transaction for email
+//     const totalAmount = userCartItems.reduce((acc, item) => {
+//       return acc + Number(item.finalPrice) * item.qty;
+//     }, 0);
+
+//     // 3. Transactional Checkout
+//     const createdOrder = await db.transaction(async (tx) => {
+//       // Create the Shop Order
+//       const [newOrder] = await tx
+//         .insert(shopOrder)
+//         .values({
+//           userId,
+//           total: totalAmount.toFixed(2),
+//           status: "pending", // Matches our orderStatusEnum
+//           shipping_name: shipping.name,
+//           shipping_email: shipping.email,
+//           shipping_phone: shipping.phone,
+//           shipping_address_line1: shipping.addressLine1,
+//           shipping_address_line2: shipping.addressLine2,
+//           shipping_city: shipping.city,
+//           shipping_region: shipping.region,
+//           shipping_postal_code: shipping.postalCode,
+//           shipping_country: shipping.country,
+//         })
+//         .returning();
+
+//       if (!newOrder) {
+//         throw new Error("Order creation failed: No row returned");
+//       }
+//       // Create Order Items (Snapshots)
+//       await tx.insert(orderItems).values(
+//         userCartItems.map((item) => ({
+//           orderId: newOrder.id,
+//           productNameSnapshot: "Custom Suit Item", // You can join 'product' to get the actual name
+//           unitPrice: item.finalPrice,
+//           priceAtPurchase: item.finalPrice,
+//           quantity: item.qty,
+//           customizationSnapsot: item.selectedOptions,
+//         })),
+//       );
+
+//       // Record Idempotency
+//       await tx.insert(idempotencyKeys).values({
+//         key: idempotencyKeyStr,
+//         userId: Number(userId),
+//         orderId: newOrder.id,
+//       });
+
+//       // Decrement inventory for STANDARD products (stock-tracked items)
+//       for (const item of userCartItems) {
+//         const stockItems = await tx
+//           .select()
+//           .from(productItem)
+//           .where(eq(productItem.productId, item.productId));
+
+//         if (stockItems.length > 0) {
+//           // Decrement stock proportionally across available SKUs
+//           let remaining = item.qty;
+//           for (const si of stockItems) {
+//             if (remaining <= 0) break;
+//             const decrement = Math.min(si.stock ?? 0, remaining);
+//             await tx
+//               .update(productItem)
+//               .set({ stock: (si.stock ?? 0) - decrement })
+//               .where(eq(productItem.id, si.id));
+//             remaining -= decrement;
+//           }
+//           if (remaining > 0) {
+//             throw new Error(
+//               `Inventory insufficient during checkout for product`,
+//             );
+//           }
+//         }
+//       }
+
+//       // Clear Cart
+//       await tx.delete(cartItem).where(eq(cartItem.userId, userId));
+
+//       return newOrder;
+//     });
+
+//     // Send order confirmation email (fire and forget - don't block response)
+//     try {
+//       const emailData: OrderConfirmationData = {
+//         orderId: createdOrder.id,
+//         customerName: shipping.name,
+//         customerEmail: shipping.email,
+//         orderDate: new Date().toLocaleDateString("en-US", {
+//           weekday: "long",
+//           year: "numeric",
+//           month: "long",
+//           day: "numeric",
+//         }),
+//         totalAmount: `$${totalAmount.toFixed(2)}`,
+//         items: userCartItems.map((item) => ({
+//           name: "Custom Suit",
+//           quantity: item.qty,
+//           price: `$${Number(item.finalPrice).toFixed(2)}`,
+//           customization: item.selectedOptions
+//             ? JSON.stringify(item.selectedOptions)
+//             : undefined,
+//         })),
+//         shippingAddress: {
+//           name: shipping.name,
+//           addressLine1: shipping.addressLine1,
+//           addressLine2: shipping.addressLine2,
+//           city: shipping.city,
+//           region: shipping.region,
+//           postalCode: shipping.postalCode,
+//           country: shipping.country,
+//         },
+//         estimatedDeliveryDate: new Date(
+//           Date.now() + 14 * 24 * 60 * 60 * 1000,
+//         ).toLocaleDateString("en-US", {
+//           weekday: "long",
+//           year: "numeric",
+//           month: "long",
+//           day: "numeric",
+//         }),
+//         tailorNotes:
+//           "Your custom suit measurements have been received. Our master tailors will begin crafting your suit within 24 hours.",
+//       };
+
+//       // Send email asynchronously (don't await - fire and forget)
+//       emailService.sendOrderConfirmation(emailData).catch((err) => {
+//         console.error("Failed to send order confirmation email:", err);
+//         // Don't fail the order if email fails
+//       });
+//     } catch (emailError) {
+//       console.error("Error preparing email data:", emailError);
+//       // Don't fail the order if email preparation fails
+//     }
+
+//     return c.json({ orderId: createdOrder.id, reused: false }, 201);
+//   } catch (error) {
+//     console.error(error);
+//     return c.json({ error: "Checkout failed" }, 500);
+//   }
+// });
 
 /**
  * GET /orders
@@ -520,3 +416,111 @@ orderRoutes.get("/:orderId", async (c) => {
   if (!order) return c.json({ error: "Order not found" }, 404);
   return c.json(order);
 });
+
+/**
+ * PUT /orders/:orderId/status
+ * Update order status (admin or system use).
+ * Body: { status: string, trackingNumber?: string, trackingCarrier?: string }
+ * Sends a status update email to the customer.
+ */
+orderRoutes.put("/:orderId/status", async (c) => {
+  try {
+    const user = c.get("user");
+    const isAdmin = (user as { role?: string })?.role === "ADMIN";
+    if (!isAdmin) {
+      return c.json({ error: "Access Denied, Unauthorized!" }, 403);
+    }
+    const orderId = Number(c.req.param("orderId"));
+    const { status, trackingNumber, trackingCarrier } = await c.req.json<{
+      status: string;
+      trackingNumber?: string;
+      trackingCarrier?: string;
+    }>();
+
+    if (!status) {
+      return c.json({ error: "Status is required" }, 400);
+    }
+
+    // Valid status transitions
+    const validStatuses = [
+      "pending",
+      "confirmed",
+      "processing",
+      "in_production",
+      "quality_check",
+      "shipped",
+      "delivered",
+      "cancelled",
+      "refunded",
+    ];
+
+    if (!validStatuses.includes(status)) {
+      return c.json(
+        {
+          error: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+        },
+        400,
+      );
+    }
+
+    // Fetch the current order
+    const order = await db.query.shopOrder.findFirst({
+      where: (table, { eq }) => eq(table.id, orderId),
+    });
+
+    if (!order) {
+      return c.json({ error: "Order not found" }, 404);
+    }
+
+    // Build update payload
+    const updates: Record<string, any> = { status };
+    if (trackingNumber !== undefined) updates.tracking_number = trackingNumber;
+    if (trackingCarrier !== undefined) updates.tracking_carrier = trackingCarrier;
+
+    // Update the order
+    await db
+      .update(shopOrder)
+      .set(updates)
+      .where(eq(shopOrder.id, orderId));
+
+    // Send status update email (fire and forget)
+    if (order.shipping_email) {
+      emailService
+        .sendOrderStatusUpdate(order.shipping_email, orderId, status, [
+          trackingNumber
+            ? `Tracking number: ${trackingNumber}${trackingCarrier ? ` (${trackingCarrier})` : ""}`
+            : "",
+          `Your order status has been updated to: ${status.replace(/_/g, " ").toUpperCase()}`,
+        ].filter(Boolean))
+        .catch((err) => {
+          console.error("Failed to send status update email:", err);
+        });
+    }
+
+    return c.json({
+      success: true,
+      message: `Order #${orderId} status updated to ${status}`,
+    });
+  } catch (error) {
+    console.error("Failed to update order status:", error);
+    return c.json({ error: "Failed to update order status" }, 500);
+  }
+});
+
+/**
+ * GET /orders/admin/all
+ * Fetch all orders (admin use). Returns orders with basic info.
+ */
+orderRoutes.get("/admin/all", async (c) => {
+  try {
+    const orders = await db.query.shopOrder.findMany({
+      orderBy: [desc(shopOrder.id)],
+      limit: 100,
+    });
+
+    return c.json({ success: true, orders });
+  } catch (error) {
+    console.error("Failed to fetch all orders:", error);
+    return c.json({ success: false, orders: [], error: "Failed to fetch orders" }, 500);
+  }
+})

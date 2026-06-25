@@ -120,21 +120,36 @@ export default function AccountPage() {
     setSaving(true);
     setSaveMessage(null);
     try {
-      // For now, update local state optimistically.
-      // In production, this would POST to a user-profile service
-      // or Kinde Management API endpoint.
-      setUser((prev) =>
-        prev
-          ? {
-              ...prev,
-              name: profileName,
-              phone: profilePhone,
-              address: profileAddress,
-            }
-          : prev,
-      );
-      setSaveMessage("Profile updated successfully");
-      setTimeout(() => setSaveMessage(null), 3000);
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name: profileName,
+          phone: profilePhone,
+          address: profileAddress,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        // Update local state optimistically
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                name: profileName,
+                phone: profilePhone,
+                address: profileAddress,
+              }
+            : prev,
+        );
+        setSaveMessage("Profile updated successfully");
+        setTimeout(() => setSaveMessage(null), 3000);
+      } else {
+        setSaveMessage(data.error || "Failed to save changes");
+      }
     } catch (error) {
       console.error("Failed to save profile", error);
       setSaveMessage("Failed to save changes");
@@ -390,6 +405,12 @@ export default function AccountPage() {
                 >
                   Profile Settings
                 </button>
+                <Link
+                  href="/account/refunds"
+                  className="block w-full text-left px-4 py-3 rounded-lg transition-colors hover:bg-[#2e2e2e]"
+                >
+                  Refunds and Returns
+                </Link>
               </div>
 
               <div className="mt-8 pt-6 border-t border-[#2e2e2e]">
@@ -496,7 +517,7 @@ export default function AccountPage() {
                             >
                               {order.status}
                             </span>
-                            <p className="font-semibold">${order.total}</p>
+                            <p className="font-mono font-semibold">£{Number(order.total).toFixed(2)}</p>
                             <Link
                               href={`/account/orders/${order.id}`}
                               className="text-[#c9a96e] hover:underline text-sm"
@@ -584,7 +605,7 @@ export default function AccountPage() {
                             </div>
                             <p className="text-gray-400">
                               Placed on {formatDate(order.createdAt)} •{" "}
-                              {order.orderedItems} items • Total: ${order.total}
+                              {order.orderedItems} items • Total: £{Number(order.total).toFixed(2)}
                             </p>
                             {order.estimatedDeliveryDate && (
                               <p className="text-sm text-gray-400 mt-1">

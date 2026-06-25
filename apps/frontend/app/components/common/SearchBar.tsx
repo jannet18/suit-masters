@@ -1,6 +1,6 @@
 "use client";
-import { Search, X, Clock, Tag, Package } from "lucide-react";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { Search, X, Tag, Package } from "lucide-react";
+import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api/api-client";
 
@@ -13,7 +13,7 @@ interface SearchSuggestion {
   type: "product" | "category" | "collection";
 }
 
-const SearchBar = () => {
+const SearchBarContent = () => {
   const [value, setValue] = useState("");
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +23,7 @@ const SearchBar = () => {
   const searchParams = useSearchParams();
   const { replace } = useRouter();
   const router = useRouter();
-  const params = new URLSearchParams(searchParams);
+  const params = new URLSearchParams(searchParams.toString());
   const query = searchParams.get("query") || "";
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -93,7 +93,6 @@ const SearchBar = () => {
     }
 
     setShowSuggestions(false);
-    console.log("Search for:", value);
   };
 
   // Handle suggestion click
@@ -181,7 +180,7 @@ const SearchBar = () => {
           value={value}
           id="search"
           placeholder="Search suits, blazers, accessories..."
-          className="rounded-md focus-visible:ring-0 focus-visible:ring-transparent focus-visible:ring-offset-0 bg-transparent dark:bg-transparent border border-gray-300 dark:border-gray-700 focus:border-[#c9a96e] dark:focus:border-[#c9a96e] w-full pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c9a96e] dark:focus:ring-[#c9a96e] transition-colors"
+          className="rounded-l-md focus-visible:ring-0 focus-visible:ring-transparent focus-visible:ring-offset-0 bg-transparent dark:bg-transparent border border-gray-300 dark:border-gray-700 focus:border-[#c9a96e] dark:focus:border-[#c9a96e] w-full pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c9a96e] dark:focus:ring-[#c9a96e] transition-colors"
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={() => value.length >= 2 && setShowSuggestions(true)}
@@ -194,16 +193,16 @@ const SearchBar = () => {
             onClick={onClear}
             aria-label="Clear search"
           >
-            {!value ? <Search className="size-4" /> : <X className="w-4 h-4" />}
+            <X className="w-4 h-4" />
           </button>
         )}
-        {/* <button
+        <button
           type="submit"
           className="w-10 h-9.5 flex items-center justify-center border border-gray-300 dark:border-gray-700 border-l-0 rounded-r-md focus-visible:ring-0 focus-visible:ring-transparent focus-visible:ring-offset-0 bg-transparent p-0 ml-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           aria-label="Search"
         >
           <Search className="size-4" />
-        </button> */}
+        </button>
       </form>
 
       {/* Search Suggestions Dropdown */}
@@ -221,7 +220,7 @@ const SearchBar = () => {
                   Suggestions
                 </div>
               </div>
-              <div className="py-1">
+              <div className="flex flex-col py-1">
                 {suggestions.map((suggestion, index) => (
                   <button
                     key={`${suggestion.type}-${suggestion.id}`}
@@ -236,7 +235,7 @@ const SearchBar = () => {
                         <Tag className="w-4 h-4 text-gray-400" />
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex flex-col min-w-0 flex-1">
                       <div className="font-medium text-gray-900 dark:text-gray-100 truncate">
                         {suggestion.name}
                       </div>
@@ -280,12 +279,13 @@ const SearchBar = () => {
         </div>
       )}
 
-      {/* Recent searches (could be enhanced with localStorage) */}
+      {/* No results found */}
       {showSuggestions &&
         !isLoading &&
         suggestions.length === 0 &&
         value.length >= 2 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-md shadow-lg z-50 p-4">
+          <div>
+          {/* // <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-md shadow-lg z-50 p-4 flex flex-col items-center justify-center text-center"> */}
             <div className="text-center text-gray-500 dark:text-gray-400">
               No results found for "{value}"
             </div>
@@ -295,6 +295,22 @@ const SearchBar = () => {
           </div>
         )}
     </div>
+  );
+};
+
+const SearchBar = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="relative w-full lg:w-100 mt-26">
+          <div className="flex items-center gap-0">
+            <div className="rounded-md bg-transparent border border-gray-300 dark:border-gray-700 w-full pl-3 pr-10 py-2 text-sm h-9.5" />
+          </div>
+        </div>
+      }
+    >
+      <SearchBarContent />
+    </Suspense>
   );
 };
 

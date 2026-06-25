@@ -88,8 +88,8 @@ export default function OrdersPage() {
               {order.orderedItems} items
             </div>
 
-            <div className="mt-2 font-medium">
-              USD {Number(order.total).toLocaleString()}
+            <div className="mt-2 font-mono font-medium">
+              £{Number(order.total).toFixed(2)}
             </div>
           </div>
         ))}

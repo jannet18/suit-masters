@@ -6,7 +6,6 @@ import {
   uuid,
   varchar,
   text,
-  serial,
   integer,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "./shared.js";
@@ -18,6 +17,8 @@ export const usersTable = pgTable("site_users", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   name: varchar("name").notNull(),
   picture: varchar("picture", { length: 1024 }).default(""),
+  phone: varchar("phone", { length: 20 }).default(""),
+  address: text("address").default(""),
   roles: varchar("roles").notNull().default("CUSTOMER"),
   ...timestamps,
 });

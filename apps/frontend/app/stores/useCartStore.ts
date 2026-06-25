@@ -26,6 +26,12 @@ interface CartState {
   updateQuantity: (id: number, quantity: number) => void;
   clearCart: () => void;
   getTotal: () => number;
+  /** Sync local cart with server cart (call on login) */
+  syncWithServer: () => Promise<void>;
+  /** Push a single item to the server cart (fire-and-forget) */
+  pushToServer: (item: CartItem) => void;
+  /** Remove item from server cart (fire-and-forget) */
+  removeFromServer: (itemId: number) => void;
 }
 
 // Store
@@ -124,7 +130,15 @@ export const useCartStore = create<CartState>()(
       /**
        * Calculate total price (base + custom options) * quantity
        */
-      clearCart: () => set({ cart: [] }),
+      clearCart: async () => {
+        set({ cart: [] });
+        // Also clear server cart
+        try {
+          await fetch("/api/cart?clear=true", { method: "DELETE" });
+        } catch {
+          // Silent fail — local state is already cleared
+        }
+      },
 
       getTotal: () =>
         get().cart.reduce((acc, item) => {
@@ -135,8 +149,95 @@ export const useCartStore = create<CartState>()(
               0,
             );
           }
-          return (acc + price * item.quantity) / 100;
+          return (acc + price * item.quantity);
         }, 0),
+
+      /**
+       * Sync local (localStorage) cart with the server cart.
+       * Called after login to merge any pre-login items.
+       */
+      syncWithServer: async () => {
+        try {
+          // 1. Fetch server cart
+          const serverRes = await fetch("/api/cart", { credentials: "include" });
+          if (!serverRes.ok) return;
+
+          const serverData = await serverRes.json();
+          const serverItems: any[] = serverData.items || [];
+
+          // 2. If server cart has items, merge them into local cart
+          if (serverItems.length > 0) {
+            const localCart = get().cart;
+            const mergedCart = [...localCart];
+
+            for (const serverItem of serverItems) {
+              // Check if this item already exists locally
+              const existingIndex = mergedCart.findIndex(
+                (local) =>
+                  local.id === (serverItem.product?.id ?? serverItem.id) &&
+                  JSON.stringify(local.selected_options) ===
+                    JSON.stringify(serverItem.selectedOptions),
+              );
+
+              if (existingIndex === -1) {
+                // Item doesn't exist locally — add it
+                mergedCart.push({
+                  id: serverItem.product?.id ?? serverItem.id,
+                  productId: String(serverItem.product?.id ?? serverItem.id),
+                  name: serverItem.product?.name || "Custom Suit",
+                  base_price: Number(serverItem.unit_price) || 0,
+                  image_url: serverItem.product?.image || "",
+                  product_type: serverItem.configuration ? "CUSTOM" : "STANDARD",
+                  quantity: serverItem.qty,
+                  selected_options: serverItem.selectedOptions || [],
+                  configuration: serverItem.configuration || {},
+                  totalPrice: Number(serverItem.total_price) || 0,
+                });
+              }
+            }
+
+            set({ cart: mergedCart });
+          }
+
+          // 3. Push local items to server that aren't already there
+          const localCart = get().cart;
+          if (localCart.length > 0) {
+            fetch("/api/cart", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ action: "sync", items: localCart }),
+            }).catch(() => {}); // fire and forget
+          }
+        } catch (error) {
+          console.error("Failed to sync cart with server:", error);
+        }
+      },
+
+      /**
+       * Push a single item to the server cart (fire-and-forget).
+       */
+      pushToServer: (item: CartItem) => {
+        fetch("/api/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            productId: item.id,
+            qty: item.quantity,
+          }),
+        }).catch(() => {}); // fire and forget
+      },
+
+      /**
+       * Remove item from server cart (fire-and-forget).
+       */
+      removeFromServer: (itemId: number) => {
+        fetch(`/api/cart?itemId=${itemId}`, {
+          method: "DELETE",
+          credentials: "include",
+        }).catch(() => {}); // fire and forget
+      },
     }),
     { name: "cart-storage" }, // persisted in localStorage
   ),

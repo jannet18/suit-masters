@@ -1,0 +1,260 @@
+import { Hono, Context } from "hono";
+import { getUser } from "@repo/auth";
+import { db, promotionTable, promotionUsage, eq, and, sql } from "@repo/db";
+
+export const promotionsHandler = new Hono();
+
+/**
+ * POST /promotions/validate
+ * Validate a coupon code and return discount details.
+ * Public endpoint (no auth required for validation).
+ */
+promotionsHandler.post("/validate", async (c: Context) => {
+  try {
+    const { code, subtotal, userId } = await c.req.json<{
+      code: string;
+      subtotal: number;
+      userId?: string;
+    }>();
+
+    if (!code) {
+      return c.json({ valid: false, error: "Coupon code is required" }, 400);
+    }
+
+    // Find the promotion
+    const promo = await db.query.promotionTable.findFirst({
+      where: (table, { eq: eqFn, and: andFn }) =>
+        andFn(
+          eqFn(table.code, code.toUpperCase().trim()),
+          eqFn(table.isActive, true),
+        ),
+    });
+
+    if (!promo) {
+      return c.json({ valid: false, error: "Invalid coupon code" }, 404);
+    }
+
+    // Check date validity
+    const now = new Date();
+    if (now < promo.startDate || now > promo.endDate) {
+      return c.json({ valid: false, error: "This coupon has expired" }, 400);
+    }
+
+    // Check usage limit
+    if (promo.usageLimit !== null && promo.usageCount >= promo.usageLimit) {
+      return c.json({ valid: false, error: "This coupon has reached its usage limit" }, 400);
+    }
+
+    // Check minimum order amount
+    if (promo.minOrderAmount !== null && subtotal < Number(promo.minOrderAmount)) {
+      return c.json({
+        valid: false,
+        error: `Minimum order amount of £${promo.minOrderAmount} required`,
+      }, 400);
+    }
+
+    // Check per-user limit
+    if (userId && promo.perUserLimit !== null) {
+      const userUsage = await db.query.promotionUsage.findMany({
+        where: (table, { and: andFn, eq: eqFn }) =>
+          andFn(
+            eqFn(table.promotionId, promo.id),
+            eqFn(table.userId, userId),
+          ),
+      });
+
+      if (userUsage.length >= promo.perUserLimit) {
+        return c.json({ valid: false, error: "You have already used this coupon" }, 400);
+      }
+    }
+
+    // Calculate discount
+    let discount = 0;
+    if (promo.type === "percentage") {
+      discount = subtotal * (Number(promo.discountRate) / 100);
+      // Apply max discount cap if set
+      if (promo.maxDiscountAmount !== null) {
+        discount = Math.min(discount, Number(promo.maxDiscountAmount));
+      }
+    } else if (promo.type === "fixed_amount") {
+      discount = Math.min(Number(promo.discountRate), subtotal);
+    } else if (promo.type === "free_shipping") {
+      // Signal free shipping to the frontend
+      discount = 0;
+    }
+
+    return c.json({
+      valid: true,
+      promotion: {
+        id: promo.id,
+        name: promo.name,
+        code: promo.code,
+        description: promo.description,
+        type: promo.type,
+        discount: Math.round(discount * 100) / 100,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to validate promotion:", error);
+    return c.json({ valid: false, error: "Failed to validate coupon" }, 500);
+  }
+});
+
+/**
+ * POST /promotions/apply
+ * Mark a promotion as used after successful order creation.
+ */
+promotionsHandler.post("/apply", getUser, async (c: Context) => {
+  try {
+    const user = c.get("user") as any;
+    const { promotionId, orderId } = await c.req.json<{
+      promotionId: number;
+      orderId: number;
+    }>();
+
+    if (!promotionId || !orderId) {
+      return c.json({ error: "promotionId and orderId are required" }, 400);
+    }
+
+    // Record usage
+    await db.insert(promotionUsage).values({
+      promotionId,
+      userId: user.id,
+      orderId,
+    });
+
+    // Increment usage count
+    await db
+      .update(promotionTable)
+      .set({
+        usageCount: sql`${promotionTable.usageCount} + 1`,
+      })
+      .where(eq(promotionTable.id, promotionId));
+
+    return c.json({ success: true, message: "Promotion applied" });
+  } catch (error) {
+    console.error("Failed to apply promotion:", error);
+    return c.json({ error: "Failed to apply promotion" }, 500);
+  }
+});
+
+/**
+ * GET /promotions
+ * Admin: List all promotions.
+ */
+promotionsHandler.get("/", async (c: Context) => {
+  try {
+    const promos = await db.query.promotionTable.findMany({
+      orderBy: (table, { desc }) => [desc(table.id)],
+    });
+
+    return c.json({ success: true, promotions: promos });
+  } catch (error) {
+    console.error("Failed to fetch promotions:", error);
+    return c.json({ success: false, promotions: [] }, 500);
+  }
+});
+
+/**
+ * POST /promotions/create
+ * Admin: Create a new promotion.
+ */
+promotionsHandler.post("/create", async (c: Context) => {
+  try {
+    const body = await c.req.json<{
+      name: string;
+      code: string;
+      description?: string;
+      type: string;
+      discountRate: number;
+      minOrderAmount?: number;
+      maxDiscountAmount?: number;
+      usageLimit?: number;
+      perUserLimit?: number;
+      startDate: string;
+      endDate: string;
+    }>();
+
+    if (!body.name || !body.code || !body.discountRate || !body.startDate || !body.endDate) {
+      return c.json({ error: "Name, code, discount rate, start date, and end date are required" }, 400);
+    }
+
+    const [newPromo] = await db
+      .insert(promotionTable)
+      .values({
+        name: body.name,
+        code: body.code.toUpperCase().trim(),
+        description: body.description || null,
+        type: (body.type as any) || "percentage",
+        discountRate: body.discountRate.toString(),
+        minOrderAmount: body.minOrderAmount?.toString() || null,
+        maxDiscountAmount: body.maxDiscountAmount?.toString() || null,
+        usageLimit: body.usageLimit || null,
+        perUserLimit: body.perUserLimit || 1,
+        startDate: new Date(body.startDate),
+        endDate: new Date(body.endDate),
+        isActive: true,
+      })
+      .returning();
+
+    if (!newPromo) {
+      return c.json({ error: "Failed to create promotion" }, 500);
+    }
+
+    return c.json({ success: true, promotion: newPromo }, 201);
+  } catch (error: any) {
+    if (error?.code === "23505") {
+      return c.json({ error: "A promotion with this code already exists" }, 400);
+    }
+    console.error("Failed to create promotion:", error);
+    return c.json({ error: "Failed to create promotion" }, 500);
+  }
+});
+
+/**
+ * PUT /promotions/:id
+ * Admin: Update a promotion.
+ */
+promotionsHandler.put("/:id", async (c: Context) => {
+  try {
+    const id = Number(c.req.param("id"));
+    const body = await c.req.json<Record<string, any>>();
+
+    // Remove undefined fields
+    const updates: Record<string, any> = {};
+    if (body.name !== undefined) updates.name = body.name;
+    if (body.code !== undefined) updates.code = body.code.toUpperCase().trim();
+    if (body.description !== undefined) updates.description = body.description;
+    if (body.type !== undefined) updates.type = body.type;
+    if (body.discountRate !== undefined) updates.discountRate = body.discountRate.toString();
+    if (body.minOrderAmount !== undefined) updates.minOrderAmount = body.minOrderAmount?.toString() || null;
+    if (body.maxDiscountAmount !== undefined) updates.maxDiscountAmount = body.maxDiscountAmount?.toString() || null;
+    if (body.usageLimit !== undefined) updates.usageLimit = body.usageLimit;
+    if (body.perUserLimit !== undefined) updates.perUserLimit = body.perUserLimit;
+    if (body.startDate !== undefined) updates.startDate = new Date(body.startDate);
+    if (body.endDate !== undefined) updates.endDate = new Date(body.endDate);
+    if (body.isActive !== undefined) updates.isActive = body.isActive;
+
+    await db.update(promotionTable).set(updates).where(eq(promotionTable.id, id));
+
+    return c.json({ success: true, message: "Promotion updated" });
+  } catch (error) {
+    console.error("Failed to update promotion:", error);
+    return c.json({ error: "Failed to update promotion" }, 500);
+  }
+});
+
+/**
+ * DELETE /promotions/:id
+ * Admin: Delete a promotion.
+ */
+promotionsHandler.delete("/:id", async (c: Context) => {
+  try {
+    const id = Number(c.req.param("id"));
+    await db.delete(promotionTable).where(eq(promotionTable.id, id));
+    return c.json({ success: true, message: "Promotion deleted" });
+  } catch (error) {
+    console.error("Failed to delete promotion:", error);
+    return c.json({ error: "Failed to delete promotion" }, 500);
+  }
+});

@@ -3,10 +3,11 @@ import { logger } from "hono/logger";
 import { cors } from "hono/cors";
 import { productsHandler } from "./routes/products.route.js";
 import { getUser } from "@repo/auth";
-import { configHandler } from "./routes/config.route.js";
+import { configHandler, profileGetHandler, profilePutHandler } from "./routes/config.route.js";
 import { collectionsHandler } from "./routes/collection.routes.js";
 import { measurementsHandler } from "./routes/measurements.routes.js";
 import { categoryRoutes } from "./routes/categories.routes.js";
+import { promotionsHandler } from "./routes/promotions.routes.js";
 import { errorHandler, notFoundHandler } from "@repo/error-handling";
 
 type Bindings = {
@@ -36,11 +37,15 @@ app.route("/categories", categoryRoutes);
 app.route("/collections", collectionsHandler);
 // Measurement definitions (video guides) are public
 app.route("/measurements", measurementsHandler);
+// Promotions (public validate + admin CRUD)
+app.route("/promotions", promotionsHandler);
 
 // --- 3. Protected Routes ---
 // Only logged-in users can save custom configurations or see private prices
 app.use("/config/*", getUser);
 app.route("/config", configHandler);
+app.route("/config", profileGetHandler);
+app.route("/config", profilePutHandler);
 // Measurement profiles (user-specific data) require auth
 app.use("/measurements/profiles*", getUser);
 
