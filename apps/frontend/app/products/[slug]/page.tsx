@@ -58,14 +58,14 @@ export default function ProductPage({ params }: ProductPageProps) {
       id: product.id,
       productId: product.id.toString(),
       name: product.name,
-      base_price: product.base_price,
+      basePrice: product.base_price,
       totalPrice: product.base_price,
       quantity: 1,
-      product_type: product.product_type || "STANDARD",
-      image_url: imageUrl,
+      productType: product.product_type || "STANDARD",
+      imageUrl: imageUrl,
       configuration: {},
-      selected_options: [],
-      measurements: {},
+      selectedOptions: [],
+      measurements: {} as any,
       customizations: {},
     };
 
@@ -77,7 +77,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const isInCart = cart.some(
     (item) =>
       item.id === product?.id &&
-      item.product_type === (product?.product_type || "STANDARD"),
+      item.productType === (product?.product_type || "STANDARD"),
   );
 
   if (loading) {
@@ -167,7 +167,7 @@ export default function ProductPage({ params }: ProductPageProps) {
             {product?.product_type === "CUSTOM" ? (
               <button
                 onClick={() =>
-                  router.push(`/products/${product.slug}/configure`)
+                  router.push(`/products/${product.slug}/customise`)
                 }
                 className="bg-[#c9a96e] text-[#0f0f0f] px-8 py-3 font-bold hover:bg-[#dfc08a] transition-colors w-full flex items-center justify-center gap-2"
               >

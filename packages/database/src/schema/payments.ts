@@ -2,7 +2,6 @@ import {
   boolean,
   integer,
   pgTable,
-  serial,
   varchar,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";

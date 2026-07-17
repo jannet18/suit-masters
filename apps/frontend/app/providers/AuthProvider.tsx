@@ -6,6 +6,7 @@ import { useCartStore } from "../stores/useCartStore";
 /**
  * Inner component that has access to the Kinde auth state.
  * Syncs the local cart with the server cart when the user first becomes authenticated.
+ * handle state reset on logout to permit subsequent user sync actions
  */
 function CartSyncProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useKindeBrowserClient();
@@ -13,12 +14,17 @@ function CartSyncProvider({ children }: { children: React.ReactNode }) {
   const hasSynced = useRef(false);
 
   useEffect(() => {
-    if (isAuthenticated && !hasSynced.current) {
+    if (isAuthenticated) {
+      if(!hasSynced.current) {
       hasSynced.current = true;
-      // Sync local cart with server cart on first authentication
+      // Sync local cart with server cart on authentication handshaking
       syncWithServer();
     }
-  }, [isAuthenticated, syncWithServer]);
+  }else {
+// Hardened: Reset key if the user logs out so a future login can re-sync
+    hasSynced.current = false;
+  }
+}, [isAuthenticated, syncWithServer]);
 
   return <>{children}</>;
 }

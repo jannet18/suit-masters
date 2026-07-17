@@ -39,20 +39,25 @@ export default function Page({ product, id }: CollectionProps) {
   const handleAddToCart = () => {
     const cartItem = {
       id: product.id,
-      productId: product.id.toString(),
+      productId: product.id,
       name: productName,
       base_price: price,
-      totalPrice: price,
+      basePrice: price.toString(),
+      totalPrice: price.toString(),
       quantity: 1,
-      product_type: "STANDARD" as const,
+      productType: "STANDARD" as const,
       image_url: imageUrl,
+      imageUrl: imageUrl,
       configuration: {}, // Empty configuration for standard products
       selected_options: [],
+      selectedOptions: [],
       measurements: {},
       customizations: {},
     };
 
-    addToCart(cartItem);
+    // measurements may not match CustomGarmentMeasurements for STANDARD products;
+    // cast via unknown to satisfy TypeScript when we're intentionally passing a simplified object
+    addToCart(cartItem as unknown as Parameters<typeof addToCart>[0]);
     setIsAdded(true);
 
     // Reset the added state after 2 seconds
@@ -60,7 +65,7 @@ export default function Page({ product, id }: CollectionProps) {
   };
 
   const isInCart = cart.some(
-    (item) => item.id === product?.id && item?.product_type === "STANDARD",
+    (item) => item.id === product?.id && item?.productType === "STANDARD",
   );
 
   return (

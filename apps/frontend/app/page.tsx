@@ -7,9 +7,14 @@ import { Testimonials } from "./components/common/Testimonials";
 import { ProductGrid } from "./components/ProductGrid";
 import { USPStrip } from "./components/USPStrip";
 import { CollectionGrid } from "./components/CollectionGrid";
+import { BespokeConfigurator } from "./components/Configurator";
 
-export default function Home() {
+// interface PageProps {
+//   params: Promise<{ slug: string }>;
+// }
+export default async function Home() {
   const [fittingOpen, setFittingOpen] = useState(false);
+  // const { slug } = await params;
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
@@ -27,6 +32,7 @@ export default function Home() {
         <EditorialBanner onOpenFitting={() => setFittingOpen(true)} />
         <Testimonials />
         <Newsletter />
+        {/* <BespokeConfigurator slug={slug}/> */}
       </main>
     </div>
   );

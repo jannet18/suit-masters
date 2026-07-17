@@ -22,29 +22,33 @@ let store: Record<string, unknown> = {};
 
 export const sessionManager = (c: Context): SessionManager => ({
   async getSessionItem(key: string) {
-    const result = getCookie(c, key);
-    return result;
+    // const result = getCookie(c, key);
+    // return result;
+    const value = getCookie(c, key)
+    if(!value) return null
+    if(value.startsWith("{") || value.startsWith("[")){
+      try { return JSON.parse(value)} catch {return value}
+    }
   },
   async setSessionItem(key: string, value: unknown) {
+    const isProd = process.env.NODE_ENV === "production"
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
+      secure: isProd,
       sameSite: "Lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7, // 7 days
     } as const;
-    if (typeof value === "string") {
-      setCookie(c, key, value, cookieOptions);
-    } else {
-      setCookie(c, key, JSON.stringify(value), cookieOptions);
-    }
+
+    const stringValue = typeof value === "string" ? value: JSON.stringify(value);
+      setCookie(c, key, stringValue, cookieOptions);
   },
   async removeSessionItem(key: string) {
-    deleteCookie(c, key);
+    deleteCookie(c, key, {path: "/"});
   },
   async destroySession() {
-    ["id_token", "access_token", "user", "refresh_token"].forEach((key) => {
-      deleteCookie(c, key);
+    const keys = ["id_token", "access_token", "user", "refresh_token", "kinde_oauth_state"];keys.forEach((key) => {
+      deleteCookie(c, key, {path: "/"});
     });
   },
 });

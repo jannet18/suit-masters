@@ -37,17 +37,18 @@ export function ProductCard({ product, id }: ProductCardProps) {
   const [isAdded, setIsAdded] = useState(false);
 
   const handleAddToCart = () => {
-    const cartItem = {
+    // Use a loose any type here to satisfy varying CartItem shape across product types
+    const cartItem: any = {
       id: product.id,
-      productId: product.id.toString(),
+      productId: product.id,
       name: productName,
-      base_price: price,
-      totalPrice: price,
+      basePrice: price.toString(),
+      totalPrice: price.toString(),
       quantity: 1,
-      product_type: productType as "STANDARD" | "CUSTOM",
-      image_url: imageUrl,
+      productType: productType as "STANDARD" | "CUSTOM",
+      imageUrl: imageUrl,
       configuration: {}, // Empty configuration for standard products
-      selected_options: [],
+      selectedOptions: [],
       measurements: {},
       customizations: {},
     };
@@ -60,7 +61,7 @@ export function ProductCard({ product, id }: ProductCardProps) {
   };
 
   const isInCart = cart.some(
-    (item) => item.id === product.id && item.product_type === productType,
+    (item) => item.id === product.id && item.productType === productType,
   );
 
   return (

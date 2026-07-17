@@ -1,4 +1,4 @@
-import { integer, pgTable, serial, varchar } from "drizzle-orm/pg-core";
+import { integer, pgTable, primaryKey, serial, varchar } from "drizzle-orm/pg-core";
 import { timestamps } from "./shared.js";
 import { product } from "./products.js";
 
@@ -14,12 +14,14 @@ export const collection = pgTable("collection", {
 export const productCollection = pgTable("product_collection", {
   product_id: integer("product_id")
     .notNull()
-    .references(() => product.id),
+    .references(() => product.id, {onDelete: "cascade"}),
 
   collection_id: integer("collection_id")
     .notNull()
-    .references(() => collection.id),
-});
+    .references(() => collection.id, {onDelete: "cascade"}),
+}, (table) => [
+  primaryKey({columns: [table.product_id, table.collection_id]})
+]);
 
 // Wedding → multiple suits
 // Suit → Wedding + Boardroom

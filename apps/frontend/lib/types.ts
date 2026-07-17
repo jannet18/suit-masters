@@ -1,9 +1,19 @@
+import { number } from "framer-motion";
+
+export type Unit = "cm" | "in";
+export type ProductType = "STANDARD" | "CUSTOM"
+
 export interface Product {
   id: number;
+  categoryId: number;
+  fabricId: number;
   name: string;
-  base_price: number;
-  product_image: { default: string; [key: string]: string };
-  product_type: "STANDARD" | "CUSTOM";
+  slug: string;
+  basePrice: string;
+  productImage: { default: string; [key: string]: string };
+  productType: ProductType
+  descriptions?: string
+  isActive: boolean;
   options?: CustomizationGroup[];
   discount?: number;
   rating?: number;
@@ -20,32 +30,50 @@ export interface CustomOption {
 }
 export interface CustomizationItem {
   id: number;
-  group_id: number;
+  groupId: number;
   value: string;
-  price_delta?: number;
+  priceDelta?: number;
   image?: string;
-  is_default?: boolean;
+  isDefault?: boolean;
+  factoryCode?:string
 }
 
 export interface CustomizationGroup {
   id: number;
+  categoryId: number,
   name?: string;
-  options?: CustomOption[];
+  isRequired: boolean;
+  displayOrder: number;
+  items: CustomizationItem[]
+  // options?: CustomOption[];
 }
 
 export interface CartItem {
   id: number;
-  productId: string;
+  productId: number;
   name: string;
   quantity: number;
-  base_price: number;
-  image_url: string;
-  product_type: "STANDARD" | "CUSTOM";
-  selected_options?: CustomOption[];
-  measurements?: Record<string, any>;
+  basePrice: string;
+  imageUrl: string;
+  productType: ProductType
+  selectedOptions: Record<string, any>
+  // selected_options?: CustomOption[];
+  measurementProfileId?: string
+  measurements?: CustomGarmentMeasurements
   customizations?: Record<number, number>; // for backward compatibil
   configuration: Record<string, any>;
-  totalPrice: number;
+  totalPrice: string;
+}
+
+export interface CustomGarmentMeasurements{
+  unit: Unit;
+  height: number;
+  chest: number;
+  waist: number;
+  hips: number;
+  inseam: number;
+  shoulder: number;
+  profileName?: string
 }
 // because if user reopens configurator later, it should not mutate cart item.
 // Cart must be immutable.
@@ -69,8 +97,6 @@ export interface Collection {
   collections: [];
 }
 
-export type Unit = "cm" | "in";
-
 export interface Measurements {}
 
 export interface FittingData {
@@ -82,6 +108,7 @@ export interface FittingData {
   lapel: string;
   lining: string;
   buttonColor: string;
+  monogram: string;
   measurements: {
     unit: Unit;
     height: number;

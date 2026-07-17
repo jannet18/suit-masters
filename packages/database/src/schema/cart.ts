@@ -44,7 +44,7 @@ export const shoppingCartItem = pgTable("shopping_cart_item", {
 export const cartItem = pgTable("cart_item", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: uuid("user_id")
-    .references(() => usersTable.id)
+    .references(() => usersTable.id, {onDelete: "cascade"})
     .notNull(),
   productId: integer("product_id")
     .references(() => product.id)

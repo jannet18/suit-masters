@@ -17,7 +17,8 @@ export const productCategory = pgTable("product_category", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 128 }).notNull(),
   slug: varchar("slug", { length: 128 }).unique().notNull(),
-  parentId: integer("parent_id"), // Self-reference for sub-categories
+  // parentId: integer("parent_id"), // Self-reference for sub-categories
+  parentId: integer("parent_id").references((): any => productCategory.id, {onDelete: "cascade"})
 });
 
 // Fabric
@@ -91,7 +92,7 @@ export const productConfiguration = pgTable("product_configuration", {
   productId: integer("product_id")
     .references(() => product.id)
     .notNull(),
-  selectedOptions: text("selected_options").$type<Record<string, any>>(),
+  selectedOptions: text("selected_options").$type<Record<string, any>>().notNull(),
   finalPrice: numeric("final_price", { precision: 12, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   kindeUserId: varchar("kinde_user_id"),

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ProductCard } from "./ProductCard";
 import { api } from "@/lib/api/api-client";
-import { motion, useInView } from "framer-motion";
+import { useInView } from "framer-motion";
 import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
 
@@ -66,30 +66,6 @@ export function ProductGrid({ limit }: { limit?: number }) {
 
   return (
     <>
-      {/* <div>
-        <div className="flex gap-6 mb-12 border-b border-white/10 pb-4">
-          {["All", "Suits", "Blazers", "Shirts"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`text-[10px] uppercase tracking-widest transition-colors ${
-                activeTab === tab
-                  ? "text-[#c9a96e] border-b border-[#c9a96e]"
-                  : "text-[#9a9490]"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {displayItems.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </div> */}
-
       <section className="relative py-24 bg-[#1a1a1a]" ref={ref}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
           {/* Header */}

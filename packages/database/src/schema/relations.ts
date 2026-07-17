@@ -6,6 +6,8 @@ import {
   product,
   productCategory,
 } from "./products.js";
+import { promotionTable, promotionUsage } from "./promotions.js";
+import { refundRequest, refundTimeline } from "./refunds.js";
 
 // 1. Collection Relations (The "Wedding" Vibe)
 export const collectionRelations = relations(collection, ({ many }) => ({
@@ -61,3 +63,15 @@ export const customizationOptionRelations = relations(
     }),
   }),
 );
+
+export const promotionRelations = relations(promotionTable, ({many}) => ({
+  usages: many(promotionUsage)
+}))
+
+export const refundRequestRelations = relations(refundRequest, ({many}) => ({
+  timeline: many(refundTimeline)
+}))
+
+export const refundTimelineRelations = relations(refundTimeline, ({one}) => ({
+  request: one(refundRequest, {fields: [refundTimeline.refundRequestId], references: [refundRequest.id]})
+}))

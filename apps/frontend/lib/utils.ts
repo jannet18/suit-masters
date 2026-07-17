@@ -73,3 +73,14 @@ export function getShippingCost(
   const zone = SHIPPING_ZONES[country.toUpperCase()];
   return zone?.cost ?? DEFAULT_SHIPPING_COST;
 }
+
+/**
+ * Safely normalizes string numeric decimals coming from Database storage engine
+ * records into reliable Javascript integers for absolute safety during checkout mathematics.
+ * @param decimalString — value from server e.g. "150.50"
+ */
+export function convertDecimalToPence(decimalString: string | number): number {
+  if (typeof decimalString === "number") return Math.round(decimalString * 100);
+  const parsed = parseFloat(decimalString);
+  return isNaN(parsed) ? 0 : Math.round(parsed * 100);
+}

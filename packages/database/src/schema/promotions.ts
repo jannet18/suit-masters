@@ -7,9 +7,13 @@ import {
   varchar,
   boolean,
   pgEnum,
+  uuid,
+  index,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "./shared.js";
 import { productCategory } from "./products.js";
+import { usersTable } from "./user.js";
+import { shopOrder } from "./orders.js";
 
 // Promotion type enum
 export const promotionTypeEnum = pgEnum("promotion_type", [
@@ -20,40 +24,30 @@ export const promotionTypeEnum = pgEnum("promotion_type", [
 
 // Promotion
 export const promotionTable = pgTable("promotion", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 128 }).notNull(),
   code: varchar("code", { length: 64 }).unique().notNull(),
   description: varchar("description", { length: 255 }),
   type: promotionTypeEnum("type").notNull().default("percentage"),
-
-  // Discount value: percentage (0-100) or fixed amount
   discountRate: numeric("discount_rate", {
     precision: 12,
     scale: 2,
   }).notNull(),
-
-  // Minimum order amount to apply (null = no minimum)
   minOrderAmount: numeric("min_order_amount", {
     precision: 12,
     scale: 2,
   }),
-
-  // Maximum discount amount (for percentage discounts)
   maxDiscountAmount: numeric("max_discount_amount", {
     precision: 12,
     scale: 2,
   }),
-
-  // Usage limits
   usageLimit: integer("usage_limit"), // null = unlimited
   usageCount: integer("usage_count").default(0).notNull(),
   perUserLimit: integer("per_user_limit").default(1),
-
   // Active dates
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
-
   ...timestamps,
 });
 
@@ -70,11 +64,13 @@ export const promotionCategory = pgTable("promotion_category", {
 
 // Track coupon usage per user
 export const promotionUsage = pgTable("promotion_usage", {
-  id: serial("id").primaryKey(),
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
   promotionId: integer("promotion_id")
     .notNull()
-    .references(() => promotionTable.id),
-  userId: varchar("user_id", { length: 128 }).notNull(),
-  orderId: integer("order_id"),
+    .references(() => promotionTable.id, {onDelete: "cascade"}),
+  userId: uuid("user_id").notNull().references(() => usersTable.id, {onDelete: "cascade"}),
+  orderId: integer("order_id").references(() => shopOrder.id, {onDelete: "set null"}),
   usedAt: timestamp("used_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("promotion_usage_user_idx").on(table.userId)
+]);
