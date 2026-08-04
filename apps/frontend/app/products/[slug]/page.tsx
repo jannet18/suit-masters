@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { api } from "@/lib/api/api-client";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/app/stores/useCartStore";
 import { ShoppingBag, Check } from "lucide-react";
 
 interface ProductPageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export default function ProductPage({ params }: ProductPageProps) {
-  const { slug } = params;
+  const resolvedParams = use(params);
+  const slug = resolvedParams.slug;
   const router = useRouter();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -19,11 +20,12 @@ export default function ProductPage({ params }: ProductPageProps) {
   const { addToCart, cart } = useCartStore();
 
   useEffect(() => {
+    if (!slug) return;
     async function fetchData() {
       setLoading(true);
       try {
         console.log("Fetching product with slug:", slug);
-        const productResponse = await api.getProductBySlug(slug);
+        const productResponse = await api.getProductBySlug(slug.toLowerCase());
         console.log("Product API response:", productResponse);
 
         if (productResponse.success && productResponse.product) {
@@ -56,14 +58,14 @@ export default function ProductPage({ params }: ProductPageProps) {
       id: product.id,
       productId: product.id.toString(),
       name: product.name,
-      base_price: product.base_price,
+      basePrice: product.base_price,
       totalPrice: product.base_price,
       quantity: 1,
-      product_type: product.product_type || "STANDARD",
-      image_url: imageUrl,
+      productType: product.product_type || "STANDARD",
+      imageUrl: imageUrl,
       configuration: {},
-      selected_options: [],
-      measurements: {},
+      selectedOptions: [],
+      measurements: {} as any,
       customizations: {},
     };
 
@@ -75,7 +77,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const isInCart = cart.some(
     (item) =>
       item.id === product?.id &&
-      item.product_type === (product?.product_type || "STANDARD"),
+      item.productType === (product?.product_type || "STANDARD"),
   );
 
   if (loading) {
@@ -103,7 +105,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-[#f5f0eb]">
+    <div className="min-h-screen bg-[#0f0f0f] text-[#f5f0eb] pt-24">
       <header className="p-6 border-b border-[#2e2e2e]">
         <button onClick={() => router.push("/")} className="text-[#c9a96e]">
           ← Back to Home
@@ -165,7 +167,7 @@ export default function ProductPage({ params }: ProductPageProps) {
             {product?.product_type === "CUSTOM" ? (
               <button
                 onClick={() =>
-                  router.push(`/products/${product.slug}/configure`)
+                  router.push(`/products/${product.slug}/customise`)
                 }
                 className="bg-[#c9a96e] text-[#0f0f0f] px-8 py-3 font-bold hover:bg-[#dfc08a] transition-colors w-full flex items-center justify-center gap-2"
               >

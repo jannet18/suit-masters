@@ -1,174 +1,3 @@
-// import { db } from "./db.js";
-// import { product, productCategory, productCollection } from "./schema/index.js";
-// import { collection } from "./schema/index.js";
-// type NewProduct = typeof product.$inferInsert;
-
-// async function seed() {
-//   try {
-//     console.log("🧹 Clearing existing data...");
-
-//     // Delete in dependency order to avoid FK issues
-//     await db.delete(productCollection).execute();
-//     await db.delete(product).execute();
-//     await db.delete(collection).execute();
-//     await db.delete(productCategory).execute();
-
-//     console.log("✅ Tables cleared");
-//     // TOP CATEGORIES
-//     const topCategories = await db
-//       .insert(productCategory)
-//       .values([
-//         { category_name: "Suits", slug: "suits" },
-//         { category_name: "Blazers", slug: "blazers" },
-//         { category_name: "Shirts", slug: "shirts" },
-//         { category_name: "Trousers", slug: "trousers" },
-//       ])
-//       .returning();
-
-//     const suits = topCategories.find((c) => c.slug === "suits");
-//     const blazers = topCategories.find((c) => c.slug === "blazers");
-
-//     if (!suits || !blazers) {
-//       throw new Error("Top categories not created properly");
-//     }
-//     console.log("Top-level categories seeded");
-//     // SUB-CATEGORIES
-
-//     const subCategories = await db
-//       .insert(productCategory)
-//       .values([
-//         {
-//           category_name: "2-Piece Suits",
-//           slug: "2-piece-suits",
-//           parent_id: suits!.id,
-//         },
-//         {
-//           category_name: "3-Piece Suits",
-//           slug: "3-piece-suits",
-//           parent_id: suits!.id,
-//         },
-//         {
-//           category_name: "Slim Fit Blazers",
-//           slug: "slim-fit-blazers",
-//           parent_id: blazers!.id,
-//         },
-//       ])
-//       .returning();
-//     const piece2Suit = subCategories.find((c) => c.slug === "2-piece-suits");
-//     const piece3Suit = subCategories.find((c) => c.slug === "3-piece-suits");
-//     const slimFitBlazers = subCategories.find(
-//       (c) => c.slug === "slim-fit-blazers",
-//     );
-
-//     if (!piece2Suit || !piece3Suit || !slimFitBlazers) {
-//       throw new Error("Subcategories not created properly");
-//     }
-//     console.log("✅ Subcategories created");
-
-//     // COLLECTIONS
-//     const collections = await db
-//       .insert(collection)
-//       .values([
-//         {
-//           name: "Wedding",
-//           slug: "wedding",
-//           description: "Timeless elegance for your special day",
-//           // categoryId: suits.id,
-//           image:
-//             "https://images.unsplash.com/photo-1765292783311-1797d8b16826?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8YmxhY2slMjB3ZWRkaW5nJTIwc3VpdHN8ZW58MHx8MHx8fDA%3D",
-//         },
-//         {
-//           name: "Evening",
-//           slug: "evening",
-//           description: "Sophisticated looks for night events",
-//           // categoryId: suits.id,
-//           image:
-//             "https://images.unsplash.com/photo-1615398264198-718da97f988d?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjB8fGJsYWNrJTIwZXZlbmluZyUyMHN1aXRzfGVufDB8fDB8fHww",
-//         },
-//         {
-//           name: "Boardroom",
-//           slug: "boardroom",
-//           description: "Power dressing for leadership moments",
-//           // categoryId: suits.id,
-//           image:
-//             "https://media.istockphoto.com/id/2229590936/photo/successful-male-business-team.webp?a=1&b=1&s=612x612&w=0&k=20&c=ahL275nh0h4p74BHgYqptuX15SCj7djpsmlvxq4Tq0Y=",
-//         },
-//         {
-//           name: "Smart Casual",
-//           slug: "smart-casual",
-//           description: "Relaxed but refined everyday style",
-//           // categoryId: blazers.id,
-//           image:
-//             "https://images.unsplash.com/photo-1618886614638-80e3c103d31a?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8YmxhY2slMjBzbWFydCUyMGNhc3VhbHMlMjBzdWl0c3xlbnwwfHwwfHx8MA%3D%3D",
-//         },
-//       ])
-//       .returning();
-
-//     const wedding = collections.find((c) => c.slug === "wedding");
-//     const evening = collections.find((c) => c.slug === "evening");
-//     const boardroom = collections.find((c) => c.slug === "boardroom");
-//     console.log("Collections seeded");
-
-//     // PRODUCTS
-
-//     const products = await db
-//       .insert(product)
-//       .values([
-//         {
-//           categoryId: piece3Suit!.id ?? 0,
-//           name: "Navy 3-Piece Suit",
-//           slug: "navy-3-piece-suit",
-//           description: "Classic navy suit for formal occasions",
-//           productImage: "/images/navy.jpg",
-//           productType: "STANDARD",
-//           basePrice: "45000",
-//         },
-//         {
-//           categoryId: piece2Suit!.id ?? 0,
-//           name: "Black Tuxedo",
-//           slug: "black-tuxedo",
-//           description: "Premium black tux for black-tie events",
-//           productImage: "/images/tux.jpg",
-//           productType: "CUSTOM",
-//           basePrice: "60000",
-//         },
-//         {
-//           categoryId: slimFitBlazers!.id ?? 0,
-//           name: "Linen Summer Blazer",
-//           slug: "linen-blazer",
-//           description: "Breathable linen for smart casual wear",
-//           productImage: "/images/linen.jpg",
-//           productType: "STANDARD",
-//           basePrice: "28000",
-//         },
-//       ] as NewProduct[])
-//       .returning();
-//     console.log("✅ Products created");
-
-//     const navySuit = products.find((p) => p.slug === "navy-3-piece-suit");
-//     const tux = products.find((p) => p.slug === "black-tuxedo");
-
-//     console.log("✅ Products seeded");
-
-//     // 5️⃣ PRODUCT ↔ COLLECTION LINKING
-
-//     await db.insert(productCollection).values([
-//       { product_id: navySuit!.id, collection_id: wedding!.id },
-//       { product_id: tux!.id, collection_id: wedding!.id },
-//       { product_id: tux!.id, collection_id: evening!.id },
-//       { product_id: navySuit!.id, collection_id: boardroom!.id },
-//     ]);
-
-//     console.log("✅ Product ↔ Collection relationships created");
-//     console.log("\n🎉 Seeding completed successfully.");
-//     process.exit(0);
-//   } catch (err) {
-//     console.error("Seeding failed", err);
-//     process.exit(1);
-//   }
-// }
-// seed();
-
 import {
   db,
   fabric,
@@ -177,6 +6,7 @@ import {
   measurementDefinitions,
   collection,
   productCollection,
+  eq,
 } from "@repo/db";
 
 async function seed() {
@@ -224,186 +54,222 @@ async function seed() {
       },
     ])
     .onConflictDoNothing()
-    .returning();
+    // .returning();
 
-  const italianWool = fabrics[0] ?? { id: 1 };
+  // Explicitly fetch the record to guarantee access to the true database ID
+  const targetFabric = await db.query.fabric.findFirst({
+    where:eq(fabric.sku, "FAB-IT-120S"),
+  })  
+  const fabricId = targetFabric?.id ?? 1;
 
   // 2. Seed Main Categories
-  const mainCategories = await db
-    .insert(productCategory)
-    .values([
-      { name: "Suits", slug: "suits" },
-      { name: "Shirts", slug: "shirts" },
-      { name: "Blazers", slug: "blazers" },
-      { name: "Pants", slug: "pants" },
-    ])
-    .onConflictDoNothing()
-    .returning();
 
-  const suitCategory = mainCategories.find((c) => c.slug === "suits");
-  const blazersCategory = mainCategories.find((c) => c.slug === "blazers");
-  const pantsCategory = mainCategories.find((c) => c.slug === "pants");
-  const shirtsCategory = mainCategories.find((c) => c.slug === "shirts");
+  const categoriesToSeed = [
+    {name: "Suits", slug: "suits"},
+    { name: "Shirts", slug: "shirts" },
+    { name: "Blazers", slug: "blazers" },
+    { name: "Pants", slug: "pants" },
+  ]
+
+  for(const cat of categoriesToSeed){
+    await db.insert(productCategory).values(cat).onConflictDoNothing()
+  }
+  // Fetch verified category IDS
+const suitCat = await db.query.productCategory.findFirst({where: eq(productCategory.slug, "suits")})
+const shirtCat = await db.query.productCategory.findFirst({where: eq(productCategory.slug, "shirts")})
+const blazerCat = await db.query.productCategory.findFirst({where: eq(productCategory.slug, "blazers")})
+const pantsCat = await db.query.productCategory.findFirst({where: eq(productCategory.slug, "pants")})
+
+if(suitCat){
+  await db.insert(productCategory).values([
+    {name: "Business Suits", slug: "business-suits", parentId: suitCat.id},
+    {name: "Wedding Suits", slug: "wedding-suits", parentId: suitCat.id}
+  ])
+}
+const businessSuitsCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "business-suits") });
+const weddingSuitsCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "wedding-suits") });
+const boardroomSuitsCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "boradroom-suits") });
+const casualSuitsCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "casual-suits") });
+const singleBreastedCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "single-breated") });
+const doubleBreastedCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "double-breasted") });
+
+const dressShirtCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "dress-shirt") });
+const chinosCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "chinos") });
+  // const mainCategories = await db
+  //   .insert(productCategory)
+  //   .values([
+  //     { name: "Suits", slug: "suits" },
+  //     { name: "Shirts", slug: "shirts" },
+  //     { name: "Blazers", slug: "blazers" },
+  //     { name: "Pants", slug: "pants" },
+  //   ])
+  //   .onConflictDoNothing()
+  //   .returning();
+
+  // const suitCategory = mainCategories.find((c) => c.slug === "suits");
+  // const blazersCategory = mainCategories.find((c) => c.slug === "blazers");
+  // const pantsCategory = mainCategories.find((c) => c.slug === "pants");
+  // const shirtsCategory = mainCategories.find((c) => c.slug === "shirts");
   // 3. Seed Sub-Categories
-  if (suitCategory) {
-    await db
-      .insert(productCategory)
-      .values([
-        {
-          name: "Business Suits",
-          slug: "business-suits",
-          parentId: suitCategory.id,
-        },
-        {
-          name: "Wedding Suits",
-          slug: "wedding-suits",
-          parentId: suitCategory.id,
-        },
-        {
-          name: "Boardroom Suits",
-          slug: "boardroom-suits",
-          parentId: suitCategory.id,
-        },
-        {
-          name: "Casual Suits",
-          slug: "casual-suits",
-          parentId: suitCategory.id,
-        },
-      ])
-      .onConflictDoNothing();
-  }
-  if (blazersCategory) {
-    await db
-      .insert(productCategory)
-      .values([
-        {
-          name: "Single-Breasted",
-          slug: "single-breasted",
-          parentId: blazersCategory.id,
-        },
-        {
-          name: "Double-Breasted",
-          slug: "wedding-suits",
-          parentId: blazersCategory.id,
-        },
-        {
-          name: "Tweed",
-          slug: "tweed",
-          parentId: blazersCategory.id,
-        },
-        {
-          name: "Velvet",
-          slug: "velvet",
-          parentId: blazersCategory.id,
-        },
-        {
-          name: "Linen/Cotton",
-          slug: "linen-cotton",
-          parentId: blazersCategory.id,
-        },
-      ])
-      .onConflictDoNothing();
-  }
-  if (shirtsCategory) {
-    await db
-      .insert(productCategory)
-      .values([
-        {
-          name: "Dress Shirt",
-          slug: "dress-shirt",
-          parentId: shirtsCategory.id,
-        },
-        {
-          name: "Double Cuff Shirt",
-          slug: "double-cuff-shirt",
-          parentId: shirtsCategory.id,
-        },
-        {
-          name: "Mandarin/Band Collar Shirt",
-          slug: "mandarin/band-collar-shirt",
-          parentId: shirtsCategory.id,
-        },
-        {
-          name: "Non-Iron Shirt",
-          slug: "non-iron-shirt",
-          parentId: shirtsCategory.id,
-        },
-        {
-          name: "Linen Shirt",
-          slug: "linen-shirt",
-          parentId: shirtsCategory.id,
-        },
-      ])
-      .onConflictDoNothing();
-  }
+  // if (suitCategory) {
+  //   await db
+  //     .insert(productCategory)
+  //     .values([
+  //       {
+  //         name: "Business Suits",
+  //         slug: "business-suits",
+  //         parentId: suitCategory.id,
+  //       },
+  //       {
+  //         name: "Wedding Suits",
+  //         slug: "wedding-suits",
+  //         parentId: suitCategory.id,
+  //       },
+  //       {
+  //         name: "Boardroom Suits",
+  //         slug: "boardroom-suits",
+  //         parentId: suitCategory.id,
+  //       },
+  //       {
+  //         name: "Casual Suits",
+  //         slug: "casual-suits",
+  //         parentId: suitCategory.id,
+  //       },
+  //     ])
+  //     .onConflictDoNothing();
+  // }
+  // if (blazersCategory) {
+  //   await db
+  //     .insert(productCategory)
+  //     .values([
+  //       {
+  //         name: "Single-Breasted",
+  //         slug: "single-breasted",
+  //         parentId: blazersCategory.id,
+  //       },
+  //       {
+  //         name: "Double-Breasted",
+  //         slug: "wedding-suits",
+  //         parentId: blazersCategory.id,
+  //       },
+  //       {
+  //         name: "Tweed",
+  //         slug: "tweed",
+  //         parentId: blazersCategory.id,
+  //       },
+  //       {
+  //         name: "Velvet",
+  //         slug: "velvet",
+  //         parentId: blazersCategory.id,
+  //       },
+  //       {
+  //         name: "Linen/Cotton",
+  //         slug: "linen-cotton",
+  //         parentId: blazersCategory.id,
+  //       },
+  //     ])
+  //     .onConflictDoNothing();
+  // }
+  // if (shirtsCategory) {
+  //   await db
+  //     .insert(productCategory)
+  //     .values([
+  //       {
+  //         name: "Dress Shirt",
+  //         slug: "dress-shirt",
+  //         parentId: shirtsCategory.id,
+  //       },
+  //       {
+  //         name: "Double Cuff Shirt",
+  //         slug: "double-cuff-shirt",
+  //         parentId: shirtsCategory.id,
+  //       },
+  //       {
+  //         name: "Mandarin/Band Collar Shirt",
+  //         slug: "mandarin/band-collar-shirt",
+  //         parentId: shirtsCategory.id,
+  //       },
+  //       {
+  //         name: "Non-Iron Shirt",
+  //         slug: "non-iron-shirt",
+  //         parentId: shirtsCategory.id,
+  //       },
+  //       {
+  //         name: "Linen Shirt",
+  //         slug: "linen-shirt",
+  //         parentId: shirtsCategory.id,
+  //       },
+  //     ])
+  //     .onConflictDoNothing();
+  // }
 
-  if (pantsCategory) {
-    await db
-      .insert(productCategory)
-      .values([
-        {
-          name: "Chinos",
-          slug: "chinos",
-          parentId: pantsCategory.id,
-        },
-        {
-          name: "Corduroy Pants",
-          slug: "corduroy-pants",
-          parentId: pantsCategory.id,
-        },
-        {
-          name: "Slacks",
-          slug: "slacks",
-          parentId: pantsCategory.id,
-        },
-        {
-          name: "Pleated",
-          slug: "pleated",
-          parentId: pantsCategory.id,
-        },
-        {
-          name: "Linen Pants",
-          slug: "linen-pants",
-          parentId: pantsCategory.id,
-        },
-      ])
-      .onConflictDoNothing();
-  }
+  // if (pantsCategory) {
+  //   await db
+  //     .insert(productCategory)
+  //     .values([
+  //       {
+  //         name: "Chinos",
+  //         slug: "chinos",
+  //         parentId: pantsCategory.id,
+  //       },
+  //       {
+  //         name: "Corduroy Pants",
+  //         slug: "corduroy-pants",
+  //         parentId: pantsCategory.id,
+  //       },
+  //       {
+  //         name: "Slacks",
+  //         slug: "slacks",
+  //         parentId: pantsCategory.id,
+  //       },
+  //       {
+  //         name: "Pleated",
+  //         slug: "pleated",
+  //         parentId: pantsCategory.id,
+  //       },
+  //       {
+  //         name: "Linen Pants",
+  //         slug: "linen-pants",
+  //         parentId: pantsCategory.id,
+  //       },
+  //     ])
+  //     .onConflictDoNothing();
+  // }
   // 4. Seed Products
   let productIds: number[] = [];
 
-  // Fetch category IDs for different product types
-  const businessSuitsCategory = await db.query.productCategory.findFirst({
-    where: (cat, { eq }) => eq(cat.slug, "business-suits"),
-  });
+  // // Fetch category IDs for different product types
+  // const businessSuitsCategory = await db.query.productCategory.findFirst({
+  //   where: (cat, { eq }) => eq(cat.slug, "business-suits"),
+  // });
 
-  const weddingSuitsCategory = await db.query.productCategory.findFirst({
-    where: (cat, { eq }) => eq(cat.slug, "wedding-suits"),
-  });
+  // const weddingSuitsCategory = await db.query.productCategory.findFirst({
+  //   where: (cat, { eq }) => eq(cat.slug, "wedding-suits"),
+  // });
 
-  const boardroomSuitsCategory = await db.query.productCategory.findFirst({
-    where: (cat, { eq }) => eq(cat.slug, "boardroom-suits"),
-  });
+  // const boardroomSuitsCategory = await db.query.productCategory.findFirst({
+  //   where: (cat, { eq }) => eq(cat.slug, "boardroom-suits"),
+  // });
 
-  const casualSuitsCategory = await db.query.productCategory.findFirst({
-    where: (cat, { eq }) => eq(cat.slug, "casual-suits"),
-  });
+  // const casualSuitsCategory = await db.query.productCategory.findFirst({
+  //   where: (cat, { eq }) => eq(cat.slug, "casual-suits"),
+  // });
 
-  const singleBreastedCategory = await db.query.productCategory.findFirst({
-    where: (cat, { eq }) => eq(cat.slug, "single-breasted"),
-  });
+  // const singleBreastedCategory = await db.query.productCategory.findFirst({
+  //   where: (cat, { eq }) => eq(cat.slug, "single-breasted"),
+  // });
 
-  const doubleBreastedCategory = await db.query.productCategory.findFirst({
-    where: (cat, { eq }) => eq(cat.slug, "double-breasted"),
-  });
+  // const doubleBreastedCategory = await db.query.productCategory.findFirst({
+  //   where: (cat, { eq }) => eq(cat.slug, "double-breasted"),
+  // });
 
-  const dressShirtCategory = await db.query.productCategory.findFirst({
-    where: (cat, { eq }) => eq(cat.slug, "dress-shirt"),
-  });
+  // const dressShirtCategory = await db.query.productCategory.findFirst({
+  //   where: (cat, { eq }) => eq(cat.slug, "dress-shirt"),
+  // });
 
-  const chinosCategory = await db.query.productCategory.findFirst({
-    where: (cat, { eq }) => eq(cat.slug, "chinos"),
-  });
+  // const chinosCategory = await db.query.productCategory.findFirst({
+  //   where: (cat, { eq }) => eq(cat.slug, "chinos"),
+  // });
 
   // Try to insert products for different categories
   try {
@@ -418,7 +284,7 @@ async function seed() {
           mainImage:
             "https://media.istockphoto.com/id/1352080196/photo/portrait-of-friendly-mature-businessman.webp?a=1&b=1&s=612x612&w=0&k=20&c=Q0IU3lRhZqe7Cx-JxjKoKsQ548QwKd0wJrdqGBrqsq4=",
           basePrice: "695.00",
-          categoryId: businessSuitsCategory?.id || 1,
+          categoryId: businessSuitsCat?.id || 1,
           fabricId: 1,
           isActive: true,
         },
@@ -430,7 +296,7 @@ async function seed() {
           mainImage:
             "https://media.istockphoto.com/id/1467795177/photo/groom-in-white-suit-with-dried-flower-boutonniere.webp?a=1&b=1&s=612x612&w=0&k=20&c=ZLLiNLhSITR5K8VKW05YOM-Pflq-LIZyuEQYiA3Pl2U=",
           basePrice: "849.00",
-          categoryId: weddingSuitsCategory?.id || 1,
+          categoryId: weddingSuitsCat?.id || 1,
           fabricId: 1,
           isActive: true,
         },
@@ -442,7 +308,7 @@ async function seed() {
           mainImage:
             "https://images.unsplash.com/photo-1592878897400-43fb1f1cc324?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8bmFtZSUzQSUyMCUyMk1pZG5pZ2h0JTIwUGVhayUyMExhcGVsJTIwVHV4ZWRvJTIyJTJDfGVufDB8fDB8fHww",
           basePrice: "899.00",
-          categoryId: weddingSuitsCategory?.id || 1,
+          categoryId: weddingSuitsCat?.id || 1,
           fabricId: 1,
           isActive: true,
         },
@@ -454,7 +320,7 @@ async function seed() {
           mainImage:
             "https://images.unsplash.com/photo-1594938374181-4b7d72c4370c?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Qk9BUkRST09NJTIwU3VpdHxlbnwwfHwwfHx8MA%3D%3D",
           basePrice: "725.00",
-          categoryId: boardroomSuitsCategory?.id || 1,
+          categoryId: boardroomSuitsCat?.id || 1,
           fabricId: 1,
           isActive: true,
         },
@@ -466,7 +332,7 @@ async function seed() {
           mainImage:
             "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Q0FTVUFMJTIwU3VpdHxlbnwwfHwwfHx8MA%3D%3D",
           basePrice: "550.00",
-          categoryId: casualSuitsCategory?.id || 1,
+          categoryId: casualSuitsCat?.id || 1,
           fabricId: 1,
           isActive: true,
         },
@@ -478,7 +344,7 @@ async function seed() {
           mainImage:
             "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8QkxBWkVSU3xlbnwwfHwwfHx8MA%3D%3D",
           basePrice: "425.00",
-          categoryId: singleBreastedCategory?.id || 2,
+          categoryId: singleBreastedCat?.id || 2,
           fabricId: 1,
           isActive: true,
         },
@@ -490,7 +356,7 @@ async function seed() {
           mainImage:
             "https://images.unsplash.com/photo-1592878897400-43fb1f1cc324?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8RE9VQkxFJTIwQlJFQVNURUQlMjBCbGF6ZXJ8ZW58MHx8MHx8fDA%3D",
           basePrice: "475.00",
-          categoryId: doubleBreastedCategory?.id || 2,
+          categoryId: doubleBreastedCat?.id || 2,
           fabricId: 1,
           isActive: true,
         },
@@ -502,7 +368,7 @@ async function seed() {
           mainImage:
             "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8U0hJUlRTfGVufDB8fDB8fHww",
           basePrice: "125.00",
-          categoryId: dressShirtCategory?.id || 3,
+          categoryId: dressShirtCat?.id || 3,
           fabricId: 1,
           isActive: true,
         },
@@ -514,7 +380,7 @@ async function seed() {
           mainImage:
             "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Q0hJTk9TfGVufDB8fDB8fHww",
           basePrice: "95.00",
-          categoryId: chinosCategory?.id || 4,
+          categoryId: chinosCat?.id || 4,
           fabricId: 1,
           isActive: true,
         },
@@ -526,7 +392,7 @@ async function seed() {
           mainImage:
             "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8VFJPVVNFUlN8ZW58MHx8MHx8fDA%3D",
           basePrice: "110.00",
-          categoryId: chinosCategory?.id || 4,
+          categoryId: chinosCat?.id || 4,
           fabricId: 1,
           isActive: true,
         },

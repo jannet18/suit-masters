@@ -12,7 +12,7 @@
 const SERVICES = {
   cart: process.env.NEXT_PUBLIC_CART_SERVICE_URL || "http://localhost:3001/api",
   product:
-    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || "http://localhost:3001/api",
+    process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || "http://localhost:4000",
   order:
     process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:3001/api",
   payment:
@@ -26,37 +26,48 @@ export const api = {
       const res = await fetch(`${SERVICES.cart}/cart`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        return res.json();
-      } else {
-        console.log("Failed to fetch cart: ", res.statusText);
-        return { success: false, cart: null };
-      }
+        return res.ok ? await res.json() : { success: false, cart: null };
     } catch (error) {
-      console.log("Error fetching cart: ", error);
+      console.error("Error fetching cart: ", error);
       return { success: false, cart: null };
     }
   },
 
   // --- Products ---
+  // getProducts: async (params?: { category?: string; search?: string }) => {
+  //   try {
+  //     const filteredParams = Object.fromEntries(
+  //       Object.entries(params || {}).filter(([_, v]) => v != null),
+  //     );
+  //     // Manually construct query string to avoid URLSearchParams issues
+  //     const queryParts = [];
+  //     for (const [key, value] of Object.entries(filteredParams)) {
+  //       queryParts.push(
+  //         `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`,
+  //       );
+  //     }
+  //     const queryString =
+  //       queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+  //     const res = await fetch(`${SERVICES.product}/products${queryString}`);
+  //     return res.ok ? res.json() : { success: false, products: [] };
+  //   } catch (error) {
+  //     console.log("Error fetching products: ", error);
+  //     return { success: false, products: [] };
+  //   }
+  // },
   getProducts: async (params?: { category?: string; search?: string }) => {
     try {
-      const filteredParams = Object.fromEntries(
-        Object.entries(params || {}).filter(([_, v]) => v != null),
-      );
-      // Manually construct query string to avoid URLSearchParams issues
-      const queryParts = [];
-      for (const [key, value] of Object.entries(filteredParams)) {
-        queryParts.push(
-          `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`,
-        );
+      const query = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, val]) => {
+          if (val != null) query.append(key, val);
+        });
       }
-      const queryString =
-        queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+      const queryString = query.toString() ? `?${query.toString()}` : "";
       const res = await fetch(`${SERVICES.product}/products${queryString}`);
-      return res.ok ? res.json() : { success: false, products: [] };
+      return res.ok ? await res.json() : { success: false, products: [] };
     } catch (error) {
-      console.log("Error fetching products: ", error);
+      console.error("Error fetching products:", error);
       return { success: false, products: [] };
     }
   },
@@ -64,18 +75,22 @@ export const api = {
   getProductById: async (id: number) => {
     try {
       const res = await fetch(`${SERVICES.product}/products/${id}`);
-      if (res.ok) {
-        return res.json();
-      } else {
-        console.log("Failed to fetch product: ", res.statusText);
-        return { success: false, product: null };
-      }
+     return res.ok ? await res.json(): {success: false, product: null}
     } catch (error) {
-      console.log("Error fetching product: ", error);
+      console.error("Error fetching product: ", error);
       return { success: false, product: null };
     }
   },
-
+// Product by slug
+getProductBySlug: async (slug: string) => {
+  try {
+    const res = await fetch(`${SERVICES.product}/products/slug/${slug}`)
+    return res.ok ? await res.json(): {success: false, product: null}
+  } catch (error) {
+    console.error("Error fetching product by slug:", error)
+    return {success: false, product: null}
+  }
+},
   // --- Categories ---
   getCategories: async () => {
     try {
@@ -92,22 +107,22 @@ export const api = {
     }
   },
 
-  getProductsByCategory: async (slug: string) => {
-    try {
-      const res = await fetch(
-        `${SERVICES.product}/categories/${slug}/products`,
-      );
-      if (res.ok) {
-        return res.json();
-      } else {
-        console.log("Failed to fetch products by category: ", res.statusText);
-        return { success: false, category: null, products: [] };
-      }
-    } catch (error) {
-      console.log("Error fetching products by category: ", error);
-      return { success: false, category: null, products: [] };
-    }
-  },
+  // getProductsByCategory: async (slug: string) => {
+  //   try {
+  //     const res = await fetch(
+  //       `${SERVICES.product}/categories/${slug}/products`,
+  //     );
+  //     if (res.ok) {
+  //       return res.json();
+  //     } else {
+  //       console.log("Failed to fetch products by category: ", res.statusText);
+  //       return { success: false, category: null, products: [] };
+  //     }
+  //   } catch (error) {
+  //     console.log("Error fetching products by category: ", error);
+  //     return { success: false, category: null, products: [] };
+  //   }
+  // },
 
   // --- Collections ---
   getCollections: async () => {
@@ -138,7 +153,11 @@ export const api = {
   // --- Orders ---
   getOrders: async (data: any, token: string) => {
     try {
-      const res = await fetch(`${SERVICES.order}/orders`);
+      const res = await fetch(`${SERVICES.order}/orders`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (res.ok) {
         return res.json();
       } else {
@@ -152,7 +171,7 @@ export const api = {
   },
   createOrder: async (data: any, token: string) => {
     try {
-      const res = await fetch(`${SERVICES.order}/checkout`, {
+      const res = await fetch(`${SERVICES.order}/orders`, {
         method: "POST",
         body: JSON.stringify(data),
         headers: {
@@ -160,12 +179,7 @@ export const api = {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (res.ok) {
-        return res.json();
-      } else {
-        console.log("Failed to create order: ", res.statusText);
-        return { success: false, order: null };
-      }
+      return res.ok ? await res.json(): {success: false, order: null}
     } catch (error) {
       console.log("Error performing checkout: ", error);
       return { success: false, order: null };
@@ -188,32 +202,47 @@ export const api = {
     }
   },
 
-  getProductBySlug: async (slug: string) => {
+  // getProductBySlug: async (slug: string) => {
+  //   try {
+  //     const res = await fetch(`${SERVICES.product}/products/${slug}`);
+  //     if (!res.ok) throw new Error("Not found");
+  //     return res.json();
+  //   } catch (error) {
+  //     return { success: false, product: null };
+  //   }
+  // },
+
+  createBespokeOrder: async (data: any, token?: string) => {
     try {
-      const res = await fetch(`${SERVICES.product}/products/${slug}`);
-      if (!res.ok) throw new Error("Not found");
-      return res.json();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch(`${SERVICES.order}/orders/bespoke`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(data),
+      });
+      return response.ok ? await response.json(): {success: false, order: null}
     } catch (error) {
-      return { success: false, product: null };
+      console.error("Error creating bespoke order: ", error);
+      return { success: false, order: null };
     }
   },
 
-  createBespokeOrder: async (data: any) => {
+  // --- Search Suggestions ---
+  getSearchSuggestions: async (query: string, limit: number = 5) => {
     try {
-      const response = await fetch("/api/checkout/bespoke", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (response.ok) {
-        return response.json();
-      } else {
-        console.log("Failed to create bespoke order: ", response.statusText);
-        return { success: false, order: null };
+      if (!query || query.trim().length < 2) {
+        return { success: true, suggestions: [] };
       }
+      const params = new URLSearchParams({q: query, limit: String(limit)});
+      const res = await fetch(
+        `${SERVICES.product}/products/suggestions?${params.toString()}`,
+      );
+      return res.ok ? await res.json(): {success: false, suggestions: []}
     } catch (error) {
-      console.log("Error creating bespoke order: ", error);
-      return { success: false, order: null };
+      console.log("Error fetching search suggestions: ", error);
+      return { success: false, suggestions: [] };
     }
   },
 

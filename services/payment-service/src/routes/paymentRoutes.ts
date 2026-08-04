@@ -95,8 +95,13 @@ import { db, eq, shopOrder } from "@repo/db";
 import { Hono } from "hono";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2022-11-15" as any,
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+if (!STRIPE_SECRET_KEY) {
+  throw new Error("STRIPE_SECRET_KEY environment variable is required");
+}
+
+const stripe = new Stripe(STRIPE_SECRET_KEY, {
+  apiVersion: "2024-11-20.acacia" as any,
 });
 export const paymentRoutes = new Hono();
 
@@ -114,21 +119,32 @@ paymentRoutes.post("/create-intent", async (c) => {
     if (!order) {
       return c.json({ error: "Order not found" }, 404);
     }
+
+    // Dynamic currency resolutiom tracking to avaid conersion drops
+    const currencyCode = (order as any).currency?.toLowerCase() || process.env.SYSTEM_CURRENCY_CODE || "£"
+    const amountInCents = Math.round(Number(order.total) * 100)
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountInCents,
+      currency: currencyCode,
+      metadata: {orderId: String(order.id)},
+      automatic_payment_methods: {enabled: true}
+    })
     // Prevent duplicate payment attempts
     if (order.status !== "PENDING_PAYMENT") {
       return c.json({ error: "Order not payable" }, 400);
     }
 
-    // Convert to cents
-    const amount = Math.round(Number(order.total) * 100);
+    // // Convert to cents
+    // const amount = Math.round(Number(order.total) * 100);
 
-    // Create PaymentIntent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: "usd",
-      metadata: { orderId: String(order.id) },
-      automatic_payment_methods: { enabled: true },
-    });
+    // // Create PaymentIntent
+    // const paymentIntent = await stripe.paymentIntents.create({
+    //   amount,
+    //   currency: "usd",
+    //   metadata: { orderId: String(order.id) },
+    //   automatic_payment_methods: { enabled: true },
+    // });
 
     return c.json({ clientSecret: paymentIntent.client_secret });
   } catch (err) {
@@ -137,40 +153,5 @@ paymentRoutes.post("/create-intent", async (c) => {
   }
 });
 
-paymentRoutes.post("/webhook", async (c) => {
-  const sig = c.req.header("stripe-signature");
-
-  if (!sig) {
-    return c.text("Missing signature", 400);
-  }
-
-  const body = await c.req.text();
-
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!,
-    );
-  } catch (err) {
-    console.error("Webhook signature verification failed", err);
-    return c.text("Invalid signature", 400);
-  }
-
-  // Handle successful payment
-  if (event.type === "payment_intent.succeeded") {
-    const intent = event.data.object as Stripe.PaymentIntent;
-    const orderId = intent.metadata.orderId;
-
-    if (orderId) {
-      await db
-        .update(shopOrder)
-        .set({ status: "PAID" })
-        .where(eq(shopOrder.id, Number(orderId)));
-    }
-  }
-
-  return c.text("ok");
-});
+// Webhook handler has been moved to webhook.ts for comprehensive event handling.
+// The webhook route is now mounted at /webhook in the service index.

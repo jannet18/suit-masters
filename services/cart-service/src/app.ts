@@ -16,6 +16,7 @@ import {
   db,
 } from "@repo/db";
 import { getUser } from "@repo/auth";
+import { errorHandler, notFoundHandler } from "@repo/error-handling";
 
 // Define a typed user object to satisfy TypeScript
 type AuthUser = {
@@ -25,15 +26,54 @@ type AuthUser = {
   [key: string]: any;
 };
 
+interface DesignSaveRequest {
+  productId: number;
+  selections: Record<string, number>;
+  measurements?: Record<string, string>;
+  qty?: number;
+}
+
+interface AddToCartRequest {
+  productId: number;
+  configurationId?: string;
+  measurementId?: string;
+  qty: number;
+}
+
+interface CustomizationOptionRow {
+  id: number;
+  groupId: string;
+  value: string;
+  priceDelta: string;
+}
+
+interface SelectedOptionSnapshot {
+  id: number;
+  label: string;
+  price_impact: string | number;
+}
+
+interface CartItemRow {
+  itemId: number;
+  qty: number;
+  productName: string | null;
+  productImage: string | null;
+  skuPrice: string | null;
+  configuration?: Record<string, any> | null;
+  configurationPrice?: string | null;
+  selectedOptions?: Record<string, any> | null;
+  configurationId?: number | null;
+  measurementId?: string | null;
+}
+
 const app = new Hono();
+
+// Health check
+app.get("/health", (c) => c.json({ status: "ok", service: "cart-service" }));
+
 app.post("/design/save", getUser, async (c: Context) => {
   const user = c.get("user") as AuthUser;
-  const { productId, selections, measurements, qty } = await c.req.json<{
-    productId: number;
-    selections: Record<string, number>;
-    measurements?: Record<string, string>;
-    qty?: number;
-  }>();
+  const { productId, selections, measurements, qty } = await c.req.json<DesignSaveRequest>();
 
   // 1️⃣ Validate product
   const productData = await db.query.product.findFirst({
@@ -44,11 +84,11 @@ app.post("/design/save", getUser, async (c: Context) => {
   }
 
   // 2️⃣ Validate selected options
-  const optionIds = Object.values(selections);
-  const dbOptions = await db
+  const optionIds = Object.values(selections) as number[];
+  const dbOptions = (await db
     .select()
     .from(customizationOption)
-    .where(inArray(customizationOption.id, optionIds));
+    .where(inArray(customizationOption.id, optionIds))) as unknown as CustomizationOptionRow[];
 
   if (dbOptions.length !== optionIds.length) {
     return c.json({ error: "One or more selected options are invalid" }, 400);
@@ -57,9 +97,9 @@ app.post("/design/save", getUser, async (c: Context) => {
   // 3️⃣ Calculate final price
   const finalPrice =
     Number(productData.basePrice) +
-    dbOptions.reduce((sum, opt) => sum + Number(opt.priceDelta), 0);
+    dbOptions.reduce<number>((sum, opt) => sum + Number(opt.priceDelta), 0);
 
-  const snapshot = dbOptions.reduce((acc: Record<string, any>, opt) => {
+  const snapshot = dbOptions.reduce<Record<string, SelectedOptionSnapshot>>((acc, opt) => {
     acc[opt.groupId] = {
       id: opt.id,
       label: opt.value,
@@ -130,69 +170,122 @@ app.post("/design/save", getUser, async (c: Context) => {
  * Add an item to the user's shopping cart
  */
 
+// app.post("/add", getUser, async (c: Context) => {
+//   const user = c.get("user") as AuthUser;
+//   const userId = user.id;
+
+//   const body = await c.req.json<AddToCartRequest>();
+
+//   const safetyQty = Math.max(1, Number(body.qty) || 1);
+
+//   const { productId, configurationId, measurementId } = body;
+//   // Find the user's cart or create one
+//   let cart = await db.query.shoppingCart.findFirst({
+//     where: eq(shoppingCart.userId, userId),
+//   });
+
+//   if (!cart) {
+//     const [newCart] = await db
+//       .insert(shoppingCart)
+//       .values({ userId: userId })
+//       .returning();
+//     cart = newCart;
+//   }
+//   // Check if the same item (with configuration & measurement) exists
+//   const existingItem = await db.query.shoppingCartItem.findFirst({
+//     where: and(
+//       eq(shoppingCartItem.cartId, cart!.id),
+//       eq(shoppingCartItem.productId, productId),
+//       configurationId
+//         ? eq(shoppingCartItem.configurationId, Number(configurationId))
+//         : isNull(shoppingCartItem.configurationId),
+//     ),
+//   });
+
+//   if (existingItem) {
+//     // Increase quantity
+
+//     await db
+//       .update(shoppingCartItem)
+//       .set({ quantity: existingItem.quantity + safetyQty })
+//       .where(eq(shoppingCartItem.id, existingItem.id));
+//   } else {
+//     // Insert new cart
+//     await db.insert(shoppingCartItem).values({
+//       cartId: cart!.id,
+//       productId,
+//       configurationId: configurationId ? Number(configurationId) : null,
+//       price: "0.00", // Default price, should be calculated from product
+//       quantity: safetyQty,
+//     });
+//   }
+
+//   return c.json({ success: true });
+// });
+
+
 app.post("/add", getUser, async (c: Context) => {
+  try {
   const user = c.get("user") as AuthUser;
   const userId = user.id;
+  const {productId, qty} = await c.req.json<{ productId: number; qty: number }>();
+  const safetyQty = Math.max(1, Number(qty) || 1);
 
-  const body = await c.req.json<{
-    productId: number;
-    configurationId?: string;
-    measurementId?: string;
-    qty: number;
-  }>();
+  // Fetch master item details to secure pricing
+  const ProductData = await db.query.product.findFirst({
+    where: eq(product.id, productId),
+  });
 
-  const safetyQty = Math.max(1, Number(body.qty) || 1);
+  if (!ProductData) {
+    return c.json({ error: "Product not found" }, 404);
+  }
 
-  const { productId, configurationId, measurementId } = body;
-  // Find the user's cart or create one
+  // Find or create user's cart
   let cart = await db.query.shoppingCart.findFirst({
     where: eq(shoppingCart.userId, userId),
   });
 
   if (!cart) {
-    c.json({ error: "Cart not found" }, 400);
     const [newCart] = await db
       .insert(shoppingCart)
       .values({ userId: userId })
       .returning();
     cart = newCart;
-    return c.json(cart);
   }
-  // Check if the same item (with configuration & measurement) exists
+
+  // Check if the same item exists in the cart
   const existingItem = await db.query.shoppingCartItem.findFirst({
     where: and(
       eq(shoppingCartItem.cartId, cart!.id),
       eq(shoppingCartItem.productId, productId),
-      configurationId
-        ? eq(shoppingCartItem.configurationId, Number(configurationId))
-        : isNull(shoppingCartItem.configurationId),
+      isNull(shoppingCartItem.configurationId), // Standard products have no configuration
     ),
   });
-
-  if (existingItem) {
-    // Increase quantity
-
+if(existingItem) {
     await db
       .update(shoppingCartItem)
       .set({ quantity: existingItem.quantity + safetyQty })
       .where(eq(shoppingCartItem.id, existingItem.id));
   } else {
-    // Insert new cart
     await db.insert(shoppingCartItem).values({
       cartId: cart!.id,
       productId,
-      configurationId: configurationId ? Number(configurationId) : null,
-      price: "0.00", // Default price, should be calculated from product
+      configurationId: null, // No configuration for standard products
+      price: ProductData.basePrice.toString(),
       quantity: safetyQty,
     });
   }
-
-  return c.json({ success: true });
+   return c.json({ success: true, message: "Item added to cart" });
+} catch (error) {
+    console.error("Failed to add item to cart:", error);
+    return c.json({ error: "Failed to add item to cart" }, 500);
+  }
 });
+
 /**
  * Get current user's cart
  */
-app.get("/cart", getUser, async (c: any) => {
+app.get("/cart", getUser, async (c: Context) => {
   const user = c.get("user") as AuthUser;
   const userId = user.id;
 
@@ -201,12 +294,12 @@ app.get("/cart", getUser, async (c: any) => {
   });
 
   if (!cart) {
-    const inserted = await db
+    const [inserted] = await db
       .insert(shoppingCart)
       .values({ userId: userId })
       .returning();
 
-    cart = inserted[0];
+    cart = inserted;
   }
   if (!cart) {
     return c.json({
@@ -217,29 +310,28 @@ app.get("/cart", getUser, async (c: any) => {
   }
 
   // Join cart items with product & configuration details
-  const rows = await db
+  const rows = (await db
     .select({
       itemId: shoppingCartItem.id,
       qty: shoppingCartItem.quantity,
       productName: product.name,
       productImage: product.productImage,
       skuPrice: productItem.price,
-      configuration: productConfiguration.selectedOptions,
+      configurationId: shoppingCartItem.configurationId,
       configurationPrice: productConfiguration.finalPrice,
       selectedOptions: productConfiguration.selectedOptions,
     })
     .from(shoppingCartItem)
+    .innerJoin(product, eq(shoppingCartItem.productId, product.id))
     .leftJoin(
       productConfiguration,
       eq(shoppingCartItem.configurationId, productConfiguration.id),
     )
-    .innerJoin(productItem, eq(shoppingCartItem.productItemId, productItem.id))
-    .innerJoin(product, eq(productItem.productId, product.id))
-    .where(eq(shoppingCartItem.cartId, cart.id));
+    .where(eq(shoppingCartItem.cartId, cart.id))) as CartItemRow[];
 
   let cartTotal = 0;
 
-  const items = rows.map((row: any) => {
+  const items = rows.map((row: CartItemRow) => {
     const unitPrice = row.configurationPrice ?? row.skuPrice;
 
     const totalPrice = Number(unitPrice) * row.qty;
@@ -267,138 +359,226 @@ app.get("/cart", getUser, async (c: any) => {
   });
 });
 
-app.post("/checkout", getUser, async (c: Context) => {
+/**
+ * Remove an item from the user's shopping cart
+ */
+app.delete("/remove/:itemId", getUser, async (c: Context) => {
   const user = c.get("user") as AuthUser;
-  const userId = user.id;
+  const itemId = Number(c.req.param("itemId"));
 
-  const body = await c.req.json<{
-    shipping: {
-      name: string;
-      email: string;
-      phone: string;
-      address_line1: string;
-      address_line2?: string;
-      city: string;
-      region: string;
-      postal_code: string;
-      country: string;
-    };
-  }>();
+  const cart = await db.query.shoppingCart.findFirst({
+    where: eq(shoppingCart.userId, user.id),
+  });
 
-  const idempotencyKey = c.req.header("Idempotency-Key");
-  if (!idempotencyKey) return c.json({ error: "Missing Idempotency-Key" }, 400);
+  if (!cart) {
+    return c.json({ success: false, error: "Cart not found" }, 404);
+  }
 
-  // Check if key already used
-  const existingKey = await db.query.idempotencyKeys.findFirst({
+  // Verify the item belongs to this user's cart
+  const item = await db.query.shoppingCartItem.findFirst({
     where: and(
-      eq(idempotencyKeys.key, idempotencyKey),
-      eq(idempotencyKeys.userId, Number(userId)),
+      eq(shoppingCartItem.id, itemId),
+      eq(shoppingCartItem.cartId, cart.id),
     ),
   });
 
-  if (existingKey)
-    return c.json({ orderId: existingKey.orderId, reused: true });
-  // 1️⃣ Load user's cart
-  const cart = await db.query.shoppingCart.findFirst({
-    where: eq(shoppingCart.userId, userId),
-  });
-
-  if (!cart) return c.json({ error: "Cart not found" }, 400);
-
-  // 2️⃣ Load cart items with configuration prices if available
-  const cartItems = await db
-    .select({
-      itemId: shoppingCartItem.id,
-      qty: shoppingCartItem.quantity,
-      productId: productItem.productId,
-      skuPrice: productItem.price,
-      configurationId: shoppingCartItem.configurationId,
-      configurationPrice: productConfiguration.finalPrice,
-      selectedOptions: productConfiguration.selectedOptions,
-    })
-    .from(shoppingCartItem)
-    .leftJoin(
-      productConfiguration,
-      eq(shoppingCartItem.configurationId, productConfiguration.id),
-    )
-    .innerJoin(productItem, eq(shoppingCartItem.productItemId, productItem.id));
-
-  if (cartItems.length === 0) return c.json({ error: "Cart is empty" }, 400);
-
-  // 3️⃣ Calculate total securely
-  let total = 0;
-  for (const item of cartItems) {
-    const unitPrice = item.configurationPrice ?? item.skuPrice;
-    total += Number(unitPrice) * item.qty;
+  if (!item) {
+    return c.json({ success: false, error: "Item not found in cart" }, 404);
   }
 
-  // 4️⃣ Create order with transaction
-  const createdOrder = await db.transaction(async (tx) => {
-    // a) Insert order
-    const [order] = await tx
-      .insert(shopOrder)
-      .values({
-        userId,
-        total: total.toString(),
-        status: "PENDING_PAYMENT",
-        shipping_name: body.shipping.name,
-        shipping_email: body.shipping.email,
-        shipping_phone: body.shipping.phone,
-        shipping_address_line1: body.shipping.address_line1,
-        shipping_address_line2: body.shipping.address_line2 ?? null,
-        shipping_city: body.shipping.city,
-        shipping_region: body.shipping.region,
-        shipping_postal_code: body.shipping.postal_code,
-        shipping_country: body.shipping.country,
-      })
-      .returning();
+  await db.delete(shoppingCartItem).where(eq(shoppingCartItem.id, itemId));
 
-    if (!order) throw new Error("Order creation failed");
+  return c.json({ success: true, message: "Item removed from cart" });
+});
 
-    // b) Insert order items
-    await tx.insert(orderItems).values(
-      cartItems.map((item) => ({
-        orderId: order.id,
-        productNameSnapshot: "Product", // We need to get actual product name
-        priceAtPurchase: (item.configurationPrice ?? item.skuPrice).toString(),
-        unitPrice: (item.configurationPrice ?? item.skuPrice).toString(),
-        quantity: item.qty,
-        customizationSnapsot: item.selectedOptions ?? {},
-      })),
-    );
+/**
+ * Update quantity of a cart item
+ */
+app.put("/update/:itemId", getUser, async (c: Context) => {
+  const user = c.get("user") as AuthUser;
+  const itemId = Number(c.req.param("itemId"));
+  const { quantity } = await c.req.json<{ quantity: number }>();
 
-    // Save idempotency key
-    await tx.insert(idempotencyKeys).values({
-      userId: Number(userId),
-      key: idempotencyKey,
-      orderId: order.id,
-    });
-    // c) Clear cart items
-    await tx
-      .delete(shoppingCartItem)
-      .where(eq(shoppingCartItem.cartId, cart.id));
+  if (!quantity || quantity < 1) {
+    return c.json({ success: false, error: "Quantity must be at least 1" }, 400);
+  }
 
-    return order;
+  const cart = await db.query.shoppingCart.findFirst({
+    where: eq(shoppingCart.userId, user.id),
   });
-  // prepare order summary with full product info + snapshot
-  const orderSummaryItems = cartItems.map((item) => ({
-    productId: item.productId,
-    // name: item.productName ??,
-    // image: item.productImage,
-    configurationId: item.configurationId,
-    quantity: item.qty,
-    price: item.configurationPrice ?? item.skuPrice,
-    total_price: Number(item.configurationPrice ?? item.skuPrice) * item.qty,
-    selectedOption: item.selectedOptions ?? {},
-    // measurement: item.measurement_id ? JSON.parse(item.measurement_id) : {},
-  }));
+
+  if (!cart) {
+    return c.json({ success: false, error: "Cart not found" }, 404);
+  }
+
+  const item = await db.query.shoppingCartItem.findFirst({
+    where: and(
+      eq(shoppingCartItem.id, itemId),
+      eq(shoppingCartItem.cartId, cart.id),
+    ),
+  });
+
+  if (!item) {
+    return c.json({ success: false, error: "Item not found in cart" }, 404);
+  }
+
+  await db
+    .update(shoppingCartItem)
+    .set({ quantity })
+    .where(eq(shoppingCartItem.id, itemId));
+
+  return c.json({ success: true, message: "Cart item updated" });
+});
+
+/**
+ * Clear all items from the user's cart
+ */
+app.delete("/clear", getUser, async (c: Context) => {
+  const user = c.get("user") as AuthUser;
+
+  const cart = await db.query.shoppingCart.findFirst({
+    where: eq(shoppingCart.userId, user.id),
+  });
+
+  if (!cart) {
+    return c.json({ success: true, message: "Cart already empty" });
+  }
+
+  await db.delete(shoppingCartItem).where(eq(shoppingCartItem.cartId, cart.id));
+
+  return c.json({ success: true, message: "Cart cleared" });
+});
+
+/**
+ * POST /sync
+ * Merge a local (client-side) cart with the server cart.
+ * Used when a user logs in and we need to merge their localStorage cart
+ * with any items already in their server cart.
+ */
+app.post("/sync", getUser, async (c: Context) => {
+  const user = c.get("user") as AuthUser;
+  const { items } = await c.req.json<{
+    items: Array<{
+      id: number;
+      name: string;
+      base_price: number;
+      image_url: string;
+      product_type: string;
+      quantity: number;
+      selected_options?: Array<{ id: number; group_id: number; label: string; price_impact: string }>;
+      configuration?: Record<string, any>;
+      totalPrice: number;
+    }>;
+  }>();
+
+  if (!items || items.length === 0) {
+    return c.json({ success: true, message: "Nothing to sync", items: [] });
+  }
+
+  // Find or create user's server cart
+  let cart = await db.query.shoppingCart.findFirst({
+    where: eq(shoppingCart.userId, user.id),
+  });
+
+  if (!cart) {
+    const [newCart] = await db
+      .insert(shoppingCart)
+      .values({ userId: user.id })
+      .returning();
+    cart = newCart;
+  }
+
+  let mergedCount = 0;
+
+  // For each local item, check if it already exists in the server cart
+  for (const localItem of items) {
+    // For CUSTOM products with selected_options, we need to save the configuration first
+    if (localItem.product_type === "CUSTOM" && localItem.selected_options?.length) {
+      // Save configuration
+      const snapshot = localItem.selected_options.reduce(
+        (acc: Record<string, any>, opt: any) => {
+          acc[opt.group_id] = {
+            id: opt.id,
+            label: opt.label,
+            price_impact: opt.price_impact,
+          };
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
+
+      const [newConfig] = await db
+        .insert(productConfiguration)
+        .values({
+          kindeUserId: user.id,
+          productId: localItem.id,
+          selectedOptions: snapshot,
+          finalPrice: localItem.totalPrice.toString(),
+          createdAt: new Date(),
+        })
+        .returning();
+
+      if (newConfig) {
+        // Check if item already exists
+        const existingItem = await db.query.shoppingCartItem.findFirst({
+          where: and(
+            eq(shoppingCartItem.cartId, cart!.id),
+            eq(shoppingCartItem.productId, localItem.id),
+            eq(shoppingCartItem.configurationId, newConfig.id),
+          ),
+        });
+
+        if (existingItem) {
+          await db
+            .update(shoppingCartItem)
+            .set({ quantity: existingItem.quantity + localItem.quantity })
+            .where(eq(shoppingCartItem.id, existingItem.id));
+        } else {
+          await db.insert(shoppingCartItem).values({
+            cartId: cart!.id,
+            productId: localItem.id,
+            configurationId: newConfig.id,
+            price: localItem.totalPrice.toString(),
+            quantity: localItem.quantity,
+          });
+        }
+        mergedCount++;
+      }
+    } else {
+      // For STANDARD products, add directly
+      const existingItem = await db.query.shoppingCartItem.findFirst({
+        where: and(
+          eq(shoppingCartItem.cartId, cart!.id),
+          eq(shoppingCartItem.productId, localItem.id),
+        ),
+      });
+
+      if (existingItem) {
+        await db
+          .update(shoppingCartItem)
+          .set({ quantity: existingItem.quantity + localItem.quantity })
+          .where(eq(shoppingCartItem.id, existingItem.id));
+      } else {
+        await db.insert(shoppingCartItem).values({
+          cartId: cart!.id,
+          productId: localItem.id,
+          price: localItem.base_price.toString(),
+          quantity: localItem.quantity,
+        });
+      }
+      mergedCount++;
+    }
+  }
+
   return c.json({
     success: true,
-    orderId: createdOrder.id,
-    total,
-    items: orderSummaryItems,
-    message: "Order created successfully! Payment pending.",
+    message: `Synced ${mergedCount} items to server cart`,
+    mergedCount,
   });
 });
+
+// Error handling
+app.onError(errorHandler);
+app.notFound(notFoundHandler);
 
 export default app;

@@ -1,13 +1,15 @@
 import { api } from "@/lib/api/api-client";
 import {
   ArrowRightIcon,
-  ChevronDownIcon,
   ChevronRight,
   Home,
+  Layers,
+  Sparkles,
+  Tag,
 } from "lucide-react";
 import Link from "next/link";
 import { Metadata } from "next";
-import Sidebar from "@/app/components/Sidebar";
+// import Sidebar from "@/app/components/Sidebar";
 
 export async function generateMetadata({
   params,
@@ -51,22 +53,27 @@ export default async function CollectionPage({
 
   if (!collectionRes || !collectionRes.success || !collectionRes.collection) {
     return (
-      <div className="text-white p-20 capitalize ">
-        {slug}
-        <span>Collection not found.</span>
-        <Link href="/" className="text-[#c9a96e]">
+        <div className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center text-center p-8">
+        <h1 className="font-serif text-3xl text-[#f5f0eb] mb-4">Collection Not Found</h1>
+        <p className="text-[#9a9490] max-w-sm mb-8">
+          The requested luxury collection "{slug}" does not exist or has been curated out of seasonal availability.
+        </p>
+        <Link 
+          href="/" 
+          className="px-6 py-3 bg-[#c9a96e] text-black font-semibold text-xs tracking-widest uppercase hover:bg-[#dfc08a] transition-all duration-300"
+        >
           Return Home
         </Link>
       </div>
     );
   }
 
-  const { collection, products } = collectionRes;
+  const { collection, products = [] } = collectionRes;
   const collections = collectionsRes.success ? collectionsRes.collections : [];
 
   // Determine product link based on product_type
   const getProductLink = (product: any) => {
-    if (product.product_type === "STANDARD") {
+    if (product.productType === "STANDARD") {
       return `/products/${product.slug}`;
     }
     // CUSTOM products go to configurator
@@ -74,126 +81,147 @@ export default async function CollectionPage({
   };
 
   return (
-    <main className="bg-[#0f0f0f] min-h-screen">
+    <main className="bg-[#0f0f0f] min-h-screen text-[#f5f0eb] pb-24">
       {/* Breadcrumbs */}
-      <nav className="py-6 px-6 lg:px-10 max-w-7xl mx-auto">
-        <div className="flex items-center text-sm text-[#9a9490]">
-          <Link href="/" className="flex items-center hover:text-[#c9a96e]">
-            <Home className="w-4 h-4 mr-1" />
+        <nav className="border-b border-[#1f1f1f] bg-[#0c0c0c]">
+        <div className="max-w-7xl mx-auto py-30 px-32 lg:px-10 flex items-center text-xs tracking-wider uppercase text-[#9a9490]">
+          <Link href="/" className="flex items-center hover:text-[#c9a96e] transition-colors">
+            <Home className="w-3.5 h-3.5 mr-1.5" />
             Home
           </Link>
-          <ChevronRight className="w-4 h-4 mx-2" />
-          <Link href="/collections" className="hover:text-[#c9a96e]">
+          <ChevronRight className="w-3.5 h-3.5 mx-2 text-[#2e2e2e]" />
+          <Link href="/collections" className="hover:text-[#c9a96e] transition-colors">
             Collections
           </Link>
-          <ChevronRight className="w-4 h-4 mx-2" />
-          <span className="text-[#f5f0eb]">{collection.name}</span>
+          <ChevronRight className="w-3.5 h-3.5 mx-2 text-[#2e2e2e]" />
+          <span className="text-[#c9a96e] font-semibold">{collection.name}</span>
         </div>
       </nav>
 
       {/* Hero Header */}
-      <section className="relative h-[50vh] flex items-center px-6 lg:px-10">
+      <section className="relative h-[40vh] md:h-[45vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <img
             src={collection.image}
-            className="w-full h-full object-cover opacity-30"
+            className="w-full h-full object-cover opacity-25 scale-105 transition-transform duration-700 group-hover:scale-110 select-none"
             alt={collection.name}
+            aria-hidden="true"
           />
-          <div className="absolute inset-0 bg-linear-to-t from-[#0f0f0f] to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-[#0f0f0f] via-[#0f0f0f]/80 to-[#0f0f0f]/30" />
+          <div className="absolute inset-0 bg-linear-to-r from-[#0f0f0f] via-transparent to-[#0f0f0f]" />
         </div>
-        <div className="relative max-w-7xl mx-auto w-full flex flex-col items-center justify-center">
-          <h1 className="text-6xl font-serif text-[#f5f0eb] mb-4">
+        <div className="relative max-w-4xl mx-auto w-full flex flex-col items-center justify-center text-center px-6 z-10">
+          <span className="text-[#c9a96e] text-[10px] tracking-[0.4em] uppercase font-semibold mt-0">
+            Luxury Curated Wardrobe
+          </span>
+          <h1 className="text-4xl md:text-5xl lg:text-6xlfont-serif font-bold text-[#f5f0eb] mb-4 leading-tight tracking-wide">
             {collection.name}
           </h1>
-          <p className="max-w-xl text-[#9a9490]">{collection.description}</p>
+          <div className="w-16 h-0.5 bg-[#c9a96e] mb-4" />
+          <p className="max-w-2xl text-[#9a9490] text-sm md:text-base font-light leading-relaxed">{collection.description}</p>
         </div>
       </section>
-
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-10 flex flex-col lg:flex-row gap-10">
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-12 flex flex-col lg:flex-row gap-12 items-start">
         {/* Collection Navigator Sidebar */}
-        <>
-          <Sidebar />
-        </>
-        {/* Product Grid */}
-        <section className="lg:w-3/4 flex flex-col items-center justify-center">
-          <div className="mb-8">
-            <h2 className="text-3xl font-serif text-[#f5f0eb] mb-2 text-center">
-              {products.length} Pieces
-            </h2>
-            <p className="text-[#9a9490]">
-              Explore our {collection.name.toLowerCase()} collection featuring
-              {/* {products.filter((p: any) => p.product_type === "CUSTOM").length}{" "} */}
-              bespoke items
-              {/* {
-                products.filter((p: any) => p.product_type === "STANDARD")
-                  .length
-              }
-              ready-to-wear pieces. */}
+            <aside className="w-full lg:w-1/4 shrink-0 bg-[#141414] border border-[#232323] p-6 rounded-lg sticky top-28">
+          <h2 className="text-xs uppercase tracking-[0.25em] font-bold text-[#c9a96e] mb-5 pb-3 border-b border-[#232323] flex items-center gap-2">
+            <Layers className="w-3.5 h-3.5 text-[#c9a96e]" />
+            Collections
+          </h2>
+          <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0 scrollbar-none text-white">
+            {collections.map((item: any) => {
+              const isActive = item.slug === slug;
+              return (
+               
+                <Link
+                  key={item.id}
+                  href={`/collections/${item.slug}`}
+                  className={`flex-none lg:w-full inline-flex items-center justify-between px-4 py-3 text-xs tracking-wider uppercase font-medium rounded transition-all duration-300 
+                    ${
+                    isActive
+                      ? "bg-[#c9a96e] text-[#0f0f0f] font-semibold shadow-md"
+                      : "text-[#9a9490] hover:text-[#f5f0eb] hover:bg-[#1f1f1f]/60"}`
+                }
+                >
+                  <span className="">{item?.name}</span>
+                  <ChevronRight className={`hidden lg:block w-3.5 h-3.5 ${isActive ? "text-[#0f0f0f]" : "text-[#2e2e2e]"}`} />
+                </Link>
+               
+              );
+            })}
+          </div>
+        </aside>
+        <section className="flex-1 w-full">
+           <div className="mb-10 bg-[#141414] border border-[#232323]/50 p-6 rounded-lg flex items-start gap-4">
+            <Sparkles className="w-5 h-5 text-[#c9a96e] shrink-0 mt-0.5" />
+            <p className="text-sm text-[#9a9490] leading-relaxed">
+              Explore our premium <strong className="text-[#f5f0eb] font-medium">{collection.name.toLowerCase()}</strong> suite selections, each customizable to your dynamic physiological profile. Crafted from standard-setting weavers including Loro Piana & Vitale Barberis Canonico.
             </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map((product: any) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 md:gap-10 lg:gap-10">
+            {products.map((product: any) => {
+              const isCustom = product.productType === "CUSTOM" || product.product_type === "CUSTOM";
+              const rawPrice = product.basePrice || product.base_price || 0;
+              const formattedPrice = Number(rawPrice).toFixed(2);
+              const productImage = product.productImage || product.product_image || product.mainImage || "https://images.unsplash.com/photo-1594938298603-c8148c4b4f5a?w=600";
+              return (
               <Link
-                key={product.id}
+                key={product?.id}
                 href={getProductLink(product)}
-                className="group block"
+                className="group flex flex-col justify-between"
               >
-                <div className="aspect-3/4 overflow-hidden bg-[#1a1a1a] mb-4 relative rounded-lg">
+              <div className="relative">
+                <div className="aspect-3/4 overflow-hidden bg-[#1a1a1a] border border-[#232323]/50 mb-3 relative rounded-md ">
                   <img
-                    src={product.product_image}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    src={productImage}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 select-none rounded-md"
                     alt={product.name}
+                    loading="lazy"
                   />
-                  {product.product_type === "CUSTOM" && (
-                    <span className="absolute top-4 right-4 bg-[#c9a96e] text-black text-[10px] px-3 py-1.5 font-bold uppercase tracking-wider">
-                      Bespoke
+                  {isCustom ? (
+                    <span className="absolute top-4 right-4 bg-[#c9a96e] text-[#0f0f0f] text-[9px] px-2.5 py-1 font-semibold uppercase tracking-widest shadow-md">
+                      Bespoke Configurable
                     </span>
-                  )}
-                  {product.product_type === "STANDARD" && (
-                    <span className="absolute top-4 right-4 bg-[#4a5568] text-white text-[10px] px-3 py-1.5 font-bold uppercase tracking-wider">
+                  ): (
+                    <span className="absolute top-4 right-4 bg-[#2c2c2c] text-[#f5f0eb] text-[9px] px-2.5 py-1 font-semibold uppercase tracking-widest shadow-md">
                       Ready-to-Wear
-                    </span>
-                  )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                    </span>)}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-all duration-300" />
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-md font-medium text-[#f5f0eb] group-hover:text-[#c9a96e] transition-colors">
+                <div className="mt-4">
+                  <div className="flex items-start justify-between gap-5">
+                    <h3 className="font-serif text-md font-medium text-[#f5f0eb] group-hover:text-[#c9a96e] transition-colors leading-tight">
                       {product.name}
                     </h3>
-                    <span className="text-sm text-[#9a9490]">
-                      {product.category_name}
+                    <div/>
+                    <span className="text-sm font-mono text-[#9a9490]">
+                      From £ {formattedPrice}
                     </span>
                   </div>
-                  <p className="text-[#c9a96e] font-medium">
-                    From £ {product.base_price.toFixed(2)}
-                  </p>
-                  <div className="flex items-center justify-between text-sm text-[#9a9490] gap-3">
-                    <span className="inline-flex items-center gap-3">
-                      {product.product_type === "CUSTOM"
-                        ? "Custom Tailored"
-                        : "Standard Sizing"}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-[#1f1f1f] flex items-center justify-between text-xs text-[#9a9490]">
+                    <span className="inline-flex items-center gap-1.5 font-light">
+                      <Tag className="w-3 h-3 text-[#c9a96e]" />
+                      {isCustom ? "Custom Tailored" : "Standard Sizing"}
                     </span>
-                    {/* <span className="mx-2">•</span> */}
-                    <span className="flex items-center gap-0">
-                      View Details
-                      <ArrowRightIcon className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </span>
+                    <Link href={isCustom ? "/configure" : "/sizing"} className="inline-flex items-center gap-1 text-[#f5f0eb] group-hover:text-[#c9a96e] transition-colors">
+                      {isCustom ? "Design Now" : "View Sizing"}
+                      <ArrowRightIcon className="w-3 h-3 ml-0.5 group-hover:translate-x-1 transition-transform duration-300" />
+                    </Link>
                   </div>
                 </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
-
           {products.length === 0 && (
-            <div className="text-center py-20">
-              <p className="text-xl text-[#9a9490]">
+            <div className="text-center py-24 bg-[#141414] border border-[#232323]/50 rounded-lg p-8">
+              <p className="text-lg text-[#9a9490] mb-4">
                 No products found in this collection.
               </p>
               <Link
                 href="/collections"
-                className="inline-flex items-center mt-4 text-[#c9a96e] hover:text-[#e6c27e]"
+                className="inline-flex items-center text-xs tracking-widest uppercase font-semibold text-[#f5f0eb] hover:text-[#e6c27e] transition-colors"
               >
                 Browse other collections
                 <ArrowRightIcon className="w-4 h-4 ml-2" />

@@ -1,13 +1,16 @@
 import { Context, Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { paymentRoutes } from "./routes/paymentRoutes.js";
+import { webhookRoutes } from "./routes/webhook.js";
 import { cors } from "hono/cors";
+import { errorHandler, notFoundHandler } from "@repo/error-handling";
 
 const app = new Hono();
 const port = Number(process.env.PORT) || 4002;
 
 app.use(
-  "/api/*",
+  // "/api/*",
+  "*",
   cors({
     origin: ["https://suit-masters.vercel.app", "http://localhost:3000"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -23,6 +26,11 @@ app.get("/health", (c: Context) =>
 // });
 
 app.route("/payments", paymentRoutes);
+app.route("/webhook", webhookRoutes);
+
+// Error handling
+app.onError(errorHandler);
+app.notFound(notFoundHandler);
 serve(
   {
     fetch: app.fetch,

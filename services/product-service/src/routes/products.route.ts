@@ -63,11 +63,87 @@ export const productsHandler = new Hono()
       return c.json({ success: false, products: [] }, 500);
     }
   })
+  // Search suggestions for autocomplete
+  .get("/suggestions", async (c) => {
+    const searchQuery = c.req.query("q");
+    const limit = parseInt(c.req.query("limit") || "5");
+
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      return c.json({
+        success: true,
+        suggestions: [],
+        message: "Query too short",
+      });
+    }
+
+    try {
+      // Search across multiple fields for better suggestions
+      const products = await db.query.product.findMany({
+        where: (p, { or, ilike }) => {
+          return or(
+            ilike(p.name, `%${searchQuery}%`),
+            ilike(p.description, `%${searchQuery}%`),
+            ilike(p.slug, `%${searchQuery}%`),
+          );
+        },
+        limit: Math.min(limit, 10), // Max 10 suggestions
+        orderBy: (p, { desc }) => [desc(p.id)], // Most recent first
+      });
+
+      // Format suggestions for autocomplete
+      const suggestions = products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        price: Number(p.basePrice),
+        image: p.mainImage || p.productImage || "",
+        type: "product" as const,
+      }));
+
+      // Also get category suggestions
+      const categories = await db.query.productCategory.findMany({
+        where: (cat, { or, ilike }) => {
+          return or(
+            ilike(cat.name, `%${searchQuery}%`),
+            ilike(cat.slug, `%${searchQuery}%`),
+          );
+        },
+        limit: Math.min(3, limit), // Max 3 category suggestions
+      });
+
+      const categorySuggestions = categories.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        type: "category" as const,
+      }));
+
+      return c.json({
+        success: true,
+        suggestions: [...suggestions, ...categorySuggestions],
+        query: searchQuery,
+      });
+    } catch (error) {
+      console.error("Error fetching search suggestions", error);
+      return c.json(
+        {
+          success: false,
+          suggestions: [],
+          error: "Failed to fetch suggestions",
+        },
+        500,
+      );
+    }
+  })
+
+  /** customised to eliminate the N+1 problem - instead of making single queries for each product
+   * Verifies the retrieved customisation actually belong to the product's category - closing the vulnerability where invalid options could be injected into the product configuration
+   */
   .get("/:slug", async (c) => {
     const slug = c.req.param("slug");
 
     try {
-      // Fetch product
+      // 1. Fetch the base product details
       const dbProduct = await db.query.product.findFirst({
         where: (p, { eq }) => eq(p.slug, slug),
       });
@@ -79,39 +155,78 @@ export const productsHandler = new Hono()
         );
       }
 
-      // Fetch customization groups for this product's category
+      // 2. Batch-fetch all customisation groups for this category to avoid N+1 queries
       const customizationGroups = await db.query.customizationGroup.findMany({
         where: (group, { eq }) => eq(group.categoryId, dbProduct.categoryId),
         orderBy: (group, { asc }) => [asc(group.displayOrder)],
       });
 
-      // Fetch options for each group
-      const groupsWithOptions = await Promise.all(
-        customizationGroups.map(async (group) => {
-          const options = await db.query.customizationOption.findMany({
-            where: (option, { eq }) => eq(option.groupId, group.id),
-            orderBy: (option, { asc }) => [asc(option.id)],
-          });
+      let groupsWithOptions: any[] = [];
+      const groupIds = customizationGroups.map((group) => group.id);
 
-          return {
-            id: group.id,
-            name: group.name,
-            isRequired: group.isRequired,
-            displayOrder: group.displayOrder,
-            options: options.map((option: any) => ({
-              id: option.id,
-              name: option.name,
-              value: option.value,
-              priceDelta: Number(option.priceDelta),
-              thumbnailUrl: option.thumbnailUrl,
-              imageUrl: (option as any).imageUrl || null,
-              texture: (option as any).texture || null,
-              metadata: (option as any).metadata || {},
-              factoryCode: option.factoryCode,
-            })),
-          };
-        }),
-      );
+      // 3. Batch-fetch all options for the retrieved groups in exactly ONE query
+      const allOptions = await db.query.customizationOption.findMany({
+        where: (option, { inArray }) => inArray(option.groupId, groupIds),
+        orderBy: (option, { asc }) => [asc(option.id)],
+      });
+
+      // 4. Group options by their groupId for easy mapping
+      const optionsByGroupId = allOptions.reduce<Record<number, any[]>>((acc, option) => {
+        const gid = option.groupId as number;
+        if (!acc[gid]) {
+          acc[gid] = [];
+        }
+        acc[gid].push({
+          id: option.id,
+          name: option.name,
+          value: option.value,
+          priceDelta: Number(option.priceDelta),
+          thumbnailUrl: option.thumbnailUrl,
+          imageUrl: (option as any).imageUrl || null,
+          texture: (option as any).texture || null,
+          metadata: (option as any).metadata || {},
+          factoryCode: option.factoryCode,
+        });
+        return acc;
+      }, {} as Record<number, any[]>);
+
+      // 5.Map the customization options to include their respective parent customization gropus
+      groupsWithOptions = customizationGroups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        isRequired: group.isRequired,
+        displayOrder: group.displayOrder,
+        options: optionsByGroupId[group.id] || [],
+      }));
+    
+
+
+      // const groupsWithOptions = await Promise.all(
+      //   customizationGroups.map(async (group) => {
+      //     const options = await db.query.customizationOption.findMany({
+      //       where: (option, { eq }) => eq(option.groupId, group.id),
+      //       orderBy: (option, { asc }) => [asc(option.id)],
+      //     });
+
+      //     return {
+      //       id: group.id,
+      //       name: group.name,
+      //       isRequired: group.isRequired,
+      //       displayOrder: group.displayOrder,
+      //       options: options.map((option: any) => ({
+      //         id: option.id,
+      //         name: option.name,
+      //         value: option.value,
+      //         priceDelta: Number(option.priceDelta),
+      //         thumbnailUrl: option.thumbnailUrl,
+      //         imageUrl: (option as any).imageUrl || null,
+      //         texture: (option as any).texture || null,
+      //         metadata: (option as any).metadata || {},
+      //         factoryCode: option.factoryCode,
+      //       })),
+      //     };
+      //   }),
+      // );
 
       const responseProduct = {
         id: dbProduct.id,

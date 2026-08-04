@@ -12,10 +12,29 @@ export function Newsletter() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [focused, setFocused] = useState(false);
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim()) {
-      setSubmitted(true);
+    if (!email.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSubmitted(true);
+      } else {
+        setError(data.error || "Failed to subscribe. Please try again.");
+      }
+    } catch {
+      setError("Failed to subscribe. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
   return (
@@ -80,7 +99,7 @@ export function Newsletter() {
               className="py-6"
             >
               <div className="text-[#c9a96e] font-serif text-2xl mb-2">
-                Welcome to Elevé.
+                Welcome to Suit Masters.
               </div>
               <p className="text-[#9a9490] text-sm">
                 Check your inbox for your exclusive welcome offer.
@@ -108,17 +127,23 @@ export function Newsletter() {
               </div>
               <button
                 type="submit"
-                className="group bg-[#c9a96e] text-[#0f0f0f] px-7 py-4 text-[10px] tracking-[0.25em] uppercase font-bold hover:bg-[#dfc08a] transition-colors duration-300 flex items-center justify-center gap-2 whitespace-nowrap"
+                disabled={loading}
+                className="group bg-[#c9a96e] text-[#0f0f0f] px-7 py-4 text-[10px] tracking-[0.25em] uppercase font-bold hover:bg-[#dfc08a] transition-colors duration-300 flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Subscribe
-                <ArrowRightIcon
-                  size={12}
-                  className="group-hover:translate-x-1 transition-transform duration-200"
-                />
+                {loading ? "Subscribing..." : "Subscribe"}
+                {!loading && (
+                  <ArrowRightIcon
+                    size={12}
+                    className="group-hover:translate-x-1 transition-transform duration-200"
+                  />
+                )}
               </button>
             </form>
           )}
 
+          {error && (
+            <p className="text-red-400 text-xs mt-3">{error}</p>
+          )}
           <p className="text-[#6b6560] text-xs mt-5">
             No spam, ever. Unsubscribe at any time.
           </p>

@@ -20,6 +20,7 @@
     "@repo/db": "*",
     "@repo/types": "*",
     "@repo/orders": "*",
+    "@repo/error-handling": "*",
     "cors": "^2.8.5",
     "hono": "^4.12.2"
   },

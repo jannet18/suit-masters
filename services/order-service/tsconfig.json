@@ -1,15 +1,17 @@
 {
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
+     "types": ["node"],
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true,
-    "emitDeclarationOnly": false,
+    "emitDeclarationOnly": true,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "target": "ES2020",
     "strict": true,
-    "noEmit": false
+    "noEmit": false,
+    "allowImportingTsExtensions": true,
   },
   "include": ["src"], // Add this
   "exclude": ["node_modules", "dist"]

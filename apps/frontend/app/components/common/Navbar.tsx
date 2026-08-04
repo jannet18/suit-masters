@@ -41,10 +41,7 @@ export function Navbar({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleNavigateToConfigure = ({
-    user,
-    activeProductSlug,
-  }: NavbarProps) => {
+  const handleNavigateToConfigure = ({ activeProductSlug }: NavbarProps) => {
     setMenuOpen(false);
     if (activeProductSlug) {
       router.push(`/products/${activeProductSlug}/configure`);
@@ -87,22 +84,44 @@ export function Navbar({
             {/* Left Nav */}
             <nav className="hidden lg:flex items-center gap-8">
               <a
-                href="/collection/suits"
-                className="gold-underline text-[#9a9490] hover:text-[#f5f0eb] text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200"
+                href="/shop/suits"
+                className={`gold-underline text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200 ${
+                  activeProductSlug === "suits" || slug === "suits"
+                    ? "text-[#c9a96e] border-b border-[#c9a96e]"
+                    : "text-[#9a9490] hover:text-[#f5f0eb]"
+                }`}
               >
                 Suits
               </a>
               <a
-                href="/collection/blazers"
-                className="gold-underline text-[#9a9490] hover:text-[#f5f0eb] text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200"
+                href="/shop/blazers"
+                className={`gold-underline text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200 ${
+                  activeProductSlug === "blazers" || slug === "blazers"
+                    ? "text-[#c9a96e] border-b border-[#c9a96e]"
+                    : "text-[#9a9490] hover:text-[#f5f0eb]"
+                }`}
               >
                 Blazers
               </a>
               <a
-                href="/collection/shirts"
-                className="gold-underline text-[#9a9490] hover:text-[#f5f0eb] text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200"
+                href="/shop/shirts"
+                className={`gold-underline text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200 ${
+                  activeProductSlug === "shirts" || slug === "shirts"
+                    ? "text-[#c9a96e] border-b border-[#c9a96e]"
+                    : "text-[#9a9490] hover:text-[#f5f0eb]"
+                }`}
               >
                 Shirts
+              </a>
+              <a
+                href="/shop/trousers"
+                className={`gold-underline text-xs tracking-[0.2em] uppercase font-medium transition-colors duration-200 ${
+                  activeProductSlug === "trousers" || slug === "trousers"
+                    ? "text-[#c9a96e] border-b border-[#c9a96e]"
+                    : "text-[#9a9490] hover:text-[#f5f0eb]"
+                }`}
+              >
+                Trousers
               </a>
               <button
                 onClick={(e) =>
@@ -192,7 +211,7 @@ export function Navbar({
               ].map((item, i) => (
                 <Link
                   key={item}
-                  href={`/collection/${item.toLocaleLowerCase()}`}
+                  href={`/shop/${item.toLocaleLowerCase()}`}
                   onClick={() => setMenuOpen(false)}
                   className="font-serif text-3xl text-[#f5f0eb] hover:text-[#c9a96e] transition-colors duration-200 border-b border-[#2e2e2e] pb-4"
                 >
@@ -211,9 +230,7 @@ export function Navbar({
                 transition={{
                   delay: 6 * 0.07,
                 }}
-                onClick={(e) =>
-                  handleNavigateToConfigure({ user, activeProductSlug })
-                }
+                onClick={() => router.push("/lifestyle")}
                 className="font-serif text-3xl text-[#c9a96e] hover:text-[#dfc08a] transition-colors duration-200 border-b border-[#2e2e2e] pb-4 text-left flex items-center gap-3"
               >
                 <ScissorsIcon size={24} />

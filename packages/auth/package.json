@@ -22,7 +22,6 @@
   "dependencies": {
     "@kinde-oss/kinde-typescript-sdk": "^2.13.1",
     "@repo/types": "*",
-    "@repo/db": "*",
     "cors": "^2.8.5",
     "hono": "^4.11.8"
   },

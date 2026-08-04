@@ -23,6 +23,7 @@
     "stripe": "^20.3.1",
     "hono": "^4.12.2",
     "@repo/db": "*",
-    "@repo/auth": "*"
+    "@repo/auth": "*",
+    "@repo/error-handling": "*"
   }
 }

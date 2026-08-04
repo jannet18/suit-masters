@@ -21,8 +21,8 @@ export function Footer() {
               </div>
             </div>
             <p className="text-[#9a9490] text-sm leading-relaxed mb-6 max-w-xs font-light">
-              Crafting exceptional suits for the modern gentleman since 1987.
-              Where tradition meets contemporary elegance.
+              Crafting exceptional suits for the modern gentleman. Where
+              tradition meets contemporary elegance.
             </p>
             <div className="flex gap-4">
               <a

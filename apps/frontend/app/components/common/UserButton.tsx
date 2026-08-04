@@ -17,10 +17,10 @@ export default function UserButton({ user }: UserButtonProps) {
   const pathname = usePathname();
   return (
     <div className="relative">
-      <button
+      <Link
+        href={`/api/auth/login?redirect=${pathname}`}
         onClick={() => {
           setIsOpen(!isOpen);
-          router.push(`/api/auth/login?redirect=${pathname}`);
         }}
         className="flex items-center gap-2 group focus:outline-none"
       >
@@ -41,7 +41,7 @@ export default function UserButton({ user }: UserButtonProps) {
           size={14}
           className={`text-[#9a9490] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
         />
-      </button>
+      </Link>
 
       {/* Dropdown Menu */}
       {isOpen && (
@@ -61,7 +61,7 @@ export default function UserButton({ user }: UserButtonProps) {
             </div>
 
             <Link
-              href="/profile"
+              href="/account"
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-2 px-4 py-2 text-sm text-[#9a9490] hover:bg-[#2e2e2e] hover:text-[#f5f0eb] transition-colors"
             >

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { kindeClient, sessionManager } from "../session/sessionManager.js";
 import { getUser } from "@repo/auth";
+// import process from "node:process";
 
 export const authRoute = new Hono()
   .get("/login", async (c) => {
@@ -14,8 +15,13 @@ export const authRoute = new Hono()
   })
   .get("/kinde_callback", async (c) => {
     const url = new URL(c.req.url);
-    await kindeClient.handleRedirectToApp(sessionManager(c), url);
-    return c.redirect("http://localhost:3000");
+    const manager = sessionManager(c)
+    await kindeClient.handleRedirectToApp(manager, url)
+    // await kindeClient.handleRedirectToApp(sessionManager(c), url);
+
+    // dynamic fallback to handle production envronments seamlessly
+    const targetRedirect = process.env.FRONTEND_URL || "http://localhost:3000"
+     return c.redirect(targetRedirect);
   })
   .get("/logout", async (c) => {
     const logoutUrl = await kindeClient.logout(sessionManager(c));
@@ -23,6 +29,6 @@ export const authRoute = new Hono()
   })
 
   .get("/me", getUser, async (c) => {
-    const user = c.var.user;
-    return c.json({ user });
+    // const user = c.var.user;
+    return c.json({ user: c.var.user });
   });
