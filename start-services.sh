@@ -23,6 +23,8 @@ start_service() {
         echo "   ✅ $service_name started on port $port (PID: $!)"
         echo "   📝 Logs: /tmp/${service_name}.log"
     fi
+
+    cd -
 }
 
 # Start services
