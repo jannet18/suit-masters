@@ -2,51 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import type { AdminOrder } from "../../../lib/api-client";
+import { adminApi, AdminOrder } from "../../../lib/api-client";
 import Link from "next/link";
-
-const ORDER_SERVICE_URL =
-  process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:4001";
-
-async function fetchOrderById(id: string): Promise<{ success: boolean; order: AdminOrder | null }> {
-  const res = await fetch(`${ORDER_SERVICE_URL}/orders/${id}`, { credentials: "include" });
-  if (!res.ok) return { success: false, order: null };
-  const raw = await res.json();
-  return {
-    success: true,
-    order: {
-      id: raw.id,
-      userId: raw.userId,
-      total: raw.total,
-      status: raw.status,
-      orderedItems: raw.items?.length || 0,
-      createdAt: raw.createdAt,
-      estimatedDeliveryDate: raw.estimated_delivery_date,
-      customerName: raw.shipping_name,
-      customerEmail: raw.shipping_email,
-    },
-  };
-}
-
-async function updateOrderStatus(
-  id: string,
-  status: string,
-  trackingNumber?: string,
-  trackingCarrier?: string,
-): Promise<{ success: boolean }> {
-  const body: Record<string, string> = { status };
-  if (trackingNumber) body.trackingNumber = trackingNumber;
-  if (trackingCarrier) body.trackingCarrier = trackingCarrier;
-
-  const res = await fetch(`${ORDER_SERVICE_URL}/orders/${id}/status`, {
-    method: "PUT",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) return { success: false };
-  return res.json();
-}
 
 const ORDER_STATUSES = [
   "pending",
@@ -73,7 +30,7 @@ export default function OrderDetailPage() {
   useEffect(() => {
     async function fetchOrder() {
       try {
-        const result = await fetchOrderById(params.id as string);
+        const result = await adminApi.getOrderById(params.id as string);
         if (result.success && result.order) {
           setOrder(result.order);
           setSelectedStatus(result.order.status);
@@ -92,7 +49,7 @@ export default function OrderDetailPage() {
 
     setUpdating(true);
     try {
-      const result = await updateOrderStatus(
+      const result = await adminApi.updateOrderStatus(
         params.id as string,
         selectedStatus,
         trackingNumber || undefined,
@@ -100,7 +57,7 @@ export default function OrderDetailPage() {
       );
       if (result.success) {
         // Refresh the order to show updated status
-        const updated = await fetchOrderById(params.id as string);
+        const updated = await adminApi.getOrderById(params.id as string);
         if (updated.success && updated.order) {
           setOrder(updated.order);
         }
@@ -189,7 +146,7 @@ export default function OrderDetailPage() {
                 <dd className="font-medium">
                   £
                   {order.total
-                    ? parseFloat(order.total).toFixed(2)
+                    ? (parseFloat(order.total) / 100).toFixed(2)
                     : "0.00"}
                 </dd>
               </div>

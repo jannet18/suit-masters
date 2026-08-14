@@ -1,15 +1,15 @@
 "use client";
+import { KindeProvider, useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { useEffect, useRef } from "react";
-import { useSession } from "@/lib/auth-client";
 import { useCartStore } from "../stores/useCartStore";
 
 /**
+ * Inner component that has access to the Kinde auth state.
  * Syncs the local cart with the server cart when the user first becomes authenticated.
  * handle state reset on logout to permit subsequent user sync actions
  */
 function CartSyncProvider({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession();
-  const isAuthenticated = !!session;
+  const { isAuthenticated } = useKindeBrowserClient();
   const syncWithServer = useCartStore((state) => state.syncWithServer);
   const hasSynced = useRef(false);
 
@@ -30,5 +30,9 @@ function CartSyncProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  return <CartSyncProvider>{children}</CartSyncProvider>;
+  return (
+    <KindeProvider>
+      <CartSyncProvider>{children}</CartSyncProvider>
+    </KindeProvider>
+  );
 };

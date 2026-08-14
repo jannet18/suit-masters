@@ -1,32 +1,36 @@
-import Link from "next/link";
+import {
+  LoginLink,
+  LogoutLink,
+  RegisterLink,
+} from "@kinde-oss/kinde-auth-nextjs";
 import { Heart, User } from "lucide-react";
-import { getServerSession } from "@/lib/get-server-session";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import ShoppingCartIcon from "./ShoppingCart";
 import { Button } from "@/components/ui/button";
-import { SignOutButton } from "./SignOutButton";
 
 async function Action() {
-  const session = await getServerSession();
+  const { getUser } = getKindeServerSession();
+  const user = await getUser();
 
   return (
     <div className="flex items-center justify-end gap-x-2 ml-2 lg:ml-0">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <span className="verical-line"></span>
-          {session?.user ? (
-            <SignOutButton>
+          {user ? (
+            <LogoutLink>
               <Button variant="outline" size="sm">
                 Log out
               </Button>
-            </SignOutButton>
+            </LogoutLink>
           ) : (
             <div className="flex items-center gap-4">
-              <Link href="/login">
+              <LoginLink>
                 <Button variant="ghost" size="icon" className="p-0">
                   <User className="w-5 h-5 text-gray-600" />
                 </Button>
-              </Link>
-              <Link href="/register">Register</Link>
+              </LoginLink>
+              <RegisterLink className="">Register</RegisterLink>
             </div>
           )}
         </div>

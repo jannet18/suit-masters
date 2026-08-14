@@ -11,7 +11,7 @@ const getData = async (): Promise<User[]> => {
         avatar: u.picture || "/users/default.png",
         fullName: u.name,
         email: u.email,
-        roles: u.roles,
+        status: (u.roles === "ADMIN" ? "active" : "active") as "active" | "inactive",
       }));
     }
   } catch (error) {

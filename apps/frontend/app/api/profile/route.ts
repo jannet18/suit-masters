@@ -9,12 +9,12 @@ const PRODUCT_SERVICE_URL =
  */
 export async function GET(request: NextRequest) {
   try {
-    const cookieHeader = request.headers.get("cookie") || "";
+    const authHeader = request.headers.get("authorization") || "";
 
     const res = await fetch(`${PRODUCT_SERVICE_URL}/config/profile`, {
       headers: {
         "Content-Type": "application/json",
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        ...(authHeader ? { Authorization: authHeader } : {}),
       },
     });
 
@@ -44,14 +44,14 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const cookieHeader = request.headers.get("cookie") || "";
+    const authHeader = request.headers.get("authorization") || "";
     const body = await request.json();
 
     const res = await fetch(`${PRODUCT_SERVICE_URL}/config/profile`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        ...(authHeader ? { Authorization: authHeader } : {}),
       },
       body: JSON.stringify(body),
     });

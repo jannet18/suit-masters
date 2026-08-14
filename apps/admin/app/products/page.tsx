@@ -9,10 +9,12 @@ const getData = async (): Promise<Product[]> => {
       return result.products.map((p: AdminProduct) => ({
         id: p.id,
         name: p.name,
+        shortDescription: p.short_description || "",
         description: p.description || "",
-        price: p.base_price,
-        image: p.product_image?.default || "",
-        isActive: p.is_active ?? true,
+        price: p.base_price / 100, // Convert cents to display price
+        sizes: p.sizes || [],
+        colors: p.colors || [],
+        images: p.image_url ? { default: p.image_url } : ({} as Record<string, string>),
       }));
     }
   } catch (error) {

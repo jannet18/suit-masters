@@ -3,22 +3,13 @@
 // // GET /products?category=
 // // GET /products?collection=
 import { Hono } from "hono";
-import { db, product } from "@repo/db";
-import { getUser, type AuthContext } from "@repo/auth";
-
-const requireAdmin = async (c: any, next: () => Promise<void>) => {
-  const user = c.get("user");
-  if (!user || (user as { roles?: string })?.roles !== "ADMIN") {
-    return c.json({ error: "Access Denied: Unauthorised" }, 403);
-  }
-  await next();
-};
+import { db } from "@repo/db";
 
 // Public product catalog routes
 // - GET /products                -> list products (optional ?category=&search=)
 // - GET /products/:slug          -> product detail with customizationGroups
 
-export const productsHandler = new Hono<AuthContext>()
+export const productsHandler = new Hono()
   .get("/", async (c) => {
     const categorySlug = c.req.query("category");
     const searchQuery = c.req.query("search");
@@ -142,83 +133,6 @@ export const productsHandler = new Hono<AuthContext>()
         },
         500,
       );
-    }
-  })
-
-  /**
-   * GET /products/fabrics
-   * List available fabrics (for the admin product-creation form).
-   */
-  .get("/fabrics", async (c) => {
-    try {
-      const fabrics = await db.query.fabric.findMany({
-        where: (f, { eq: eqFn }) => eqFn(f.isActive, true),
-        orderBy: (f, { asc }) => [asc(f.name)],
-      });
-      return c.json({ success: true, fabrics });
-    } catch (error) {
-      console.error("Error fetching fabrics", error);
-      return c.json({ success: false, fabrics: [] }, 500);
-    }
-  })
-
-  /**
-   * POST /products
-   * Admin: create a new product.
-   */
-  .post("/", getUser, requireAdmin, async (c) => {
-    try {
-      const body = await c.req.json<{
-        name: string;
-        slug?: string;
-        categoryId: number;
-        fabricId: number;
-        productType?: "STANDARD" | "CUSTOM";
-        basePrice: number;
-        description?: string;
-        mainImage?: string;
-        productImage?: string;
-        isActive?: boolean;
-      }>();
-
-      if (!body.name || !body.categoryId || !body.fabricId || body.basePrice == null) {
-        return c.json(
-          { success: false, error: "name, categoryId, fabricId, and basePrice are required" },
-          400,
-        );
-      }
-
-      const slug =
-        body.slug?.trim() ||
-        body.name
-          .toLowerCase()
-          .trim()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, "");
-
-      const [newProduct] = await db
-        .insert(product)
-        .values({
-          name: body.name,
-          slug,
-          categoryId: body.categoryId,
-          fabricId: body.fabricId,
-          productType: body.productType || "CUSTOM",
-          basePrice: body.basePrice.toFixed(2),
-          description: body.description,
-          mainImage: body.mainImage,
-          productImage: body.productImage,
-          isActive: body.isActive ?? true,
-        })
-        .returning();
-
-      return c.json({ success: true, product: newProduct }, 201);
-    } catch (error: any) {
-      if (error?.code === "23505") {
-        return c.json({ success: false, error: "A product with that slug already exists" }, 409);
-      }
-      console.error("Error creating product", error);
-      return c.json({ success: false, error: "Failed to create product" }, 500);
     }
   })
 

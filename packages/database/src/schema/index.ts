@@ -9,7 +9,6 @@ export * from "./collection.js";
 export * from "./idempotency.js";
 export * from "./relations.js";
 export * from "./refunds.js";
-export * from "./auth-tables.js";
 
 // Re-export drizzle-orm for convenience
 export * from "drizzle-orm";

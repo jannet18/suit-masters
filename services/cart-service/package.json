@@ -15,8 +15,6 @@
   "license": "ISC",
   "dependencies": {
     "@hono/node-server": "^1.19.9",
-    "@repo/auth": "*",
-    "@repo/db": "*",
     "@repo/error-handling": "*",
     "cors": "^2.8.5",
     "hono": "^4.12.2"

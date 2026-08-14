@@ -7,18 +7,18 @@ const ORDER_SERVICE_URL =
  * GET /api/orders
  *
  * Proxies requests to the order-service, keeping internal
- * service URLs hidden from the client. The order-service validates
- * the better-auth session directly against the shared database, so
- * the session cookie is forwarded rather than a bearer token.
+ * service URLs hidden from the client.  Requires the
+ * Kinde session token forwarded as a Bearer token.
  */
 export async function GET(request: NextRequest) {
   try {
-    const cookieHeader = request.headers.get("cookie") || "";
+    // Forward the Authorization header from the client request
+    const authHeader = request.headers.get("authorization") || "";
 
     const res = await fetch(`${ORDER_SERVICE_URL}/orders`, {
       headers: {
         "Content-Type": "application/json",
-        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        ...(authHeader ? { Authorization: authHeader } : {}),
       },
     });
 

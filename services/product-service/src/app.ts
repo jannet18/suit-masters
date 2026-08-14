@@ -8,17 +8,19 @@ import { collectionsHandler } from "./routes/collection.routes.js";
 import { measurementsHandler } from "./routes/measurements.routes.js";
 import { categoryRoutes } from "./routes/categories.routes.js";
 import { promotionsHandler } from "./routes/promotions.routes.js";
-import { usersHandler } from "./routes/users.route.js";
 import { errorHandler, notFoundHandler } from "@repo/error-handling";
 
 type Bindings = {
   DATABASE_URL: string;
+  KINDE_DOMAIN: string;
+  KINDE_CLIENT_ID: string;
 };
 
 type Variables = {
   user: {
     id: string;
-    roles: string;
+    kinde_user_id: string;
+    role: string;
   };
 };
 
@@ -26,18 +28,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
 // --- 1. Global Middleware ---
 app.use("*", logger());
-app.use(
-  "*",
-  cors({
-    origin: [
-      process.env.FRONTEND_URL || "http://localhost:3000",
-      process.env.ADMIN_URL || "http://localhost:3002",
-    ],
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  }),
-);
+app.use("*", cors());
 
 // --- 2. Public Routes ---
 // Everyone can see the catalog and product details
@@ -57,10 +48,6 @@ app.route("/config", profileGetHandler);
 app.route("/config", profilePutHandler);
 // Measurement profiles (user-specific data) require auth
 app.use("/measurements/profiles*", getUser);
-
-// Admin: user management
-app.use("/users/*", getUser);
-app.route("/users", usersHandler);
 
 // --- 4. Health Check ---
 app.get("/health", (c) => c.json({ status: "ok", service: "product-service" }));

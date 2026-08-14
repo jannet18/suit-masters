@@ -1,12 +1,13 @@
-import { getServerSession } from "@/lib/get-server-session";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { Navbar } from "./Navbar";
 
 const Header = async () => {
-  const session = await getServerSession();
+  const { getUser } = getKindeServerSession();
+  const user = await getUser();
 
   return (
     <>
-      <Navbar user={session?.user ?? null} />
+      <Navbar user={user} />
     </>
   );
 };
