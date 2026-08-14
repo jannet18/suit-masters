@@ -14,12 +14,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@kinde-oss/kinde-auth-nextjs": "^2.11.0",
     "@repo/auth": "*",
     "@repo/db": "*",
     "@stripe/react-stripe-js": "^5.6.0",
     "@stripe/stripe-js": "^8.7.0",
     "@tailwindcss/postcss": "^4.1.18",
+    "better-auth": "^1.6.27",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.3",

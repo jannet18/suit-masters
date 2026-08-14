@@ -29,12 +29,12 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@kinde-oss/kinde-typescript-sdk": "^2.13.1",
     "@neondatabase/serverless": "^1.0.2",
     "@types/pg": "^8.16.0",
     "dotenv": "^17.2.3",
     "drizzle-orm": "0.45.1",
     "hono": "^4.11.9",
+    "next": "16.1.6",
     "pg": "^8.18.0",
     "typescript": "^5.9.2"
   },
@@ -42,11 +42,11 @@
     "drizzle-orm": "0.45.1"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.31.8",
-    "tsx": "^4.21.0",
+    "@repo/typescript-config": "*",
     "dotenv": "^17.2.4",
     "dotenv-cli": "^11.0.0",
-    "@repo/typescript-config": "*",
+    "drizzle-kit": "^0.18.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.0.0"
   },
   "type": "module"
