@@ -19,10 +19,10 @@ export const refundRoutes = new Hono<AuthContext>();
  */
 const isAdmin = async (c:any, next: () => Promise<void>) => {
   const user = c.get("user")
-  if(!user || user.role !== "ADMIN"){
+  if(!user || user.roles !== "ADMIN"){
     return c.json({
       error: "Access Denied: Unauthorised"
-    })
+    }, 403)
   }
     await next()
 }
@@ -49,6 +49,19 @@ refundRoutes.post("/", async (c) => {
     if (!orderId || !reason) {
       return c.json({ error: "Order ID and reason are required" }, 400);
     }
+
+    const validReasons = [
+      "wrong_size",
+      "defective",
+      "not_as_described",
+      "changed_mind",
+      "late_delivery",
+      "other",
+    ] as const;
+    if (!(validReasons as readonly string[]).includes(reason)) {
+      return c.json({ error: `Invalid reason. Must be one of: ${validReasons.join(", ")}` }, 400);
+    }
+
 const order = await db.query.shopOrder.findFirst({
   where: (table, {and: and, eq: e}) => and(eq(table.id, orderId), eq(table.userId, userId))
 })
@@ -109,8 +122,8 @@ if(!order) return c.json({error: "Order record not found"}, 404)
 // Database insertion wrapped alongside timeline tracking inside a unified transaction
  const result = await db.transaction(async (tx) => {
   const [newRefund] = await tx.insert(refundRequest).values({
-    orderId, userId, status: "Requested",
-    reason, description: description || null,
+    orderId, userId, status: "requested",
+    reason: reason as (typeof validReasons)[number], description: description || null,
     quantity: quantity || 1,
     refundAmount: order.total
   }).returning()
@@ -222,7 +235,7 @@ refundRoutes.get("/:id", async (c) => {
  * PUT /refunds/:id/approve
  * Secure Admin approves a refund request and processes Stripe refund.
  */
-refundRoutes.put("/:id/approve", async (c) => {
+refundRoutes.put("/:id/approve", isAdmin, async (c) => {
   try {
     const refundId = Number(c.req.param("id"));
     const user = c.get("user");
@@ -292,7 +305,7 @@ refundRoutes.put("/:id/approve", async (c) => {
  * PUT /refunds/:id/reject
  * Admin rejects a refund request.
  */
-refundRoutes.put("/:id/reject", async (c) => {
+refundRoutes.put("/:id/reject", isAdmin, async (c) => {
   try {
     const refundId = Number(c.req.param("id"));
     const user = c.get("user");
@@ -348,7 +361,7 @@ refundRoutes.put("/:id/reject", async (c) => {
  * PUT /refunds/:id/complete
  * Admin marks a refund as completed (after confirming money was returned).
  */
-refundRoutes.put("/:id/complete", async (c) => {
+refundRoutes.put("/:id/complete", isAdmin, async (c) => {
   try {
     const refundId = Number(c.req.param("id"));
     const user = c.get("user");
@@ -402,7 +415,7 @@ refundRoutes.put("/:id/complete", async (c) => {
  * GET /refunds/admin/all
  * Admin fetches all refund requests.
  */
-refundRoutes.get("/admin/all", async (c) => {
+refundRoutes.get("/admin/all", isAdmin, async (c) => {
   try {
     const refunds = await db.query.refundRequest.findMany({
       orderBy: [desc(refundRequest.id)],

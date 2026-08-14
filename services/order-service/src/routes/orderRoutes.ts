@@ -17,6 +17,14 @@ import {
 
 export const orderRoutes = new Hono<AuthContext>();
 
+const requireAdmin = async (c: any, next: () => Promise<void>) => {
+  const user = c.get("user");
+  if (!user || (user as { roles?: string })?.roles !== "ADMIN") {
+    return c.json({ error: "Access Denied, Unauthorized!" }, 403);
+  }
+  await next();
+};
+
 /**
  * POST /orders
  * Checkout user's cart and create order with idempotency
@@ -132,7 +140,7 @@ orderRoutes.post("/", async (c) => {
     // Record Idempotency
     await tx.insert(idempotencyKeys).values({
       key: idempotencyKeyStr,
-      userId: Number(userId),
+      userId,
       orderId: newOrder.id,
     });
 
@@ -404,10 +412,11 @@ orderRoutes.get("/", async (c) => {
 orderRoutes.get("/:orderId", async (c) => {
   const user = c.get("user");
   const orderId = Number(c.req.param("orderId"));
+  const isAdmin = (user as { roles?: string })?.roles === "ADMIN";
 
   const order = await db.query.shopOrder.findFirst({
     where: (table, { and, eq }) =>
-      and(eq(table.id, orderId), eq(table.userId, user.id)),
+      isAdmin ? eq(table.id, orderId) : and(eq(table.id, orderId), eq(table.userId, user.id)),
     with: {
       items: true, // This works because of our shopOrderRelations
     },
@@ -426,7 +435,7 @@ orderRoutes.get("/:orderId", async (c) => {
 orderRoutes.put("/:orderId/status", async (c) => {
   try {
     const user = c.get("user");
-    const isAdmin = (user as { role?: string })?.role === "ADMIN";
+    const isAdmin = (user as { roles?: string })?.roles === "ADMIN";
     if (!isAdmin) {
       return c.json({ error: "Access Denied, Unauthorized!" }, 403);
     }
@@ -511,16 +520,182 @@ orderRoutes.put("/:orderId/status", async (c) => {
  * GET /orders/admin/all
  * Fetch all orders (admin use). Returns orders with basic info.
  */
-orderRoutes.get("/admin/all", async (c) => {
+orderRoutes.get("/admin/all", requireAdmin, async (c) => {
   try {
     const orders = await db.query.shopOrder.findMany({
       orderBy: [desc(shopOrder.id)],
       limit: 100,
+      with: { items: true },
     });
 
-    return c.json({ success: true, orders });
+    return c.json({
+      success: true,
+      orders: orders.map((o) => ({
+        id: o.id,
+        userId: o.userId,
+        total: o.total,
+        status: o.status,
+        customerName: o.shipping_name,
+        customerEmail: o.shipping_email,
+        orderedItems: o.items.length,
+        createdAt: o.createdAt,
+        estimatedDeliveryDate: o.estimated_delivery_date,
+      })),
+    });
   } catch (error) {
     console.error("Failed to fetch all orders:", error);
     return c.json({ success: false, orders: [], error: "Failed to fetch orders" }, 500);
   }
-})
+});
+
+/**
+ * GET /orders/admin/stats
+ * Aggregate order data for the admin dashboard.
+ */
+orderRoutes.get("/admin/stats", requireAdmin, async (c) => {
+  try {
+    const revenueByMonthResult = await db.execute(sql`
+      SELECT to_char(date_trunc('month', created_at), 'Mon') as month,
+             count(*)::int as total,
+             count(*) filter (where status = 'paid')::int as successful
+      FROM shop_order
+      WHERE created_at >= now() - interval '6 months'
+      GROUP BY date_trunc('month', created_at)
+      ORDER BY date_trunc('month', created_at)
+    `);
+
+    const ordersByStatusResult = await db.execute(sql`
+      SELECT status, count(*)::int as count
+      FROM shop_order
+      GROUP BY status
+      ORDER BY count DESC
+    `);
+
+    const recentOrders = await db.query.shopOrder.findMany({
+      orderBy: [desc(shopOrder.id)],
+      limit: 5,
+    });
+
+    return c.json({
+      success: true,
+      revenueByMonth: revenueByMonthResult.rows,
+      ordersByStatus: ordersByStatusResult.rows,
+      recentOrders: recentOrders.map((o) => ({
+        id: o.id,
+        customerName: o.shipping_name,
+        total: o.total,
+        status: o.status,
+        createdAt: o.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error("Failed to fetch order stats:", error);
+    return c.json(
+      { success: false, revenueByMonth: [], ordersByStatus: [], recentOrders: [], error: "Failed to fetch stats" },
+      500,
+    );
+  }
+});
+
+/**
+ * POST /orders/admin/create
+ * Admin manually creates an order for a customer (e.g. phone/in-store orders).
+ * Prices are always resolved server-side from the product catalog, never
+ * trusted from the client.
+ */
+orderRoutes.post("/admin/create", requireAdmin, async (c) => {
+  try {
+    const body = await c.req.json<{
+      userId: string;
+      status?: string;
+      shipping: {
+        name: string;
+        email: string;
+        phone: string;
+        addressLine1: string;
+        addressLine2?: string;
+        city: string;
+        region: string;
+        postalCode: string;
+        country: string;
+      };
+      items: { productId: number; quantity: number }[];
+    }>();
+
+    const { userId, status, shipping, items } = body;
+
+    if (!userId || !shipping || !items || items.length === 0) {
+      return c.json({ error: "userId, shipping, and at least one item are required" }, 400);
+    }
+
+    const customer = await db.query.usersTable.findFirst({
+      where: (table, { eq: eqFn }) => eqFn(table.id, userId),
+    });
+    if (!customer) {
+      return c.json({ error: "Customer not found" }, 404);
+    }
+
+    const productIds = items.map((i) => i.productId);
+    const products = await db.query.product.findMany({
+      where: (table, { inArray }) => inArray(table.id, productIds),
+    });
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
+    for (const item of items) {
+      if (!productMap.has(item.productId)) {
+        return c.json({ error: `Product ${item.productId} not found` }, 404);
+      }
+      if (!item.quantity || item.quantity < 1) {
+        return c.json({ error: "Item quantity must be at least 1" }, 400);
+      }
+    }
+
+    const total = items.reduce((sum, item) => {
+      const p = productMap.get(item.productId)!;
+      return sum + Number(p.basePrice) * item.quantity;
+    }, 0);
+
+    const createdOrder = await db.transaction(async (tx) => {
+      const [newOrder] = await tx
+        .insert(shopOrder)
+        .values({
+          userId,
+          total: total.toFixed(2),
+          status: status || "pending",
+          shipping_name: shipping.name,
+          shipping_email: shipping.email,
+          shipping_phone: shipping.phone,
+          shipping_address_line1: shipping.addressLine1,
+          shipping_address_line2: shipping.addressLine2,
+          shipping_city: shipping.city,
+          shipping_region: shipping.region,
+          shipping_postal_code: shipping.postalCode,
+          shipping_country: shipping.country,
+        })
+        .returning();
+
+      if (!newOrder) throw new Error("Order creation failed: No row returned");
+
+      await tx.insert(orderItems).values(
+        items.map((item) => {
+          const p = productMap.get(item.productId)!;
+          return {
+            orderId: newOrder.id,
+            productId: p.id,
+            productNameSnapshot: p.name,
+            unitPrice: p.basePrice,
+            priceAtPurchase: p.basePrice,
+            quantity: item.quantity,
+          };
+        }),
+      );
+
+      return newOrder;
+    });
+
+    return c.json({ success: true, orderId: createdOrder.id }, 201);
+  } catch (error) {
+    console.error("Failed to create order:", error);
+    return c.json({ error: "Failed to create order" }, 500);
+  }
+});

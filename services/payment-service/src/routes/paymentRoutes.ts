@@ -91,8 +91,9 @@
 // });
 
 // services/payment-service/src/routes/paymentRoutes.ts
-import { db, eq, shopOrder } from "@repo/db";
+import { db, eq, desc, shopOrder } from "@repo/db";
 import { Hono } from "hono";
+import { getUser, type AuthContext } from "@repo/auth";
 import Stripe from "stripe";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
@@ -103,7 +104,40 @@ if (!STRIPE_SECRET_KEY) {
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2024-11-20.acacia" as any,
 });
-export const paymentRoutes = new Hono();
+export const paymentRoutes = new Hono<AuthContext>();
+
+/**
+ * GET /payments
+ * Admin: list payments. There's no dedicated payment-transactions table —
+ * every shop_order implies a payment attempt at checkout, so orders are the
+ * source of truth here, joined to the customer for display.
+ */
+paymentRoutes.get("/", getUser, async (c) => {
+  const user = c.get("user");
+  if (!user || (user as { roles?: string })?.roles !== "ADMIN") {
+    return c.json({ error: "Access Denied: Unauthorised" }, 403);
+  }
+
+  try {
+    const rows = await db
+      .select({
+        id: shopOrder.id,
+        amount: shopOrder.total,
+        status: shopOrder.status,
+        fullName: shopOrder.shipping_name,
+        email: shopOrder.shipping_email,
+        createdAt: shopOrder.createdAt,
+      })
+      .from(shopOrder)
+      .orderBy(desc(shopOrder.id))
+      .limit(100);
+
+    return c.json({ success: true, payments: rows });
+  } catch (error) {
+    console.error("Failed to fetch payments:", error);
+    return c.json({ success: false, payments: [], error: "Failed to fetch payments" }, 500);
+  }
+});
 
 paymentRoutes.post("/create-intent", async (c) => {
   try {

@@ -3,12 +3,10 @@
   "ui": "tui",
   "globalEnv": [
     "NODE_ENV",
-    "KINDE_ISSUER_URL",
-    "KINDE_CLIENT_ID",
-    "KINDE_CLIENT_SECRET",
-    "KINDE_SITE_URL",
-    "KINDE_POST_LOGOUT_REDIRECT_URL",
-    "KINDE_POST_LOGIN_REDIRECT_URL"
+    "BETTER_AUTH_SECRET",
+    "BETTER_AUTH_URL",
+    "FRONTEND_URL",
+    "ADMIN_URL"
   ],
   "tasks": {
     "build": {
@@ -32,13 +30,10 @@
       "env": [
         "PORT",
         "DATABASE_URL",
-        "KINDE_DOMAIN",
-        "KINDE_CLIENT_ID",
-        "KINDE_CLIENT_SECRET",
-        "KINDE_ISSUER_URL",
-        "KINDE_SITE_URL",
-        "KINDE_POST_LOGIN_REDIRECT_URL",
-        "KINDE_POST_LOGOUT_REDIRECT_URL"
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "FRONTEND_URL",
+        "ADMIN_URL"
       ]
     }
   }

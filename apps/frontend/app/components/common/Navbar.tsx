@@ -142,7 +142,7 @@ export function Navbar({
               >
                 {!user ? (
                   <Link
-                    href="/api/auth/login"
+                    href="/login"
                     className="text-gray-400 hover:text-white "
                   >
                     <User size={18} />

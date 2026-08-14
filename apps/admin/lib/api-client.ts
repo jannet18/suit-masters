@@ -1,32 +1,41 @@
+import { cookies } from "next/headers";
+
 const SERVICES = {
   product:
     process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || "http://localhost:4000",
   order:
-    process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:3001/api",
+    process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:4001",
   payment:
-    process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL || "http://localhost:3001/api",
+    process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL || "http://localhost:4002",
 };
+
+// Server-side fetches don't automatically carry the admin's browser session
+// cookie, so it's forwarded explicitly on every admin-gated request.
+async function authHeaders(): Promise<Record<string, string>> {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+  return cookieHeader ? { Cookie: cookieHeader } : {};
+}
 
 export interface AdminProduct {
   id: number;
   name: string;
+  slug: string;
   base_price: number;
   product_type: "STANDARD" | "CUSTOM";
   description?: string;
-  short_description?: string;
-  image_url?: string;
-  sizes?: string[];
-  colors?: string[];
-  created_at?: string;
+  product_image?: { default?: string };
+  is_active?: boolean;
 }
 
 export interface AdminUser {
   id: string;
-  kinde_user_id: string;
   email: string;
   name: string;
   picture?: string;
   roles: string;
+  phone?: string;
+  address?: string;
   created_at?: string;
 }
 
@@ -43,19 +52,31 @@ export interface AdminOrder {
 }
 
 export interface AdminPayment {
-  id: string;
-  amount: number;
+  id: number;
+  amount: string;
   status: string;
   fullName: string;
   email: string;
   createdAt?: string;
 }
 
+export interface AdminOrderStats {
+  revenueByMonth: { month: string; total: number; successful: number }[];
+  ordersByStatus: { status: string; count: number }[];
+  recentOrders: {
+    id: number;
+    customerName: string;
+    total: string;
+    status: string;
+    createdAt: string;
+  }[];
+}
+
 export const adminApi = {
   // --- Products ---
   getProducts: async (): Promise<{ success: boolean; products: AdminProduct[] }> => {
     try {
-      const res = await fetch(`${SERVICES.product}/products`);
+      const res = await fetch(`${SERVICES.product}/products`, { cache: "no-store" });
       if (res.ok) {
         return res.json();
       }
@@ -67,13 +88,10 @@ export const adminApi = {
   },
 
   // --- Users ---
-  getUsers: async (token?: string): Promise<{ success: boolean; users: AdminUser[] }> => {
+  getUsers: async (): Promise<{ success: boolean; users: AdminUser[] }> => {
     try {
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-      const res = await fetch(`${SERVICES.product}/users`, { headers });
+      const headers = await authHeaders();
+      const res = await fetch(`${SERVICES.product}/users`, { headers, cache: "no-store" });
       if (res.ok) {
         return res.json();
       }
@@ -84,14 +102,46 @@ export const adminApi = {
     }
   },
 
-  // --- Orders ---
-  getOrders: async (token?: string): Promise<{ success: boolean; orders: AdminOrder[] }> => {
+  getUserById: async (id: string): Promise<{ success: boolean; user: AdminUser | null }> => {
     try {
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+      const headers = await authHeaders();
+      const res = await fetch(`${SERVICES.product}/users/${id}`, { headers, cache: "no-store" });
+      if (res.ok) {
+        return res.json();
       }
-      const res = await fetch(`${SERVICES.order}/orders`, { headers });
+      return { success: false, user: null };
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      return { success: false, user: null };
+    }
+  },
+
+  updateUser: async (
+    id: string,
+    updates: { name?: string; phone?: string; address?: string; roles?: string },
+  ): Promise<{ success: boolean; user: AdminUser | null }> => {
+    try {
+      const headers = { ...(await authHeaders()), "Content-Type": "application/json" };
+      const res = await fetch(`${SERVICES.product}/users/${id}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        return res.json();
+      }
+      return { success: false, user: null };
+    } catch (error) {
+      console.error("Error updating user:", error);
+      return { success: false, user: null };
+    }
+  },
+
+  // --- Orders ---
+  getOrders: async (): Promise<{ success: boolean; orders: AdminOrder[] }> => {
+    try {
+      const headers = await authHeaders();
+      const res = await fetch(`${SERVICES.order}/orders/admin/all`, { headers, cache: "no-store" });
       if (res.ok) {
         return res.json();
       }
@@ -102,15 +152,27 @@ export const adminApi = {
     }
   },
 
-  getOrderById: async (id: string, token?: string): Promise<{ success: boolean; order: AdminOrder | null }> => {
+  getOrderStats: async (): Promise<{ success: boolean } & Partial<AdminOrderStats>> => {
     try {
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-      const res = await fetch(`${SERVICES.order}/orders/${id}`, { headers });
+      const headers = await authHeaders();
+      const res = await fetch(`${SERVICES.order}/orders/admin/stats`, { headers, cache: "no-store" });
       if (res.ok) {
         return res.json();
+      }
+      return { success: false, revenueByMonth: [], ordersByStatus: [], recentOrders: [] };
+    } catch (error) {
+      console.error("Error fetching order stats:", error);
+      return { success: false, revenueByMonth: [], ordersByStatus: [], recentOrders: [] };
+    }
+  },
+
+  getOrderById: async (id: string): Promise<{ success: boolean; order: AdminOrder | null }> => {
+    try {
+      const headers = await authHeaders();
+      const res = await fetch(`${SERVICES.order}/orders/${id}`, { headers, cache: "no-store" });
+      if (res.ok) {
+        const order = await res.json();
+        return { success: true, order };
       }
       return { success: false, order: null };
     } catch (error) {
@@ -124,15 +186,9 @@ export const adminApi = {
     status: string,
     trackingNumber?: string,
     trackingCarrier?: string,
-    token?: string,
   ): Promise<{ success: boolean; order: AdminOrder | null }> => {
     try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
+      const headers = { ...(await authHeaders()), "Content-Type": "application/json" };
       const body: Record<string, string> = { status };
       if (trackingNumber) body.trackingNumber = trackingNumber;
       if (trackingCarrier) body.trackingCarrier = trackingCarrier;
@@ -153,13 +209,10 @@ export const adminApi = {
   },
 
   // --- Payments ---
-  getPayments: async (token?: string): Promise<{ success: boolean; payments: AdminPayment[] }> => {
+  getPayments: async (): Promise<{ success: boolean; payments: AdminPayment[] }> => {
     try {
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-      const res = await fetch(`${SERVICES.payment}/payments`, { headers });
+      const headers = await authHeaders();
+      const res = await fetch(`${SERVICES.payment}/payments`, { headers, cache: "no-store" });
       if (res.ok) {
         return res.json();
       }

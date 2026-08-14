@@ -15,11 +15,11 @@ import {
 } from "../components/ui/dropdown-menu";
 
 export type Payment = {
-  id: string;
-  amount: number;
+  id: number;
+  amount: string;
   fullName: string;
   email: string;
-  status: "pending" | "processing" | "success" | "failed";
+  status: string;
 };
 
 export const columns: ColumnDef<Payment>[] = [
@@ -42,7 +42,7 @@ export const columns: ColumnDef<Payment>[] = [
     ),
   },
   {
-    accessorKey: "username",
+    accessorKey: "fullName",
     header: "User",
   },
   {
@@ -63,18 +63,20 @@ export const columns: ColumnDef<Payment>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status");
+      const status = row.getValue("status") as string;
+      const failed = ["payment_failed", "cancelled", "disputed"].includes(status);
+      const success = ["paid", "delivered", "shipped"].includes(status);
 
       return (
         <div
           className={cn(
             `p-1 rounded-md w-max text-xs`,
-            status === "pending" && "bg-yellow-500/40",
-            status === "success" && "bg-green-500/40",
-            status === "failed" && "bg-red-500/40",
+            !failed && !success && "bg-yellow-500/40",
+            success && "bg-green-500/40",
+            failed && "bg-red-500/40",
           )}
         >
-          {status as string}
+          {status}
         </div>
       );
     },
@@ -108,7 +110,7 @@ export const columns: ColumnDef<Payment>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
+              onClick={() => navigator.clipboard.writeText(String(payment.id))}
             >
               Copy payment ID
             </DropdownMenuItem>

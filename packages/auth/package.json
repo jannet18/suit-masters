@@ -20,12 +20,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@kinde-oss/kinde-typescript-sdk": "^2.13.1",
+    "@repo/db": "*",
     "@repo/types": "*",
+    "better-auth": "^1.6.27",
     "cors": "^2.8.5",
     "hono": "^4.11.8"
   },
   "devDependencies": {
+    "@better-auth/cli": "^1.4.21",
     "@repo/typescript-config": "*",
     "@types/cors": "^2.8.19",
     "tsx": "^4.0.0",

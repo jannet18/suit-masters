@@ -9,12 +9,12 @@ const CART_SERVICE_URL =
  */
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get("authorization") || "";
+    const cookieHeader = request.headers.get("cookie") || "";
 
     const res = await fetch(`${CART_SERVICE_URL}/cart`, {
       headers: {
         "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
     });
 
@@ -44,14 +44,14 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get("authorization") || "";
+    const cookieHeader = request.headers.get("cookie") || "";
     const body = await request.json();
 
     const res = await fetch(`${CART_SERVICE_URL}/add`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
       body: JSON.stringify(body),
     });
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const authHeader = request.headers.get("authorization") || "";
+    const cookieHeader = request.headers.get("cookie") || "";
     const body = await request.json();
 
     // Sync operation
@@ -91,7 +91,7 @@ export async function PUT(request: NextRequest) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
         },
         body: JSON.stringify({ items: body.items }),
       });
@@ -115,7 +115,7 @@ export async function PUT(request: NextRequest) {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
         },
         body: JSON.stringify({ quantity: body.quantity }),
       });
@@ -152,7 +152,7 @@ export async function PUT(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const authHeader = request.headers.get("authorization") || "";
+    const cookieHeader = request.headers.get("cookie") || "";
     const { searchParams } = new URL(request.url);
     const itemId = searchParams.get("itemId");
     const clearAll = searchParams.get("clear");
@@ -162,7 +162,7 @@ export async function DELETE(request: NextRequest) {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
         },
       });
 
@@ -184,7 +184,7 @@ export async function DELETE(request: NextRequest) {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          ...(authHeader ? { Authorization: authHeader } : {}),
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
         },
       });
 
