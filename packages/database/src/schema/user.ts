@@ -15,8 +15,9 @@ import { shopOrder } from "./orders.js";
 // IDENTITY & MEASUREMENTS
 export const usersTable = pgTable("site_users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  kinde_user_id: varchar("kinde_user_id").notNull().unique(),
+  kinde_user_id: varchar("kinde_user_id").unique(),
   email: varchar("email", { length: 255 }).notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(true),
   name: varchar("name").notNull(),
   picture: varchar("picture", { length: 1024 }).default(""),
   phone: varchar("phone", { length: 20 }).default(""),

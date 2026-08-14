@@ -21,7 +21,7 @@ export type User = {
   avatar: string;
   fullName: string;
   email: string;
-  status: "active" | "inactive";
+  roles: string;
 };
 
 export const columns: ColumnDef<User>[] = [
@@ -79,20 +79,19 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
-    accessorKey: "status",
-    header: "Status",
+    accessorKey: "roles",
+    header: "Role",
     cell: ({ row }) => {
-      const status = row.getValue("status");
+      const roles = row.getValue("roles") as string;
 
       return (
         <div
           className={cn(
             `p-1 rounded-md w-max text-xs`,
-            status === "active" && "bg-green-500/40",
-            status === "inactive" && "bg-red-500/40",
+            roles === "ADMIN" ? "bg-blue-500/40" : "bg-muted",
           )}
         >
-          {status as string}
+          {roles}
         </div>
       );
     },

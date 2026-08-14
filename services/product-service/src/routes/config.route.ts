@@ -155,7 +155,7 @@ export const profileGetHandler = new Hono().get(
     const user = c.get("user");
 
     const profile = await db.query.usersTable.findFirst({
-      where: eq(usersTable.kinde_user_id, user.id),
+      where: eq(usersTable.id, user.id),
     });
 
     if (!profile) {
@@ -211,7 +211,7 @@ export const profilePutHandler = new Hono().put(
     const [updatedProfile] = await db
       .update(usersTable)
       .set(updates)
-      .where(eq(usersTable.kinde_user_id, user.id))
+      .where(eq(usersTable.id, user.id))
       .returning();
 
     if (!updatedProfile) {
