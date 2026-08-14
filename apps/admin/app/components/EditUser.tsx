@@ -1,4 +1,6 @@
 "use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Form, useForm } from "react-hook-form";
 import {
   SheetContent,
@@ -15,58 +17,80 @@ import {
   FormMessage,
 } from "./ui/form";
 import { Input } from "./ui/input";
-import { Select } from "@radix-ui/react-select";
-import {
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 import { Button } from "./ui/button";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { AdminUser } from "@/lib/api-client";
+
+const PRODUCT_SERVICE_URL =
+  process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || "http://localhost:4000";
 
 const formSchema = z.object({
   fullName: z
     .string()
-    .min(2, { message: "Username must be at least 2 characters!" })
+    .min(2, { message: "Name must be at least 2 characters!" })
     .max(50),
   email: z.string().email({ message: "Invalid email address!" }),
-  phone: z.string().min(10).max(15),
-  address: z.string().min(2),
-  city: z.enum(["admin", "user"]),
+  phone: z.string().optional(),
+  address: z.string().optional(),
 });
 
-const EditUser = () => {
+const EditUser = ({ user }: { user: AdminUser }) => {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      fullName: "John Doe",
-      email: "john.doe@gmail.com",
-      phone: "+1 234 5678",
-      address: "New York, NY",
-      city: "admin",
+      fullName: user.name,
+      email: user.email,
+      phone: user.phone || "",
+      address: user.address || "",
     },
   });
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`${PRODUCT_SERVICE_URL}/users/${user.id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: values.fullName,
+          phone: values.phone,
+          address: values.address,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to update user");
+      }
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update user");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <SheetContent>
       <SheetHeader>
         <SheetTitle className="mb-4">Edit User</SheetTitle>
         <SheetDescription asChild>
           <Form {...form}>
-            <form className="space-y-8">
+            <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
               <FormField
                 control={form.control}
                 name="fullName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Username</FormLabel>
+                    <FormLabel>Full name</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
-                    <FormDescription>
-                      This is your public username.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -78,10 +102,10 @@ const EditUser = () => {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} disabled />
                     </FormControl>
                     <FormDescription>
-                      Only admin can see your email.
+                      Email is managed via the account&apos;s sign-in identity and can&apos;t be changed here.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -96,9 +120,6 @@ const EditUser = () => {
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
-                    <FormDescription>
-                      Only admin can see your phone number.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -108,42 +129,18 @@ const EditUser = () => {
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Location</FormLabel>
+                    <FormLabel>Address</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
-                    <FormDescription>
-                      This is the public location.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              {/* <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <FormControl>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="user">User</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormDescription>
-                      Only verified users can be admin.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              /> */}
-              <Button type="submit">Submit</Button>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Submit"}
+              </Button>
             </form>
           </Form>
         </SheetDescription>

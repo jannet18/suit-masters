@@ -3,17 +3,23 @@ import { serve } from "@hono/node-server";
 import { paymentRoutes } from "./routes/paymentRoutes.js";
 import { webhookRoutes } from "./routes/webhook.js";
 import { cors } from "hono/cors";
+import { type AuthContext } from "@repo/auth";
 import { errorHandler, notFoundHandler } from "@repo/error-handling";
 
-const app = new Hono();
+const app = new Hono<AuthContext>();
 const port = Number(process.env.PORT) || 4002;
 
 app.use(
-  // "/api/*",
   "*",
   cors({
-    origin: ["https://suit-masters.vercel.app", "http://localhost:3000"],
+    origin: [
+      "https://suit-masters.vercel.app",
+      process.env.FRONTEND_URL || "http://localhost:3000",
+      process.env.ADMIN_URL || "http://localhost:3002",
+    ],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   }),
 );
 app.get("/health", (c: Context) =>

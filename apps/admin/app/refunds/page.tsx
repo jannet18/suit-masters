@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { adminApi } from "../../lib/api-client";
 
 interface RefundRequest {
   id: number;
@@ -20,7 +19,7 @@ interface RefundRequest {
 }
 
 const ORDER_SERVICE_URL =
-  process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:4001/api";
+  process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:4001";
 
 export default function RefundsPage() {
   const [refunds, setRefunds] = useState<RefundRequest[]>([]);
@@ -37,6 +36,7 @@ export default function RefundsPage() {
     try {
       const res = await fetch(`${ORDER_SERVICE_URL}/refunds/admin/all`, {
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
       if (res.ok) {
         const data = await res.json();
@@ -55,6 +55,7 @@ export default function RefundsPage() {
       const res = await fetch(`${ORDER_SERVICE_URL}/refunds/${refundId}/approve`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ adminNotes: adminNotes[refundId] || "" }),
       });
       if (res.ok) {
@@ -73,6 +74,7 @@ export default function RefundsPage() {
       const res = await fetch(`${ORDER_SERVICE_URL}/refunds/${refundId}/reject`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ adminNotes: adminNotes[refundId] || "" }),
       });
       if (res.ok) {
@@ -91,6 +93,7 @@ export default function RefundsPage() {
       const res = await fetch(`${ORDER_SERVICE_URL}/refunds/${refundId}/complete`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
       if (res.ok) {
         fetchRefunds();

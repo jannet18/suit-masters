@@ -14,7 +14,7 @@ import { stripePromise } from "../../lib/stripe";
 import { useCartStore } from "../stores/useCartStore";
 import { getShippingCost, getTaxRate } from "../../lib/utils";
 import { Loader2, ArrowLeft, MapPin, Package, CreditCard, AlertCircle } from "lucide-react";
-import {useKindeBrowserClient} from "@kinde-oss/kinde-auth-nextjs";
+import {useSession} from "@/lib/auth-client";
 
 /** Client-side validation for shipping form fields */
 function validateShipping(data: {
@@ -51,7 +51,9 @@ function CheckoutClient() {
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const {user, isAuthenticated, isLoading} = useKindeBrowserClient();
+  const {data: session, isPending: isLoading} = useSession();
+  const user = session?.user;
+  const isAuthenticated = !!session;
   // const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [shippingData, setShippingData] = useState({
     fullName: "",
@@ -145,16 +147,16 @@ function CheckoutClient() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/api/auth/login?redirect=/checkout");
+      router.push("/login?redirect=/checkout");
     }
     if (user){
       setShippingData((prev) => ({
         ...prev,
-        fullName: `${user.given_name || ""} ${user.family_name || ""}`.trim(),
+        fullName: user.name || "",
       email: user.email || "",
       }))
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, user, router]);
 
   // useEffect(() => {
   //   async function checkAuth() {
@@ -628,20 +630,20 @@ function CheckoutClient() {
               <div className="space-y-4 mb-6">
                 {cart.map((item) => (
                   <div
-                    key={`${item.id}-${item.product_type}`}
+                    key={`${item.id}-${item.productType}`}
                     className="flex justify-between items-start"
                   >
                     <div>
                       <p className="font-medium">{item.name}</p>
                       <p className="text-sm text-[#9a9490]">
-                        {item.product_type === "CUSTOM"
+                        {item.productType === "CUSTOM"
                           ? "Custom Suit"
                           : "Standard"}
                         {item.quantity > 1 && ` × ${item.quantity}`}
                       </p>
                     </div>
                     <p className="font-mono">
-                      £{((item.totalPrice * item.quantity) / 100).toFixed(2)}
+                      £{(Number(item.totalPrice) * item.quantity).toFixed(2)}
                     </p>
                   </div>
                 ))}

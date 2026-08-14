@@ -34,14 +34,14 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const authHeader = request.headers.get("authorization") || "";
+    const cookieHeader = request.headers.get("cookie") || "";
     const body = await request.json();
 
     const res = await fetch(`${PRODUCT_SERVICE_URL}/promotions/apply`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
       body: JSON.stringify(body),
     });
