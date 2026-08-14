@@ -9,7 +9,7 @@ const getData = async (): Promise<Payment[]> => {
       return result.payments.map((p: AdminPayment) => ({
         id: p.id,
         amount: p.amount,
-        status: p.status,
+        status: p.status as "pending" | "processing" | "success" | "failed",
         fullName: p.fullName,
         email: p.email,
       }));

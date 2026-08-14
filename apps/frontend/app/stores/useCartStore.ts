@@ -215,7 +215,7 @@ export const useCartStore = create<CartState>()(
       pushToServer: (item: CartItem) => {
         // only push to postgress if the user is logged in (session cookie exists)
         // Consider user logged in if session cookie exists
-        const isLoggedIn = document.cookie.includes("better-auth.session_token");
+        const isLoggedIn = document.cookie.includes("Kinde_token");
         if (!isLoggedIn) return; //guest users don't have a server cart, so we skip the push
 
         fetch("/api/cart", {

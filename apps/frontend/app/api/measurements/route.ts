@@ -11,12 +11,14 @@ const PRODUCT_SERVICE_URL =
 export async function GET(request: NextRequest) {
   try {
     const cookieHeader = request.headers.get("cookie") || "";
+    const authHeader = request.headers.get("authorization") || "";
 
     const res = await fetch(
       `${PRODUCT_SERVICE_URL}/measurements/profiles`,
       {
         headers: {
           Cookie: cookieHeader,
+          Authorization: authHeader,
           "Content-Type": "application/json",
         },
       },
@@ -41,6 +43,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const cookieHeader = request.headers.get("cookie") || "";
+    const authHeader = request.headers.get("authorization") || "";
     const body = await request.json();
 
     const res = await fetch(
@@ -49,6 +52,7 @@ export async function POST(request: NextRequest) {
         method: "POST",
         headers: {
           Cookie: cookieHeader,
+          Authorization: authHeader,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
@@ -74,6 +78,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const cookieHeader = request.headers.get("cookie") || "";
+    const authHeader = request.headers.get("authorization") || "";
     const body = await request.json();
     const { searchParams } = new URL(request.url);
     const profileId = searchParams.get("id");
@@ -91,6 +96,7 @@ export async function PUT(request: NextRequest) {
         method: "PUT",
         headers: {
           Cookie: cookieHeader,
+          Authorization: authHeader,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
@@ -116,6 +122,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const cookieHeader = request.headers.get("cookie") || "";
+    const authHeader = request.headers.get("authorization") || "";
     const { searchParams } = new URL(request.url);
     const profileId = searchParams.get("id");
 
@@ -132,6 +139,7 @@ export async function DELETE(request: NextRequest) {
         method: "DELETE",
         headers: {
           Cookie: cookieHeader,
+          Authorization: authHeader,
           "Content-Type": "application/json",
         },
       },

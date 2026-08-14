@@ -19,11 +19,6 @@ const SERVICES = {
     process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL || "http://localhost:3001/api",
 };
 
-export const CLIENTS = {
-  admin: process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3002",
-  frontend: process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000",
-}
-
 export const api = {
   // --- Cart ---
   getCart: async (token: string) => {

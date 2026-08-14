@@ -21,7 +21,6 @@
     "@repo/types": "*",
     "@repo/orders": "*",
     "@repo/error-handling": "*",
-    "@repo/auth": "*",
     "cors": "^2.8.5",
     "hono": "^4.12.2"
   },

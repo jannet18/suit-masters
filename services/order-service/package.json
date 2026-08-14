@@ -19,8 +19,6 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.9",
-    "@repo/auth": "*",
-    "@repo/db": "*",
     "@repo/error-handling": "*",
     "@repo/types": "*",
     "dotenv": "^16.3.1",

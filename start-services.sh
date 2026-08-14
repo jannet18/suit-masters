@@ -18,17 +18,14 @@ start_service() {
         echo "   ✅ $service_name is already running on port $port"
     else
         # Start service in background
-        npm install && npm run dev > "/tmp/${service_name}.log" 2>&1 &
+        npm run dev > "/tmp/${service_name}.log" 2>&1 &
         echo $! > "/tmp/${service_name}.pid"
         echo "   ✅ $service_name started on port $port (PID: $!)"
         echo "   📝 Logs: /tmp/${service_name}.log"
     fi
-
-    cd -
 }
 
 # Start services
-start_service "Auth Service" "services/auth-service" 4004
 start_service "Product Service" "services/product-service" 4000
 start_service "Cart Service" "services/cart-service" 10000
 start_service "Order Service" "services/order-service" 4001
@@ -52,7 +49,6 @@ check_service() {
     fi
 }
 
-check_service "Auth Service" 4004 "/health"
 check_service "Product Service" 4000 "/health"
 check_service "Cart Service" 10000 "/health"
 check_service "Order Service" 4001 "/health"
@@ -61,7 +57,7 @@ check_service "Payment Service" 4002 "/health"
 echo ""
 echo "🎉 Services started! Use 'pkill -f \"npm run dev\"' to stop all services"
 echo "📊 Service PIDs:"
-for service in "Auth Service" "Product Service" "Cart Service" "Order Service" "Payment Service"; do
+for service in "Product Service" "Cart Service" "Order Service" "Payment Service"; do
     pid_file="/tmp/${service// /_}.pid"
     if [ -f "$pid_file" ]; then
         pid=$(cat "$pid_file")

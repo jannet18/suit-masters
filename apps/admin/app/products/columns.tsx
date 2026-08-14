@@ -19,9 +19,11 @@ export type Product = {
   id: string | number;
   price: number;
   name: string;
+  shortDescription: string;
   description: string;
-  image: string;
-  isActive: boolean;
+  sizes: string[];
+  colors: string[];
+  images: Record<string, string>;
 };
 
 export const columns: ColumnDef<Product>[] = [
@@ -50,16 +52,16 @@ export const columns: ColumnDef<Product>[] = [
       const product = row.original;
       return (
         <div className="w-9 h-9 relative">
-          {product.image ? (
-            <Image
-              src={product.image}
-              alt={product.name}
-              fill
-              className="rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full rounded-full bg-muted" />
-          )}
+          <Image
+            src={
+              (product.images as Record<string, string>)?.[
+                product.colors[0] || ""
+              ] || ""
+            }
+            alt={product.name}
+            fill
+            className="rounded-full object-cover"
+          />
         </div>
       );
     },
@@ -83,13 +85,8 @@ export const columns: ColumnDef<Product>[] = [
     },
   },
   {
-    accessorKey: "description",
+    accessorKey: "shortDescription",
     header: "Description",
-  },
-  {
-    accessorKey: "isActive",
-    header: "Active",
-    cell: ({ row }) => (row.getValue("isActive") ? "Yes" : "No"),
   },
   {
     id: "actions",
