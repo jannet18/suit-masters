@@ -1,10 +1,12 @@
 import { Order, columns } from "./columns";
 import { DataTable } from "../products/data-table";
 import { adminApi, AdminOrder } from "../../lib/api-client";
+import { getSessionToken } from "../../lib/getSessionToken";
 
 const getData = async (): Promise<Order[]> => {
   try {
-    const result = await adminApi.getOrders();
+    const token = await getSessionToken();
+    const result = await adminApi.getOrders(token);
     if (result.success && result.orders.length > 0) {
       return result.orders.map((o: AdminOrder) => ({
         id: o.id,

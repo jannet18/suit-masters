@@ -10,6 +10,7 @@ import {
   Shirt,
   User,
   ShoppingBasket,
+  Activity,
 } from "lucide-react";
 import {
   Sidebar,
@@ -66,6 +67,11 @@ const items = [
     url: "#",
     icon: Settings,
   },
+  {
+    title: "System Health",
+    url: "/system",
+    icon: Activity,
+  },
 ];
 
 const AppSidebar = () => {
@@ -121,34 +127,40 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
+                <AddProduct
+                  trigger={
+                    <SidebarMenuButton>
+                      <Plus />
+                      Add Product
+                    </SidebarMenuButton>
+                  }
+                />
+              </SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <SidebarMenuButton asChild>
-                        <Link href="#">
-                          <Plus />
-                          Add Product
-                        </Link>
-                      </SidebarMenuButton>
-                    </SheetTrigger>
-                    <AddProduct />
-                  </Sheet>
+                  <Link href="/categories">
+                    <Shirt />
+                    See All Categories
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <SidebarMenuButton asChild>
-                        <Link href="#">
-                          <Plus />
-                          Add Category
-                        </Link>
-                      </SidebarMenuButton>
-                    </SheetTrigger>
-                    <AddCategory />
-                  </Sheet>
+                  <Link href="/collections">
+                    <Shirt />
+                    See All Collections
+                  </Link>
                 </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <AddCategory
+                  trigger={
+                    <SidebarMenuButton>
+                      <Plus />
+                      Add Category
+                    </SidebarMenuButton>
+                  }
+                />
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>

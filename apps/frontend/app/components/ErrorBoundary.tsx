@@ -1,6 +1,7 @@
 "use client";
 
 import { Component, type ReactNode } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -34,11 +35,9 @@ export class ErrorBoundary extends Component<
     console.error("[ErrorBoundary] Caught an error:", error);
     console.error("[ErrorBoundary] Component stack:", errorInfo.componentStack);
 
-    // In production, this is where you'd send to Sentry/DataDog
-    if (process.env.NODE_ENV === "production") {
-      // TODO: Integrate with Sentry
-      // Sentry.captureException(error, { extra: errorInfo });
-    }
+    Sentry.captureException(error, {
+      extra: { componentStack: errorInfo.componentStack },
+    });
   }
 
   render() {
@@ -48,7 +47,7 @@ export class ErrorBoundary extends Component<
       }
 
       return (
-        <div className="min-h-100 flex items-center justify-center bg-[#0f0f0f] text-[#f5f0eb]">
+        <div className="min-h-100 flex items-center justify-center bg-[#0f0f0f] text-[#f5f0eb] mt-14">
           <div className="text-center max-w-md mx-auto p-8">
             <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[#c9a96e]/10 flex items-center justify-center">
               <svg
@@ -64,9 +63,7 @@ export class ErrorBoundary extends Component<
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold mb-2">
-              Something went wrong
-            </h2>
+            <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
             <p className="text-[#9a9490] mb-6">
               An unexpected error occurred. Please try refreshing the page.
             </p>

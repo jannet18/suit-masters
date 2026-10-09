@@ -26,17 +26,19 @@
     "db:seed": "dotenv -e ../../.env -- tsx src/seed.ts",
     "db:reset": "dotenv -e ../../.env -- tsx ../../node_modules/drizzle-kit/bin.cjs drop",
     "check-types": "tsc --noEmit",
-    "build": "tsc"
+    "build": "tsc",
+    "db:migrate:money": "dotenv -e ../../.env -- tsx scripts/migrate-money-to-minor-units.ts",
+    "db:seed:customization": "dotenv -e ../../.env -- tsx scripts/seed-suit-customization.ts"
   },
   "dependencies": {
-    "@kinde-oss/kinde-typescript-sdk": "^2.13.1",
     "@neondatabase/serverless": "^1.0.2",
     "@types/pg": "^8.16.0",
     "dotenv": "^17.2.3",
     "drizzle-orm": "0.45.1",
     "hono": "^4.11.9",
     "pg": "^8.18.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "@repo/pricing": "*"
   },
   "peerDependencies": {
     "drizzle-orm": "0.45.1"

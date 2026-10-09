@@ -1,17 +1,21 @@
 import { User, columns } from "./columns";
 import { DataTable } from "./data-table";
 import { adminApi, AdminUser } from "../../lib/api-client";
+import { getSessionToken } from "../../lib/getSessionToken";
 
 const getData = async (): Promise<User[]> => {
   try {
-    const result = await adminApi.getUsers();
+    const token = await getSessionToken();
+    const result = await adminApi.getUsers(token);
     if (result.success && result.users.length > 0) {
       return result.users.map((u: AdminUser) => ({
         id: u.id,
-        avatar: u.picture || "/users/default.png",
+        avatar: u.picture || "/",
         fullName: u.name,
         email: u.email,
-        status: (u.roles === "ADMIN" ? "active" : "active") as "active" | "inactive",
+        status: (u.roles === "ADMIN" ? "active" : "active") as
+          | "active"
+          | "inactive",
       }));
     }
   } catch (error) {

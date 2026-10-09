@@ -2,7 +2,8 @@
   "name": "@repo/products",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.ts",
+  "type": "module",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
@@ -10,22 +11,27 @@
     "check-types": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "build": "tsc"
+    "build": "tsc",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@hono/node-server": "^1.19.9",
+    "@repo/auth": "*",
     "@repo/db": "*",
-    "@repo/types": "*",
-    "@repo/orders": "*",
     "@repo/error-handling": "*",
+    "@repo/orders": "*",
+    "@repo/types": "*",
+    "@repo/validation": "*",
     "cors": "^2.8.5",
     "hono": "^4.12.2"
   },
   "devDependencies": {
+    "@repo/testing": "*",
     "@repo/typescript-config": "*",
-    "@types/cors": "^2.8.19"
+    "@types/cors": "^2.8.19",
+    "vitest": "~3.2.4"
   }
 }

@@ -3,6 +3,8 @@
 import { CartItem } from "@/lib/types";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { authClient } from "@repo/auth/client";
+import { toMinorUnits } from "@repo/pricing";
 
 /**
  * CustomOption represents a selection in a CUSTOM product (like size, color, fabric)
@@ -12,7 +14,8 @@ export interface CustomOption {
   id: number;
   group_id: number;
   label: string;
-  price_impact: string;
+  /** pence */
+  price_impact: number;
 }
 /**
  * CartItem is what we store in the cart
@@ -63,10 +66,16 @@ export const useCartStore = create<CartState>()(
           if (Number(p.id) !== Number(item.id)) return false;
 
           if (p.productType === "CUSTOM") {
-            if (!p.selectedOptions || !item.selectedOptions) return p.selectedOptions === item.selectedOptions;
-            if (p.selectedOptions.length !== item.selectedOptions.length) return false;
-            const pOptionsIds = new Set(p.selectedOptions.map((o: CustomOption) => o.id));
-            return item.selectedOptions.every((opt: CustomOption) => pOptionsIds.has(opt.id));
+            if (!p.selectedOptions || !item.selectedOptions)
+              return p.selectedOptions === item.selectedOptions;
+            if (p.selectedOptions.length !== item.selectedOptions.length)
+              return false;
+            const pOptionsIds = new Set(
+              p.selectedOptions.map((o: CustomOption) => o.id),
+            );
+            return item.selectedOptions.every((opt: CustomOption) =>
+              pOptionsIds.has(opt.id),
+            );
           }
           return true; // Match standard product solely by item identification code
         });
@@ -93,10 +102,15 @@ export const useCartStore = create<CartState>()(
 
           if (item.productType === "CUSTOM") {
             if (!item.selectedOptions || !selectedOptions) return true;
-            if (item.selectedOptions.length !== selectedOptions.length) return true;
+            if (item.selectedOptions.length !== selectedOptions.length)
+              return true;
 
-            const targetOptionIds = new Set(selectedOptions.map((o: CustomOption) => o.id));
-            const matchesAllOptions = item.selectedOptions.every((opt: CustomOption) => targetOptionIds.has(opt.id));
+            const targetOptionIds = new Set(
+              selectedOptions.map((o: CustomOption) => o.id),
+            );
+            const matchesAllOptions = item.selectedOptions.every(
+              (opt: CustomOption) => targetOptionIds.has(opt.id),
+            );
 
             return !matchesAllOptions; // Keep the item if it doesn't match the selection precisely
           }
@@ -128,24 +142,22 @@ export const useCartStore = create<CartState>()(
         set({ cart: [] });
         // Also clear server cart
         try {
-          await fetch("/api/cart?clear=true", { method: "DELETE", credentials: "include" });
+          await fetch("/api/cart?clear=true", {
+            method: "DELETE",
+            credentials: "include",
+          });
         } catch (error) {
           // Silent fail — local state is already cleared
           console.error("Failed to clear cart successfully", error);
         }
       },
 
+      /** Bag total in integer pence (display only; checkout reprices on the server). */
       getTotal: () =>
-        get().cart.reduce((acc, item) => {
-          let price = Number(item.basePrice || 0);
-          if (item.selectedOptions) {
-            price += item.selectedOptions.reduce(
-              (sum: number, opt:any) => sum + Number(opt.price_impact || 0),
-              0,
-            );
-          }
-          return acc + price * item.quantity;
-        }, 0),
+        get().cart.reduce(
+          (acc, item) => acc + unitPrice(item) * item.quantity,
+          0,
+        ),
 
       /**
        * Sync local (localStorage) cart with the server cart.
@@ -154,7 +166,9 @@ export const useCartStore = create<CartState>()(
       syncWithServer: async () => {
         try {
           // 1. Fetch server cart
-          const serverRes = await fetch("/api/cart", { credentials: "include" });
+          const serverRes = await fetch("/api/cart", {
+            credentials: "include",
+          });
           if (!serverRes.ok) return;
 
           const serverData = await serverRes.json();
@@ -165,7 +179,9 @@ export const useCartStore = create<CartState>()(
           // 2. If server cart has items, merge them into local cart
           if (serverItems.length > 0) {
             for (const serverItem of serverItems) {
-              const serverProdId = Number(serverItem.product?.id ?? serverItem.id);
+              const serverProdId = Number(
+                serverItem.product?.id ?? serverItem.id,
+              );
               // Check if this item already exists locally
               const existingIndex = mergedCart.findIndex((local) => {
                 if (Number(local.id) !== serverProdId) return false;
@@ -181,13 +197,13 @@ export const useCartStore = create<CartState>()(
                   id: serverProdId,
                   productId: serverProdId,
                   name: serverItem.product?.name || "Bespoke Garment Selection",
-                  basePrice: String(Number(serverItem.unit_price) || 0),
+                  basePrice: Number(serverItem.unit_price) || 0,
                   imageUrl: serverItem.product?.image || "",
                   productType: serverItem.configuration ? "CUSTOM" : "STANDARD",
                   quantity: serverItem.qty,
                   selectedOptions: serverItem.selectedOptions || [],
                   configuration: serverItem.configuration || {},
-                  totalPrice: String(Number(serverItem.total_price) || 0),
+                  totalPrice: Number(serverItem.unit_price) || 0,
                 });
               }
             }
@@ -212,11 +228,10 @@ export const useCartStore = create<CartState>()(
       /**
        * Push a single item to the server cart (fire-and-forget).
        */
-      pushToServer: (item: CartItem) => {
-        // only push to postgress if the user is logged in (session cookie exists)
-        // Consider user logged in if session cookie exists
-        const isLoggedIn = document.cookie.includes("Kinde_token");
-        if (!isLoggedIn) return; //guest users don't have a server cart, so we skip the push
+      pushToServer: async (item: CartItem) => {
+        // guest users don't have a server cart, so we skip the push
+        const { data: session } = await authClient.getSession();
+        if (!session) return;
 
         fetch("/api/cart", {
           method: "POST",
@@ -246,6 +261,48 @@ export const useCartStore = create<CartState>()(
         }).catch((err) => console.error("Fire-and-forget delete failed", err));
       },
     }),
-    { name: "cart-storage" }, // persisted in localStorage
+    {
+      name: "cart-storage", // persisted in localStorage
+      // v1: prices are integer pence. v0 stored pound strings ("499.99").
+      version: 1,
+      migrate: (persisted, version) => {
+        const state = persisted as { cart?: any[] } | undefined;
+        if (version < 1 && state?.cart) {
+          state.cart = state.cart.map(migrateItemToPence);
+        }
+        return state as CartState;
+      },
+    },
   ),
 );
+
+/** Unit price of a bag line in pence: base price plus chosen options. */
+export function unitPrice(item: CartItem): number {
+  return (
+    item.basePrice +
+    (item.selectedOptions ?? []).reduce(
+      (sum, opt) => sum + (opt.price_impact || 0),
+      0,
+    )
+  );
+}
+
+function poundsToPence(value: unknown): number {
+  try {
+    return toMinorUnits(String(value ?? 0));
+  } catch {
+    return 0;
+  }
+}
+
+function migrateItemToPence(item: any): CartItem {
+  return {
+    ...item,
+    basePrice: poundsToPence(item.basePrice),
+    totalPrice: poundsToPence(item.totalPrice),
+    selectedOptions: (item.selectedOptions ?? []).map((opt: any) => ({
+      ...opt,
+      price_impact: poundsToPence(opt.price_impact),
+    })),
+  };
+}

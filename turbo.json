@@ -3,18 +3,22 @@
   "ui": "tui",
   "globalEnv": [
     "NODE_ENV",
-    "KINDE_ISSUER_URL",
-    "KINDE_CLIENT_ID",
-    "KINDE_CLIENT_SECRET",
-    "KINDE_SITE_URL",
-    "KINDE_POST_LOGOUT_REDIRECT_URL",
-    "KINDE_POST_LOGIN_REDIRECT_URL"
+    "DATABASE_URL",
+    "DATABASE_SSL",
+    "BETTER_AUTH_SECRET",
+    "BETTER_AUTH_URL",
+    "NEXT_PUBLIC_AUTH_URL",
+    "BETTER_AUTH_TRUSTED_ORIGINS",
+    "SENTRY_DSN",
+    "NEXT_PUBLIC_SENTRY_DSN",
+    "SENTRY_TRACES_SAMPLE_RATE",
+    "LOG_LEVEL"
   ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "db:reset": {
       "cache": false,
@@ -23,23 +27,24 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
+    "test": {
+      "dependsOn": ["^build"],
+      "env": ["TEST_DATABASE_URL", "KEEP_TEST_DB"],
+      "outputs": []
+    },
+    "test:e2e": {
+      "dependsOn": ["^build"],
+      "env": ["TEST_DATABASE_URL", "E2E_*"],
+      "outputs": ["playwright-report/**", "test-results/**"],
+      "cache": false
+    },
     "check-types": {
       "dependsOn": ["^check-types"]
     },
     "dev": {
       "cache": false,
       "persistent": true,
-      "env": [
-        "PORT",
-        "DATABASE_URL",
-        "KINDE_DOMAIN",
-        "KINDE_CLIENT_ID",
-        "KINDE_CLIENT_SECRET",
-        "KINDE_ISSUER_URL",
-        "KINDE_SITE_URL",
-        "KINDE_POST_LOGIN_REDIRECT_URL",
-        "KINDE_POST_LOGOUT_REDIRECT_URL"
-      ]
+      "env": ["PORT"]
     }
   }
 }

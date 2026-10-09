@@ -2,12 +2,18 @@ import {
   pgTable,
   varchar,
   integer,
-  numeric,
   boolean,
   text,
   pgEnum,
   jsonb,
+  uuid,
+  check,
+  timestamp,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { usersTable } from "./user.js";
+
+// Money: integer minor units (pence). £199.00 is stored as 19900.
 
 // Product type enum
 export const productTypeEnum = pgEnum("product_type", ["STANDARD", "CUSTOM"]);
@@ -18,7 +24,9 @@ export const productCategory = pgTable("product_category", {
   name: varchar("name", { length: 128 }).notNull(),
   slug: varchar("slug", { length: 128 }).unique().notNull(),
   // parentId: integer("parent_id"), // Self-reference for sub-categories
-  parentId: integer("parent_id").references((): any => productCategory.id, {onDelete: "cascade"})
+  parentId: integer("parent_id").references((): any => productCategory.id, {
+    onDelete: "cascade",
+  }),
 });
 
 // Fabric
@@ -45,7 +53,7 @@ export const product = pgTable("product", {
   name: varchar("name", { length: 128 }).notNull(),
   slug: varchar("slug", { length: 128 }).unique().notNull(),
   productType: productTypeEnum("product_type").notNull().default("CUSTOM"),
-  basePrice: numeric("base_price", { precision: 12, scale: 2 }).notNull(),
+  basePrice: integer("base_price").notNull(),
   description: text("description"),
   mainImage: varchar("main_image", { length: 255 }),
   productImage: varchar("product_image", { length: 255 }),
@@ -71,9 +79,7 @@ export const customizationOption = pgTable("customization_option", {
     .notNull(),
   name: varchar("name", { length: 128 }).notNull(),
   value: varchar("value", { length: 128 }),
-  priceDelta: numeric("price_delta", { precision: 12, scale: 2 }).default(
-    "0.00",
-  ),
+  priceDelta: integer("price_delta").default(0).notNull(),
   thumbnailUrl: varchar("thumbnail_url", { length: 255 }),
   imageUrl: varchar("image_url", { length: 255 }),
   texture: varchar("texture", { length: 128 }),
@@ -90,27 +96,35 @@ export const customizationOption = pgTable("customization_option", {
 export const productConfiguration = pgTable("product_configuration", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   productId: integer("product_id")
-    .references(() => product.id)
+    .references(() => product.id, { onDelete: "cascade" })
     .notNull(),
-  selectedOptions: text("selected_options").$type<Record<string, any>>().notNull(),
-  finalPrice: numeric("final_price", { precision: 12, scale: 2 }).notNull(),
+  selectedOptions: text("selected_options")
+    .$type<Record<string, any>>()
+    .notNull(),
+  finalPrice: integer("final_price").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  kindeUserId: varchar("kinde_user_id"),
+  userId: uuid("user_id").references(() => usersTable.id, {
+    onDelete: "cascade",
+  }),
 });
 
-// For backward compatibility with existing code
-export const productItem = pgTable("product_item", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  productId: integer("product_id")
-    .references(() => product.id)
-    .notNull(),
-  sku: varchar("sku", { length: 64 }).unique().notNull(),
-  size: varchar("size", { length: 16 }),
-  color: varchar("color", { length: 64 }),
-  price: numeric("price", { precision: 12, scale: 2 }).notNull(),
-  stock: integer("stock").default(0),
-  isActive: boolean("is_active").default(true),
-});
-
-// Import timestamp function
-import { timestamp } from "drizzle-orm/pg-core";
+// Stock-keeping unit. Stock is tracked here, per SKU. A product with no active
+// SKUs is made to order and is not stock-limited.
+export const productItem = pgTable(
+  "product_item",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    productId: integer("product_id")
+      .references(() => product.id, { onDelete: "cascade" })
+      .notNull(),
+    sku: varchar("sku", { length: 64 }).unique().notNull(),
+    size: varchar("size", { length: 16 }),
+    color: varchar("color", { length: 64 }),
+    price: integer("price").notNull(),
+    stock: integer("stock").default(0).notNull(),
+    isActive: boolean("is_active").default(true),
+  },
+  (table) => [
+    check("product_item_stock_non_negative", sql`${table.stock} >= 0`),
+  ],
+);

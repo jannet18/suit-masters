@@ -27,7 +27,7 @@ export function CollectionGrid({ currentSlug }: CollectionGridProps) {
   }, []);
   console.log(collections);
 
-  const handleCollectionClick = (slug: string) => {
+  const handleCollectionClick = (slug: string): void => {
     router.push(`/collections/${slug}/`);
   };
 

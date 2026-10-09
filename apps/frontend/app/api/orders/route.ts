@@ -7,18 +7,18 @@ const ORDER_SERVICE_URL =
  * GET /api/orders
  *
  * Proxies requests to the order-service, keeping internal
- * service URLs hidden from the client.  Requires the
- * Kinde session token forwarded as a Bearer token.
+ * service URLs hidden from the client. Requires the
+ * Better Auth session token forwarded as a Bearer token.
  */
 export async function GET(request: NextRequest) {
   try {
     // Forward the Authorization header from the client request
-    const authHeader = request.headers.get("authorization") || "";
+    const cookieHeader = request.headers.get("cookie") || "";
 
     const res = await fetch(`${ORDER_SERVICE_URL}/orders`, {
       headers: {
         "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
     });
 
@@ -37,6 +37,41 @@ export async function GET(request: NextRequest) {
     console.error("Order proxy error:", error);
     return NextResponse.json(
       { success: false, orders: [], error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+/**
+ * POST /api/orders
+ * Create an order from the user's server-side cart. The Idempotency-Key header
+ * is forwarded so retries don't create duplicate orders. Error responses (e.g.
+ * 409 OUT_OF_STOCK) are passed through unchanged so checkout can show them.
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const cookieHeader = request.headers.get("cookie") || "";
+    const idempotencyKey = request.headers.get("idempotency-key") || "";
+    const body = await request.text();
+
+    const res = await fetch(`${ORDER_SERVICE_URL}/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
+      },
+      body,
+    });
+
+    const data = await res
+      .json()
+      .catch(() => ({ error: "Failed to create order" }));
+    return NextResponse.json(data, { status: res.status });
+  } catch (error) {
+    console.error("Order proxy error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

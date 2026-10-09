@@ -1,8 +1,20 @@
 import { Hono } from "hono";
-import { db, promotionTable, promotionCategory, promotionUsage, sql } from "@repo/db";
+import {
+  db,
+  promotionTable,
+  promotionCategory,
+  checkPromotion,
+} from "@repo/db";
 import { eq, and, gte, lte } from "@repo/db";
+import { getUser, requireRole, type AuthEnv } from "@repo/auth";
+import {
+  createPromotionSchema,
+  validateRequest,
+  type PromotionData,
+} from "@repo/validation";
 
-export const promotionsHandler = new Hono();
+export const promotionsHandler = new Hono<AuthEnv>();
+const requireAdmin = [getUser, requireRole("ADMIN")] as const;
 
 /**
  * GET /promotions
@@ -15,8 +27,8 @@ promotionsHandler.get("/", async (c) => {
       where: (table, { and: andFn, eq: eqFn, gte: gteFn, lte: lteFn }) =>
         andFn(
           eqFn(table.isActive, true),
-          gteFn(table.startDate, now),
-          lteFn(table.endDate, now),
+          lteFn(table.startDate, now),
+          gteFn(table.endDate, now),
         ),
       orderBy: (table, { desc }) => [desc(table.id)],
     });
@@ -37,80 +49,46 @@ promotionsHandler.get("/", async (c) => {
  */
 promotionsHandler.post("/validate", async (c) => {
   try {
-    const { code, subtotal, userId } = await c.req.json<{ code: string; subtotal: number; userId: string }>();
-
-    if (!code) {
-      return c.json({ valid: false, error: "Coupon code is required" }, 400);
+    // subtotal is integer pence
+    const { code, subtotal, userId } = await c.req.json<{
+      code: string;
+      subtotal: number;
+      userId?: string;
+    }>();
+    if (!Number.isSafeInteger(subtotal) || subtotal < 0) {
+      return c.json(
+        { valid: false, error: "subtotal must be whole pence" },
+        400,
+      );
     }
-// 1. Fetch active promotion matching exact trimmed uppercase code
-    const promotion = await db.query.promotionTable.findFirst({
-      where: (table, { eq: eqFn, and: andFn }) => andFn(eqFn(table.code, code.toUpperCase()), eqFn(table.isActive, true)),
+
+    // Same rules order-service applies when it charges the order
+    const check = await checkPromotion(db, {
+      code: code ?? "",
+      subtotal,
+      userId,
     });
+    if (!check.ok) return c.json({ valid: false, error: check.error }, 400);
 
-    if (!promotion) {
-      return c.json({ valid: false, error: "Invalid promo code" }, 404);
-    }
-// 2. Validate tempral constraints (is it active and within start/end dates)
-    const now = new Date();
-
-    if (promotion.startDate && new Date(promotion.startDate) > now) {
-      return c.json({ valid: false, error: "This Coupon code is not yet valid" }, 400);
-    }
-    if (promotion.endDate && new Date(promotion.endDate) < now) {
-      return c.json({ valid: false, error: "This Coupon code has expired" }, 400);
-    }
-    // 3. Validate usage limits (global and per-user)
-    if (promotion.minOrderAmount && subtotal < Number(promotion.minOrderAmount)) {
-      return c.json({ valid: false, error: `This promo code requires a minimum order amount of ${promotion.minOrderAmount}` }, 400);
-    }
-    // 4 Validate max redemptions across total Platform (Global caps)
-    if (promotion.usageLimit != null) {
-      const totalUsage = await db.select({
-        count: sql<number>`count(*)`,
-      }).from(promotionUsage).where(eq(promotionUsage.promotionId, promotion.id));
-
-      const totalRedemptions = totalUsage[0]?.count || 0;
-      if (totalRedemptions >= Number(promotion.usageLimit)) {
-        return c.json({ valid: false, error: "This promo code has reached its maximum redemptions" }, 400);
-      }
-    }
-    // 5. Validate per-user usage limit (if userId is provided)
-    if (userId && promotion.perUserLimit != null) {
-      const userUsageCount = await db.select({
-        count: sql<number>`count(*)`,
-      }).from(promotionUsage).where(and(eq(promotionUsage.promotionId, promotion.id), eq(promotionUsage.userId, userId)));
-      
-      const timeUsed = userUsageCount[0]?.count || 0;
-      if (timeUsed >= Number(promotion.perUserLimit)) {
-        return c.json({ valid: false, error: "You have already used this promo code the maximum number of times allowed" }, 400);
-      }
-    }
-   
-// 6. Calculate Savings impact
-    let discountAmount = 0;
-    if (promotion.type === "percentage") {
-      discountAmount = (Number(promotion.discountRate) / 100) * subtotal;
-    } else if (promotion.type === "fixed_amount") {
-      discountAmount = Number(promotion.discountRate);
-    } else if (promotion.type === "free_shipping") {
-      discountAmount = 0;
-    }
-    // Cap discount amount at the subtotal so it never results in negative balances
-    const finalDiscount = Math.min(discountAmount, subtotal);
-  
+    const { promotion } = check;
     return c.json({
-      success: true,
-      promotionId: promotion.id,
-      code: promotion.code,
-      discountType: promotion.type,
-      discountRate: promotion.discountRate,
-      appliedDiscount: Number(finalDiscount.toFixed(2)),
-      newSubtotal: Number((subtotal - finalDiscount).toFixed(2)),
-     
+      valid: true,
+      promotion: {
+        id: promotion.id,
+        name: promotion.name,
+        code: promotion.code,
+        type: promotion.type,
+        percentOff: promotion.percentOff,
+        amountOff: promotion.amountOff,
+        categoryIds: check.categoryIds,
+      },
     });
   } catch (error) {
     console.error("Failed to validate coupon code:", error);
-    return c.json({ error: "Failed to validate coupon code" }, 500);
+    return c.json(
+      { valid: false, error: "Failed to validate coupon code" },
+      500,
+    );
   }
 });
 
@@ -118,7 +96,7 @@ promotionsHandler.post("/validate", async (c) => {
  * GET /promotions/all
  * Admin: list all promotions.
  */
-promotionsHandler.get("/all", async (c) => {
+promotionsHandler.get("/all", ...requireAdmin, async (c) => {
   try {
     const promotions = await db.query.promotionTable.findMany({
       orderBy: (table, { desc }) => [desc(table.id)],
@@ -134,120 +112,119 @@ promotionsHandler.get("/all", async (c) => {
   }
 });
 
+/** Columns for a validated promotion; the unused discount field is cleared. */
+function promotionColumns(p: PromotionData) {
+  return {
+    name: p.name,
+    code: p.code,
+    description: p.description || null,
+    type: p.type,
+    percentOff: p.type === "percentage" ? p.percentOff : null,
+    amountOff: p.type === "fixed_amount" ? p.amountOff : null,
+    minOrderAmount: p.minOrderAmount ?? null,
+    maxDiscountAmount: p.maxDiscountAmount ?? null,
+    usageLimit: p.usageLimit ?? null,
+    perUserLimit: p.perUserLimit ?? 1,
+    startDate: p.startDate,
+    endDate: p.endDate,
+    isActive: p.isActive ?? true,
+  };
+}
+
 /**
  * POST /promotions
- * Admin: create a new promotion.
+ * Admin: create a promotion. Amounts (amountOff, minOrderAmount,
+ * maxDiscountAmount) are integer pence; percentOff is a percentage.
  */
-promotionsHandler.post("/", async (c) => {
+promotionsHandler.post("/", ...requireAdmin, async (c) => {
+  const parsed = validateRequest(
+    createPromotionSchema,
+    await c.req.json().catch(() => undefined),
+  );
+  if (!parsed.success)
+    return c.json({ success: false, errors: parsed.errors }, 400);
+
   try {
-    const body = await c.req.json<{
-      name: string;
-      code: string;
-      description?: string;
-      type?: string;
-      discountRate: string;
-      minOrderAmount?: string;
-      maxDiscountAmount?: string;
-      usageLimit?: number;
-      perUserLimit?: number;
-      startDate: string;
-      endDate: string;
-      isActive?: boolean;
-      categoryIds?: number[];
-    }>();
-
-    if (!body.name || !body.code || !body.discountRate || !body.startDate || !body.endDate) {
-      return c.json({ error: "Name, code, discount rate, start date, and end date are required" }, 400);
-    }
-
-    const [newPromotion] = await db
-      .insert(promotionTable)
-      .values({
-        name: body.name,
-        code: body.code.toUpperCase(),
-        description: body.description || null,
-        type: (body.type as any) || "percentage",
-        discountRate: body.discountRate,
-        minOrderAmount: body.minOrderAmount || null,
-        maxDiscountAmount: body.maxDiscountAmount || null,
-        usageLimit: body.usageLimit ?? null,
-        perUserLimit: body.perUserLimit ?? 1,
-        startDate: new Date(body.startDate),
-        endDate: new Date(body.endDate),
-        isActive: body.isActive ?? true,
-      })
-      .returning();
-
-    if (!newPromotion) {
-      return c.json({ error: "Failed to create promotion" }, 500);
-    }
-
-    // Add category associations if provided
-    if (body.categoryIds && body.categoryIds.length > 0) {
-      await db.insert(promotionCategory).values(
-        body.categoryIds.map((categoryId) => ({
-          promotionId: newPromotion.id,
-          categoryId,
-        })),
+    const created = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(promotionTable)
+        .values(promotionColumns(parsed.data))
+        .returning();
+      if (!row) throw new Error("Promotion insert returned no row");
+      if (parsed.data.categoryIds?.length) {
+        await tx
+          .insert(promotionCategory)
+          .values(
+            parsed.data.categoryIds.map((categoryId) => ({
+              promotionId: row.id,
+              categoryId,
+            })),
+          );
+      }
+      return row;
+    });
+    return c.json({ success: true, promotion: created }, 201);
+  } catch (error) {
+    if ((error as { cause?: { code?: string } })?.cause?.code === "23505") {
+      return c.json(
+        { success: false, error: "A promotion with this code already exists" },
+        409,
       );
     }
-
-    return c.json({ success: true, promotion: newPromotion }, 201);
-  } catch (error) {
     console.error("Failed to create promotion:", error);
-    return c.json({ error: "Failed to create promotion" }, 500);
+    return c.json({ success: false, error: "Failed to create promotion" }, 500);
   }
 });
 
 /**
  * PUT /promotions/:id
- * Admin: update a promotion.
+ * Admin: replace a promotion (same body as POST). Full replacement keeps the
+ * discount type and its amount consistent.
  */
-promotionsHandler.put("/:id", async (c) => {
+promotionsHandler.put("/:id", ...requireAdmin, async (c) => {
+  const promotionId = Number(c.req.param("id"));
+  const parsed = validateRequest(
+    createPromotionSchema,
+    await c.req.json().catch(() => undefined),
+  );
+  if (!parsed.success)
+    return c.json({ success: false, errors: parsed.errors }, 400);
+
   try {
-    const promotionId = Number(c.req.param("id"));
-    const body = await c.req.json<{
-      name?: string;
-      code?: string;
-      description?: string;
-      type?: string;
-      discountRate?: string;
-      minOrderAmount?: string;
-      maxDiscountAmount?: string;
-      usageLimit?: number;
-      perUserLimit?: number;
-      startDate?: string;
-      endDate?: string;
-      isActive?: boolean;
-    }>();
-
-    const updates: Record<string, any> = {};
-    if (body.name !== undefined) updates.name = body.name;
-    if (body.code !== undefined) updates.code = body.code.toUpperCase();
-    if (body.description !== undefined) updates.description = body.description;
-    if (body.type !== undefined) updates.type = body.type;
-    if (body.discountRate !== undefined) updates.discountRate = body.discountRate;
-    if (body.minOrderAmount !== undefined) updates.minOrderAmount = body.minOrderAmount;
-    if (body.maxDiscountAmount !== undefined) updates.maxDiscountAmount = body.maxDiscountAmount;
-    if (body.usageLimit !== undefined) updates.usageLimit = body.usageLimit;
-    if (body.perUserLimit !== undefined) updates.perUserLimit = body.perUserLimit;
-    if (body.startDate !== undefined) updates.startDate = new Date(body.startDate);
-    if (body.endDate !== undefined) updates.endDate = new Date(body.endDate);
-    if (body.isActive !== undefined) updates.isActive = body.isActive;
-
-    if (Object.keys(updates).length === 0) {
-      return c.json({ error: "No fields to update" }, 400);
-    }
-
-    await db
-      .update(promotionTable)
-      .set(updates)
-      .where(eq(promotionTable.id, promotionId));
-
-    return c.json({ success: true, message: "Promotion updated" });
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(promotionTable)
+        .set({ ...promotionColumns(parsed.data), updatedAt: new Date() })
+        .where(eq(promotionTable.id, promotionId))
+        .returning();
+      if (!row) return null;
+      await tx
+        .delete(promotionCategory)
+        .where(eq(promotionCategory.promotionId, promotionId));
+      if (parsed.data.categoryIds?.length) {
+        await tx
+          .insert(promotionCategory)
+          .values(
+            parsed.data.categoryIds.map((categoryId) => ({
+              promotionId,
+              categoryId,
+            })),
+          );
+      }
+      return row;
+    });
+    if (!updated)
+      return c.json({ success: false, error: "Promotion not found" }, 404);
+    return c.json({ success: true, promotion: updated });
   } catch (error) {
+    if ((error as { cause?: { code?: string } })?.cause?.code === "23505") {
+      return c.json(
+        { success: false, error: "A promotion with this code already exists" },
+        409,
+      );
+    }
     console.error("Failed to update promotion:", error);
-    return c.json({ error: "Failed to update promotion" }, 500);
+    return c.json({ success: false, error: "Failed to update promotion" }, 500);
   }
 });
 
@@ -255,7 +232,7 @@ promotionsHandler.put("/:id", async (c) => {
  * DELETE /promotions/:id
  * Admin: delete a promotion.
  */
-promotionsHandler.delete("/:id", async (c) => {
+promotionsHandler.delete("/:id", ...requireAdmin, async (c) => {
   try {
     const promotionId = Number(c.req.param("id"));
 
@@ -264,9 +241,7 @@ promotionsHandler.delete("/:id", async (c) => {
       .delete(promotionCategory)
       .where(eq(promotionCategory.promotionId, promotionId));
 
-    await db
-      .delete(promotionTable)
-      .where(eq(promotionTable.id, promotionId));
+    await db.delete(promotionTable).where(eq(promotionTable.id, promotionId));
 
     return c.json({ success: true, message: "Promotion deleted" });
   } catch (error) {

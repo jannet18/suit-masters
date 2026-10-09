@@ -1,12 +1,19 @@
 "use client";
 
+import { formatCurrency } from "@repo/pricing";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { adminApi, AdminOrder } from "../../../lib/api-client";
+import { authClient } from "@repo/auth/client";
 import Link from "next/link";
 
+// Mirrors services/order-service/src/domain/orderStatus.ts; the service
+// rejects moves its transition rules don't allow.
 const ORDER_STATUSES = [
   "pending",
+  "payment_failed",
+  "payment_review",
+  "paid",
   "confirmed",
   "processing",
   "in_production",
@@ -15,6 +22,7 @@ const ORDER_STATUSES = [
   "delivered",
   "cancelled",
   "refunded",
+  "disputed",
 ] as const;
 
 export default function OrderDetailPage() {
@@ -23,6 +31,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<AdminOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [trackingCarrier, setTrackingCarrier] = useState("");
@@ -30,7 +39,11 @@ export default function OrderDetailPage() {
   useEffect(() => {
     async function fetchOrder() {
       try {
-        const result = await adminApi.getOrderById(params.id as string);
+        const { data: session } = await authClient.getSession();
+        const result = await adminApi.getOrderById(
+          params.id as string,
+          session?.session.token,
+        );
         if (result.success && result.order) {
           setOrder(result.order);
           setSelectedStatus(result.order.status);
@@ -48,16 +61,24 @@ export default function OrderDetailPage() {
     if (!order || selectedStatus === order.status) return;
 
     setUpdating(true);
+    setUpdateError(null);
     try {
+      const { data: session } = await authClient.getSession();
       const result = await adminApi.updateOrderStatus(
         params.id as string,
         selectedStatus,
         trackingNumber || undefined,
         trackingCarrier || undefined,
+        session?.session.token,
       );
-      if (result.success) {
+      if (!result.success) {
+        setUpdateError(result.error ?? "Could not update the order status");
+      } else {
         // Refresh the order to show updated status
-        const updated = await adminApi.getOrderById(params.id as string);
+        const updated = await adminApi.getOrderById(
+          params.id as string,
+          session?.session.token,
+        );
         if (updated.success && updated.order) {
           setOrder(updated.order);
         }
@@ -99,10 +120,7 @@ export default function OrderDetailPage() {
         <p className="text-gray-500 mb-4">
           The order you are looking for does not exist.
         </p>
-        <Link
-          href="/orders"
-          className="text-blue-600 hover:underline"
-        >
+        <Link href="/orders" className="text-blue-600 hover:underline">
           Back to Orders
         </Link>
       </div>
@@ -144,10 +162,7 @@ export default function OrderDetailPage() {
               <div>
                 <dt className="text-sm text-gray-500">Total</dt>
                 <dd className="font-medium">
-                  £
-                  {order.total
-                    ? (parseFloat(order.total) / 100).toFixed(2)
-                    : "0.00"}
+                  {formatCurrency(order.total ?? 0)}
                 </dd>
               </div>
               <div>
@@ -190,15 +205,11 @@ export default function OrderDetailPage() {
             <dl className="grid grid-cols-2 gap-4">
               <div>
                 <dt className="text-sm text-gray-500">Name</dt>
-                <dd className="font-medium">
-                  {order.customerName || "N/A"}
-                </dd>
+                <dd className="font-medium">{order.customerName || "N/A"}</dd>
               </div>
               <div>
                 <dt className="text-sm text-gray-500">Email</dt>
-                <dd className="font-medium">
-                  {order.customerEmail || "N/A"}
-                </dd>
+                <dd className="font-medium">{order.customerEmail || "N/A"}</dd>
               </div>
             </dl>
           </div>
@@ -221,14 +232,17 @@ export default function OrderDetailPage() {
                 >
                   {ORDER_STATUSES.map((status) => (
                     <option key={status} value={status}>
-                      {status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                      {status
+                        .replace(/_/g, " ")
+                        .replace(/\b\w/g, (c) => c.toUpperCase())}
                     </option>
                   ))}
                 </select>
               </div>
 
               {/* Tracking fields — shown when status is shipped or later */}
-              {(selectedStatus === "shipped" || selectedStatus === "delivered") && (
+              {(selectedStatus === "shipped" ||
+                selectedStatus === "delivered") && (
                 <>
                   <div>
                     <label className="block text-sm text-gray-500 mb-2">
@@ -271,6 +285,11 @@ export default function OrderDetailPage() {
               >
                 {updating ? "Updating..." : "Update Status"}
               </button>
+              {updateError && (
+                <p role="alert" className="text-sm text-red-600">
+                  {updateError}
+                </p>
+              )}
 
               {/* Status Timeline */}
               <div className="mt-8">
@@ -289,9 +308,7 @@ export default function OrderDetailPage() {
                       <div key={status} className="flex items-center gap-3">
                         <div
                           className={`w-2.5 h-2.5 rounded-full ${
-                            isComplete
-                              ? "bg-green-500"
-                              : "bg-gray-300"
+                            isComplete ? "bg-green-500" : "bg-gray-300"
                           }`}
                         />
                         <span
@@ -301,7 +318,9 @@ export default function OrderDetailPage() {
                               : "text-gray-400"
                           }`}
                         >
-                          {status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                          {status
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase())}
                         </span>
                       </div>
                     );

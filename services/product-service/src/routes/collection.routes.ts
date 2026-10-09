@@ -5,21 +5,19 @@ import {
   productCollection,
   productCategory,
 } from "@repo/db";
-import { eq, isNull, and, inArray } from "@repo/db";
+import { eq, and, asc, inArray } from "@repo/db";
 import { Context, Hono } from "hono";
 
 export const collectionsHandler = new Hono()
   // 1. List all collections (e.g. Wedding, Evening, Boardroom, Smart Casual)
   .get("/", async (c: Context) => {
     try {
-      // Simple query to get all collections without complex joins
-      const collectionsData = await db.select().from(collection);
-
-      // Filter to only include lifestyle collections (IDs 1-4: wedding, evening, boardroom, smart-casual)
-      // This excludes product categories that were incorrectly added to the collection table
-      const lifestyleCollections = collectionsData.filter(
-        (col) => col.id >= 1 && col.id <= 4,
-      );
+      // Active collections in the order the admin arranged them
+      const lifestyleCollections = await db
+        .select()
+        .from(collection)
+        .where(eq(collection.isActive, true))
+        .orderBy(asc(collection.sortOrder), asc(collection.id));
 
       // Map DB collections into the frontend Collection view model
       const collections = lifestyleCollections.map((col, index) => ({
@@ -60,7 +58,7 @@ export const collectionsHandler = new Hono()
       const collectionData = await db
         .select()
         .from(collection)
-        .where(eq(collection.slug, slug))
+        .where(and(eq(collection.slug, slug), eq(collection.isActive, true)))
         .limit(1);
 
       if (collectionData.length === 0) {
@@ -88,8 +86,7 @@ export const collectionsHandler = new Hono()
       let products: any[] = [];
 
       if (productIds.length > 0) {
-        // Use a join to get product details with category name
-        // Temporarily exclude productType to debug
+        // Join to get product details with category name
         const productData = await db
           .select({
             id: product.id,
@@ -97,7 +94,7 @@ export const collectionsHandler = new Hono()
             name: product.name,
             basePrice: product.basePrice,
             mainImage: product.mainImage,
-            // productType: product.productType, // Temporarily commented out
+            productType: product.productType,
             categoryName: productCategory.name,
           })
           .from(product)
@@ -105,15 +102,17 @@ export const collectionsHandler = new Hono()
             productCategory,
             eq(product.categoryId, productCategory.id),
           )
-          .where(inArray(product.id, productIds));
+          .where(
+            and(inArray(product.id, productIds), eq(product.isActive, true)),
+          );
 
         products = productData.map((p) => ({
           id: p.id,
           slug: p.slug,
           name: p.name,
-          base_price: Number(p.basePrice),
+          base_price: p.basePrice,
           product_image: p.mainImage,
-          product_type: "CUSTOM", // Default for now
+          product_type: p.productType,
           category_name: p.categoryName,
         }));
       }
@@ -153,7 +152,7 @@ export const collectionsHandler = new Hono()
     const productSlug = c.req.param("productSlug");
 
     const data = await db.query.product.findFirst({
-      where: eq(product.slug, productSlug),
+      where: and(eq(product.slug, productSlug), eq(product.isActive, true)),
     });
 
     if (!data) return c.json({ error: "Product not found" }, 404);
@@ -162,9 +161,9 @@ export const collectionsHandler = new Hono()
       id: data.id,
       slug: data.slug,
       name: data.name,
-      base_price: Number(data.basePrice),
+      base_price: data.basePrice,
       product_image: data.mainImage,
-      product_type: "CUSTOM" as const,
+      product_type: data.productType,
     };
 
     return c.json(responseProduct);

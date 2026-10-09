@@ -70,7 +70,8 @@ export const categoryRoutes = new Hono()
 
     // Get products only in this specific child category (not including its subcategories)
     const products = await db.query.product.findMany({
-      where: (p, { eq }) => eq(p.categoryId, childCategory.id),
+      where: (p, { and, eq }) =>
+        and(eq(p.categoryId, childCategory.id), eq(p.isActive, true)),
       with: {
         category: true,
       },
@@ -112,7 +113,8 @@ export const categoryRoutes = new Hono()
 
     // Get products for all these category IDs
     const products = await db.query.product.findMany({
-      where: (p, { inArray }) => inArray(p.categoryId, categoryIds),
+      where: (p, { and, eq, inArray }) =>
+        and(inArray(p.categoryId, categoryIds), eq(p.isActive, true)),
       with: {
         category: true,
       },

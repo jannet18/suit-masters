@@ -1,7 +1,8 @@
 "use client";
 
+import { formatCurrency } from "@repo/pricing";
 import { useEffect, useState } from "react";
-import { adminApi } from "../../lib/api-client";
+import { authClient } from "@repo/auth/client";
 
 interface RefundRequest {
   id: number;
@@ -11,7 +12,7 @@ interface RefundRequest {
   reason: string;
   description?: string;
   quantity: number;
-  refundAmount: string;
+  refundAmount: number | null; // pence
   stripeRefundId?: string;
   adminNotes?: string;
   processedBy?: string;
@@ -20,7 +21,18 @@ interface RefundRequest {
 }
 
 const ORDER_SERVICE_URL =
-  process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:4001/api";
+  process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || "http://localhost:4001";
+
+/** Headers for order-service calls, carrying the admin's session as a Bearer token. */
+async function authHeaders(): Promise<Record<string, string>> {
+  const { data: session } = await authClient.getSession();
+  return {
+    "Content-Type": "application/json",
+    ...(session?.session.token
+      ? { Authorization: `Bearer ${session.session.token}` }
+      : {}),
+  };
+}
 
 export default function RefundsPage() {
   const [refunds, setRefunds] = useState<RefundRequest[]>([]);
@@ -36,7 +48,7 @@ export default function RefundsPage() {
     setLoading(true);
     try {
       const res = await fetch(`${ORDER_SERVICE_URL}/refunds/admin/all`, {
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeaders(),
       });
       if (res.ok) {
         const data = await res.json();
@@ -52,11 +64,14 @@ export default function RefundsPage() {
   const handleApprove = async (refundId: number) => {
     setActionLoading(refundId);
     try {
-      const res = await fetch(`${ORDER_SERVICE_URL}/refunds/${refundId}/approve`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminNotes: adminNotes[refundId] || "" }),
-      });
+      const res = await fetch(
+        `${ORDER_SERVICE_URL}/refunds/${refundId}/approve`,
+        {
+          method: "PUT",
+          headers: await authHeaders(),
+          body: JSON.stringify({ adminNotes: adminNotes[refundId] || "" }),
+        },
+      );
       if (res.ok) {
         fetchRefunds();
       }
@@ -70,11 +85,14 @@ export default function RefundsPage() {
   const handleReject = async (refundId: number) => {
     setActionLoading(refundId);
     try {
-      const res = await fetch(`${ORDER_SERVICE_URL}/refunds/${refundId}/reject`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminNotes: adminNotes[refundId] || "" }),
-      });
+      const res = await fetch(
+        `${ORDER_SERVICE_URL}/refunds/${refundId}/reject`,
+        {
+          method: "PUT",
+          headers: await authHeaders(),
+          body: JSON.stringify({ adminNotes: adminNotes[refundId] || "" }),
+        },
+      );
       if (res.ok) {
         fetchRefunds();
       }
@@ -88,10 +106,13 @@ export default function RefundsPage() {
   const handleComplete = async (refundId: number) => {
     setActionLoading(refundId);
     try {
-      const res = await fetch(`${ORDER_SERVICE_URL}/refunds/${refundId}/complete`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-      });
+      const res = await fetch(
+        `${ORDER_SERVICE_URL}/refunds/${refundId}/complete`,
+        {
+          method: "PUT",
+          headers: await authHeaders(),
+        },
+      );
       if (res.ok) {
         fetchRefunds();
       }
@@ -143,7 +164,9 @@ export default function RefundsPage() {
     <div className="p-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Refund Requests</h1>
-        <p className="text-gray-500 mt-1">Manage customer refund and return requests</p>
+        <p className="text-gray-500 mt-1">
+          Manage customer refund and return requests
+        </p>
       </div>
 
       {refunds.length === 0 ? (
@@ -153,21 +176,37 @@ export default function RefundsPage() {
       ) : (
         <div className="space-y-4">
           {refunds.map((refund) => (
-            <div key={refund.id} className="bg-white rounded-lg border p-6">
+            <article
+              key={refund.id}
+              aria-labelledby={`refund-${refund.id}-title`}
+              className="bg-white rounded-lg border p-6"
+            >
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-3">
-                    <h3 className="font-semibold">Refund #{refund.id}</h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(refund.status)}`}>
-                      {refund.status.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                    <h3
+                      id={`refund-${refund.id}-title`}
+                      className="font-semibold"
+                    >
+                      Refund #{refund.id}
+                    </h3>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(refund.status)}`}
+                    >
+                      {refund.status
+                        .replace(/_/g, " ")
+                        .replace(/\b\w/g, (c: string) => c.toUpperCase())}
                     </span>
                   </div>
                   <p className="text-sm text-gray-500 mt-1">
-                    Order #{refund.orderId} • User: {refund.userId.substring(0, 8)}...
+                    Order #{refund.orderId} • User:{" "}
+                    {refund.userId.substring(0, 8)}...
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold">£{parseFloat(refund.refundAmount || "0").toFixed(2)}</p>
+                  <p className="text-lg font-bold">
+                    {formatCurrency(refund.refundAmount ?? 0)}
+                  </p>
                   <p className="text-xs text-gray-400">
                     {new Date(refund.createdAt).toLocaleDateString("en-GB")}
                   </p>
@@ -186,13 +225,17 @@ export default function RefundsPage() {
                 {refund.stripeRefundId && (
                   <div>
                     <span className="text-gray-500">Stripe Refund ID:</span>
-                    <p className="font-medium text-xs">{refund.stripeRefundId}</p>
+                    <p className="font-medium text-xs">
+                      {refund.stripeRefundId}
+                    </p>
                   </div>
                 )}
                 {refund.processedAt && (
                   <div>
                     <span className="text-gray-500">Processed:</span>
-                    <p className="font-medium">{new Date(refund.processedAt).toLocaleDateString("en-GB")}</p>
+                    <p className="font-medium">
+                      {new Date(refund.processedAt).toLocaleDateString("en-GB")}
+                    </p>
                   </div>
                 )}
               </div>
@@ -215,7 +258,12 @@ export default function RefundsPage() {
                   type="text"
                   placeholder="Add admin notes..."
                   value={adminNotes[refund.id] || ""}
-                  onChange={(e) => setAdminNotes({ ...adminNotes, [refund.id]: e.target.value })}
+                  onChange={(e) =>
+                    setAdminNotes({
+                      ...adminNotes,
+                      [refund.id]: e.target.value,
+                    })
+                  }
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -246,10 +294,12 @@ export default function RefundsPage() {
                   disabled={actionLoading === refund.id}
                   className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {actionLoading === refund.id ? "Processing..." : "Mark as Completed"}
+                  {actionLoading === refund.id
+                    ? "Processing..."
+                    : "Mark as Completed"}
                 </button>
               )}
-            </div>
+            </article>
           ))}
         </div>
       )}

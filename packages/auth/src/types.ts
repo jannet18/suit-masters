@@ -1,7 +1,11 @@
-import { UserType } from "@kinde-oss/kinde-typescript-sdk";
+import type { AuthUser } from "./auth.js";
 
 export type AuthContext = {
   Variables: {
-    user: UserType;
+    user: AuthUser;
   };
 };
+
+export type AuthEnv = AuthContext;
+
+export type { AuthUser };

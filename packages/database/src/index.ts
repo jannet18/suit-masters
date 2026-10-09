@@ -1,5 +1,7 @@
 // 1. Export the database instance
 export { db } from "./db.js";
+export * from "./inventory.js";
+export * from "./promotions.js";
 export * from "drizzle-orm";
 // 2. Export everything from your schema folders
 // Make sure "product", "shoppingCart", etc. are defined in these files

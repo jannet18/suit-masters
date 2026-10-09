@@ -1,0 +1,198 @@
+name: suit-masters
+
+x-service-env: &service-env
+  env_file:
+    - .env
+  depends_on:
+    postgres:
+      condition: service_healthy
+    migrate:
+      condition: service_completed_successfully
+  networks:
+    - suitmasters
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: suitmasters
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - suitmasters
+
+  # One-shot migration runner: applies pending Drizzle migrations and exits.
+  # Every app/service waits on this completing successfully before it starts,
+  # so the schema is always up to date before anything serves traffic.
+  migrate:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.service
+      target: builder
+      args:
+        SERVICE: "@repo/db"
+    working_dir: /app/packages/database
+    command: ["npx", "drizzle-kit", "migrate"]
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - suitmasters
+    restart: "no"
+
+  product-service:
+    <<: *service-env
+    build:
+      context: .
+      dockerfile: services/Dockerfile.service
+      args:
+        SERVICE: "@repo/products"
+        SERVICE_DIR: product-service
+        SERVICE_PORT: "4000"
+    environment:
+      PORT: "4000"
+    ports:
+      - "4000:4000"
+
+  cart-service:
+    <<: *service-env
+    build:
+      context: .
+      dockerfile: services/Dockerfile.service
+      args:
+        SERVICE: "@repo/cart"
+        SERVICE_DIR: cart-service
+        SERVICE_PORT: "4001"
+    environment:
+      PORT: "4001"
+    ports:
+      - "4001:4001"
+
+  payment-service:
+    <<: *service-env
+    build:
+      context: .
+      dockerfile: services/Dockerfile.service
+      args:
+        SERVICE: "@repo/payment"
+        SERVICE_DIR: payment-service
+        SERVICE_PORT: "4002"
+    environment:
+      PORT: "4002"
+    ports:
+      - "4002:4002"
+
+  order-service:
+    <<: *service-env
+    build:
+      context: .
+      dockerfile: services/Dockerfile.service
+      args:
+        SERVICE: "@repo/orders"
+        SERVICE_DIR: order-service
+        SERVICE_PORT: "4003"
+    environment:
+      PORT: "4003"
+    ports:
+      - "4003:4003"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/Dockerfile.next
+      args:
+        APP: frontend
+        APP_DIR: apps/frontend
+        NEXT_DIST_DIR: dist
+        APP_PORT: "3000"
+        DATABASE_URL: ${DATABASE_URL}
+        BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+        BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+        NEXT_PUBLIC_AUTH_URL: ${NEXT_PUBLIC_AUTH_URL}
+        BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS}
+        NEXT_PUBLIC_PRODUCT_SERVICE_URL: ${NEXT_PUBLIC_PRODUCT_SERVICE_URL}
+        NEXT_PUBLIC_CART_SERVICE_URL: ${NEXT_PUBLIC_CART_SERVICE_URL}
+        NEXT_PUBLIC_ORDER_SERVICE_URL: ${NEXT_PUBLIC_ORDER_SERVICE_URL}
+        NEXT_PUBLIC_PAYMENT_SERVICE_URL: ${NEXT_PUBLIC_PAYMENT_SERVICE_URL}
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
+    env_file:
+      - .env
+    environment:
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      product-service:
+        condition: service_healthy
+      cart-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+    networks:
+      - suitmasters
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/Dockerfile.next
+      args:
+        APP: admin
+        APP_DIR: apps/admin
+        NEXT_DIST_DIR: .next
+        APP_PORT: "3002"
+        DATABASE_URL: ${DATABASE_URL}
+        BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+        BETTER_AUTH_URL: http://localhost:3002
+        NEXT_PUBLIC_AUTH_URL: http://localhost:3002
+        BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS}
+        NEXT_PUBLIC_PRODUCT_SERVICE_URL: ${NEXT_PUBLIC_PRODUCT_SERVICE_URL}
+        NEXT_PUBLIC_CART_SERVICE_URL: ${NEXT_PUBLIC_CART_SERVICE_URL}
+        NEXT_PUBLIC_ORDER_SERVICE_URL: ${NEXT_PUBLIC_ORDER_SERVICE_URL}
+        NEXT_PUBLIC_PAYMENT_SERVICE_URL: ${NEXT_PUBLIC_PAYMENT_SERVICE_URL}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
+    env_file:
+      - .env
+    environment:
+      PORT: "3002"
+      BETTER_AUTH_URL: http://localhost:3002
+      NEXT_PUBLIC_AUTH_URL: http://localhost:3002
+    ports:
+      - "3002:3002"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      product-service:
+        condition: service_healthy
+      cart-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+    networks:
+      - suitmasters
+    restart: unless-stopped
+
+networks:
+  suitmasters:
+
+volumes:
+  postgres-data:

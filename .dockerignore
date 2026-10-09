@@ -1,0 +1,29 @@
+# Keep the Docker build context small and, critically, keep real secrets
+# out of image layers. Next.js standalone output copies an app's .env file
+# straight into the image if it's present in the build context, so these
+# MUST be excluded — runtime config is injected via docker-compose /
+# platform env vars instead.
+**/.env
+**/.env.*
+!**/.env.example
+
+**/node_modules
+**/.turbo
+**/.next
+**/dist
+**/build
+**/coverage
+**/playwright-report
+**/test-results
+**/.next-e2e
+**/.next-e2e-dev
+
+.git
+.github
+.vscode
+.DS_Store
+*.md
+!README.md
+
+docker-compose*.yml
+Dockerfile*

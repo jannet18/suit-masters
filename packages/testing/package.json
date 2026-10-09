@@ -1,0 +1,27 @@
+{
+  "name": "@repo/testing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared test infrastructure: disposable Postgres databases, fixtures, a fake Stripe API and webhook signing.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./vitest/global-setup": "./src/vitest/global-setup.ts",
+    "./vitest/setup": "./src/vitest/setup.ts",
+    "./e2e": "./src/e2e.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/auth": "*",
+    "@repo/db": "*",
+    "pg": "^8.18.0",
+    "stripe": "^20.3.1"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/pg": "^8.16.0",
+    "typescript": "^5.9.2"
+  }
+}

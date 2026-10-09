@@ -4,20 +4,30 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, Package, Truck } from "lucide-react";
+import { formatCurrency } from "@repo/pricing";
+import { useCartStore } from "../stores/useCartStore";
 
 interface OrderItem {
   id: number;
   productNameSnapshot: string;
   quantity: number;
-  priceAtPurchase: string;
+  priceAtPurchase: number;
   customizationSnapsot?: Record<string, any>;
 }
 
 interface Order {
   id: number;
   status: string;
-  total: string;
-  orderDate: string;
+  // Money: integer pence
+  total: number;
+  subtotal: number | null;
+  discountTotal: number;
+  shippingTotal: number;
+  exportVatRelief: number;
+  vatTotal: number;
+  currency: string | null;
+  promotionCode: string | null;
+  createdAt: string;
   shipping_name: string;
   shipping_email: string;
   shipping_address_line1: string;
@@ -37,6 +47,7 @@ function OrderConfirmationContent() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const clearCart = useCartStore((state) => state.clearCart);
 
   useEffect(() => {
     if (!orderId) {
@@ -58,6 +69,8 @@ function OrderConfirmationContent() {
 
         const data = await res.json();
         setOrder(data);
+        // The bag has become this order; empty it so it isn't bought twice
+        clearCart();
       } catch (err: any) {
         console.error("Failed to fetch order:", err);
         setError(err.message);
@@ -67,7 +80,7 @@ function OrderConfirmationContent() {
     }
 
     fetchOrder();
-  }, [orderId]);
+  }, [orderId, clearCart]);
 
   if (loading) {
     return (
@@ -90,7 +103,9 @@ function OrderConfirmationContent() {
           <h1 className="font-serif text-2xl text-[#f5f0eb] mb-2">
             Order Not Found
           </h1>
-          <p className="text-[#9a9490] mb-8">{error || "Unable to load order details"}</p>
+          <p className="text-[#9a9490] mb-8">
+            {error || "Unable to load order details"}
+          </p>
           <Link
             href="/account"
             className="inline-block px-8 py-3 bg-[#c9a96e] text-black rounded-lg font-medium hover:bg-[#d8b87c] transition-colors"
@@ -99,12 +114,13 @@ function OrderConfirmationContent() {
           </Link>
         </div>
       </div>
-      
     );
   }
 
-  const orderTotal = (Number(order.total) / 100).toFixed(2);
-  const orderDate = new Date(order.orderDate).toLocaleDateString("en-GB", {
+  const money = (pence: number) =>
+    formatCurrency(pence, order.currency ?? undefined);
+  const orderTotal = money(order.total);
+  const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -115,7 +131,10 @@ function OrderConfirmationContent() {
       {/* Header */}
       <header className="border-b border-[#2e2e2e]">
         <div className="max-w-3xl mx-auto px-6 py-6">
-          <Link href="/" className="text-xl font-serif tracking-wider text-[#c9a96e]">
+          <Link
+            href="/"
+            className="text-xl font-serif tracking-wider text-[#c9a96e]"
+          >
             SUIT MASTERS
           </Link>
         </div>
@@ -162,7 +181,7 @@ function OrderConfirmationContent() {
               <p className="text-[#9a9490] text-xs tracking-widest uppercase mb-1">
                 Total
               </p>
-              <p className="font-mono text-lg font-bold">£{orderTotal}</p>
+              <p className="font-mono text-lg font-bold">{orderTotal}</p>
             </div>
           </div>
         </div>
@@ -183,9 +202,7 @@ function OrderConfirmationContent() {
                   <p className="font-medium">
                     {item.productNameSnapshot || "Custom Suit"}
                   </p>
-                  <p className="text-sm text-[#9a9490]">
-                    Qty: {item.quantity}
-                  </p>
+                  <p className="text-sm text-[#9a9490]">Qty: {item.quantity}</p>
                   {item.customizationSnapsot &&
                     Object.keys(item.customizationSnapsot).length > 0 && (
                       <p className="text-xs text-[#6b6560] mt-1">
@@ -194,15 +211,55 @@ function OrderConfirmationContent() {
                     )}
                 </div>
                 <p className="font-mono">
-                  £{((Number(item.priceAtPurchase) * item.quantity) / 100).toFixed(2)}
+                  {money(item.priceAtPurchase * item.quantity)}
                 </p>
               </div>
             ))}
           </div>
+          <div className="border-t border-[#2e2e2e] pt-4 mt-2 space-y-2 text-sm">
+            {order.subtotal != null && (
+              <div className="flex justify-between text-[#9a9490]">
+                <span>Subtotal</span>
+                <span className="font-mono">{money(order.subtotal)}</span>
+              </div>
+            )}
+            {order.discountTotal > 0 && (
+              <div className="flex justify-between text-green-400">
+                <span>
+                  Discount
+                  {order.promotionCode ? ` (${order.promotionCode})` : ""}
+                </span>
+                <span className="font-mono">-{money(order.discountTotal)}</span>
+              </div>
+            )}
+            {order.exportVatRelief > 0 && (
+              <div className="flex justify-between text-[#9a9490]">
+                <span>UK VAT removed (export)</span>
+                <span className="font-mono">
+                  -{money(order.exportVatRelief)}
+                </span>
+              </div>
+            )}
+            {order.subtotal != null && (
+              <div className="flex justify-between text-[#9a9490]">
+                <span>Shipping</span>
+                <span className="font-mono">
+                  {order.shippingTotal > 0
+                    ? money(order.shippingTotal)
+                    : "FREE"}
+                </span>
+              </div>
+            )}
+          </div>
           <div className="border-t border-[#2e2e2e] pt-4 mt-2 flex justify-between text-lg font-bold">
             <span>Total</span>
-            <span className="font-mono">£{orderTotal}</span>
+            <span className="font-mono">{orderTotal}</span>
           </div>
+          {order.vatTotal > 0 && (
+            <p className="text-xs text-[#9a9490] mt-1 text-right">
+              Includes {money(order.vatTotal)} VAT
+            </p>
+          )}
         </div>
 
         {/* Shipping Details */}
@@ -214,13 +271,17 @@ function OrderConfirmationContent() {
           <div className="text-[#d0cbc6] space-y-1">
             <p className="font-medium">{order.shipping_name}</p>
             <p>{order.shipping_address_line1}</p>
-            {order.shipping_address_line2 && <p>{order.shipping_address_line2}</p>}
+            {order.shipping_address_line2 && (
+              <p>{order.shipping_address_line2}</p>
+            )}
             <p>
               {order.shipping_city}, {order.shipping_region}{" "}
               {order.shipping_postal_code}
             </p>
             <p>{order.shipping_country}</p>
-            <p className="text-[#9a9490] text-sm mt-2">{order.shipping_email}</p>
+            <p className="text-[#9a9490] text-sm mt-2">
+              {order.shipping_email}
+            </p>
           </div>
         </div>
 

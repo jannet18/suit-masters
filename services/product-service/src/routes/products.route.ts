@@ -8,6 +8,7 @@ import { db } from "@repo/db";
 // Public product catalog routes
 // - GET /products                -> list products (optional ?category=&search=)
 // - GET /products/:slug          -> product detail with customizationGroups
+// All prices (base_price, priceDelta) are integer pence.
 
 export const productsHandler = new Hono()
   .get("/", async (c) => {
@@ -38,7 +39,7 @@ export const productsHandler = new Hono()
 
       const rawProducts = await db.query.product.findMany({
         where: (p, { and, eq, ilike }) => {
-          const filters = [];
+          const filters = [eq(p.isActive, true)];
           if (categoryId) filters.push(eq(p.categoryId, categoryId));
           if (searchQuery) filters.push(ilike(p.name, `%${searchQuery}%`));
           return filters.length ? and(...filters) : undefined;
@@ -50,7 +51,7 @@ export const productsHandler = new Hono()
         id: p.id,
         slug: p.slug,
         name: p.name,
-        base_price: Number(p.basePrice),
+        base_price: p.basePrice,
         product_image: { default: p.mainImage || p.productImage || "" },
         product_type: p.productType,
         description: p.description || "",
@@ -79,11 +80,14 @@ export const productsHandler = new Hono()
     try {
       // Search across multiple fields for better suggestions
       const products = await db.query.product.findMany({
-        where: (p, { or, ilike }) => {
-          return or(
-            ilike(p.name, `%${searchQuery}%`),
-            ilike(p.description, `%${searchQuery}%`),
-            ilike(p.slug, `%${searchQuery}%`),
+        where: (p, { and, eq, or, ilike }) => {
+          return and(
+            eq(p.isActive, true),
+            or(
+              ilike(p.name, `%${searchQuery}%`),
+              ilike(p.description, `%${searchQuery}%`),
+              ilike(p.slug, `%${searchQuery}%`),
+            ),
           );
         },
         limit: Math.min(limit, 10), // Max 10 suggestions
@@ -95,7 +99,7 @@ export const productsHandler = new Hono()
         id: p.id,
         name: p.name,
         slug: p.slug,
-        price: Number(p.basePrice),
+        price: p.basePrice,
         image: p.mainImage || p.productImage || "",
         type: "product" as const,
       }));
@@ -145,7 +149,7 @@ export const productsHandler = new Hono()
     try {
       // 1. Fetch the base product details
       const dbProduct = await db.query.product.findFirst({
-        where: (p, { eq }) => eq(p.slug, slug),
+        where: (p, { and, eq }) => and(eq(p.slug, slug), eq(p.isActive, true)),
       });
 
       if (!dbProduct) {
@@ -171,24 +175,27 @@ export const productsHandler = new Hono()
       });
 
       // 4. Group options by their groupId for easy mapping
-      const optionsByGroupId = allOptions.reduce<Record<number, any[]>>((acc, option) => {
-        const gid = option.groupId as number;
-        if (!acc[gid]) {
-          acc[gid] = [];
-        }
-        acc[gid].push({
-          id: option.id,
-          name: option.name,
-          value: option.value,
-          priceDelta: Number(option.priceDelta),
-          thumbnailUrl: option.thumbnailUrl,
-          imageUrl: (option as any).imageUrl || null,
-          texture: (option as any).texture || null,
-          metadata: (option as any).metadata || {},
-          factoryCode: option.factoryCode,
-        });
-        return acc;
-      }, {} as Record<number, any[]>);
+      const optionsByGroupId = allOptions.reduce<Record<number, any[]>>(
+        (acc, option) => {
+          const gid = option.groupId as number;
+          if (!acc[gid]) {
+            acc[gid] = [];
+          }
+          acc[gid].push({
+            id: option.id,
+            name: option.name,
+            value: option.value,
+            priceDelta: option.priceDelta,
+            thumbnailUrl: option.thumbnailUrl,
+            imageUrl: (option as any).imageUrl || null,
+            texture: (option as any).texture || null,
+            metadata: (option as any).metadata || {},
+            factoryCode: option.factoryCode,
+          });
+          return acc;
+        },
+        {} as Record<number, any[]>,
+      );
 
       // 5.Map the customization options to include their respective parent customization gropus
       groupsWithOptions = customizationGroups.map((group) => ({
@@ -198,41 +205,12 @@ export const productsHandler = new Hono()
         displayOrder: group.displayOrder,
         options: optionsByGroupId[group.id] || [],
       }));
-    
-
-
-      // const groupsWithOptions = await Promise.all(
-      //   customizationGroups.map(async (group) => {
-      //     const options = await db.query.customizationOption.findMany({
-      //       where: (option, { eq }) => eq(option.groupId, group.id),
-      //       orderBy: (option, { asc }) => [asc(option.id)],
-      //     });
-
-      //     return {
-      //       id: group.id,
-      //       name: group.name,
-      //       isRequired: group.isRequired,
-      //       displayOrder: group.displayOrder,
-      //       options: options.map((option: any) => ({
-      //         id: option.id,
-      //         name: option.name,
-      //         value: option.value,
-      //         priceDelta: Number(option.priceDelta),
-      //         thumbnailUrl: option.thumbnailUrl,
-      //         imageUrl: (option as any).imageUrl || null,
-      //         texture: (option as any).texture || null,
-      //         metadata: (option as any).metadata || {},
-      //         factoryCode: option.factoryCode,
-      //       })),
-      //     };
-      //   }),
-      // );
 
       const responseProduct = {
         id: dbProduct.id,
         slug: dbProduct.slug,
         name: dbProduct.name,
-        base_price: Number(dbProduct.basePrice),
+        base_price: dbProduct.basePrice,
         product_image: {
           default: dbProduct.mainImage || dbProduct.productImage || "",
         },

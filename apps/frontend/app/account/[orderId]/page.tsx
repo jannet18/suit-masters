@@ -1,12 +1,13 @@
 "use client";
 
+import { formatCurrency } from "@repo/pricing";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, loginUrl, type CurrentUser } from "@/lib/auth";
 
 interface Order {
   id: number;
-  total: string;
+  total: number; // pence
   status: string;
   orderedItems: number;
   createdAt: string;
@@ -16,13 +17,13 @@ export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState();
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
     getCurrentUser().then((user) => {
       if (!user) {
-        router.replace(`/api/auth/login?redirect=${pathname}`);
+        router.replace(loginUrl(pathname));
       } else {
         setUser(user);
         fetchOrders();
@@ -89,7 +90,7 @@ export default function OrdersPage() {
             </div>
 
             <div className="mt-2 font-mono font-medium">
-              £{Number(order.total).toFixed(2)}
+              {formatCurrency(order.total)}
             </div>
           </div>
         ))}

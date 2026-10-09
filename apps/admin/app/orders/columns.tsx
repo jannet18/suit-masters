@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@repo/pricing";
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "../components/ui/checkbox";
 import { Button } from "../components/ui/button";
@@ -19,7 +20,7 @@ export type Order = {
   id: number;
   customerName: string;
   customerEmail: string;
-  total: string;
+  total: number; // pence
   status: string;
   orderedItems: number;
   createdAt: string;
@@ -81,12 +82,9 @@ export const columns: ColumnDef<Order>[] = [
       );
     },
     cell: ({ row }) => {
-      const total = parseFloat(row.getValue("total"));
-      const formatted = new Intl.NumberFormat("en-GB", {
-        style: "currency",
-        currency: "GBP",
-      }).format(total);
-      return <div className="font-medium">{formatted}</div>;
+      return (
+        <div className="font-medium">{formatCurrency(row.original.total)}</div>
+      );
     },
   },
   {

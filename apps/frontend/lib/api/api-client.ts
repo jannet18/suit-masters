@@ -26,7 +26,7 @@ export const api = {
       const res = await fetch(`${SERVICES.cart}/cart`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-        return res.ok ? await res.json() : { success: false, cart: null };
+      return res.ok ? await res.json() : { success: false, cart: null };
     } catch (error) {
       console.error("Error fetching cart: ", error);
       return { success: false, cart: null };
@@ -75,22 +75,22 @@ export const api = {
   getProductById: async (id: number) => {
     try {
       const res = await fetch(`${SERVICES.product}/products/${id}`);
-     return res.ok ? await res.json(): {success: false, product: null}
+      return res.ok ? await res.json() : { success: false, product: null };
     } catch (error) {
       console.error("Error fetching product: ", error);
       return { success: false, product: null };
     }
   },
-// Product by slug
-getProductBySlug: async (slug: string) => {
-  try {
-    const res = await fetch(`${SERVICES.product}/products/slug/${slug}`)
-    return res.ok ? await res.json(): {success: false, product: null}
-  } catch (error) {
-    console.error("Error fetching product by slug:", error)
-    return {success: false, product: null}
-  }
-},
+  // Product by slug
+  getProductBySlug: async (slug: string) => {
+    try {
+      const res = await fetch(`${SERVICES.product}/products/${slug}`);
+      return res.ok ? await res.json() : { success: false, product: null };
+    } catch (error) {
+      console.error("Error fetching product by slug:", error);
+      return { success: false, product: null };
+    }
+  },
   // --- Categories ---
   getCategories: async () => {
     try {
@@ -179,7 +179,7 @@ getProductBySlug: async (slug: string) => {
           Authorization: `Bearer ${token}`,
         },
       });
-      return res.ok ? await res.json(): {success: false, order: null}
+      return res.ok ? await res.json() : { success: false, order: null };
     } catch (error) {
       console.log("Error performing checkout: ", error);
       return { success: false, order: null };
@@ -214,7 +214,9 @@ getProductBySlug: async (slug: string) => {
 
   createBespokeOrder: async (data: any, token?: string) => {
     try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
       if (token) headers.Authorization = `Bearer ${token}`;
 
       const response = await fetch(`${SERVICES.order}/orders/bespoke`, {
@@ -222,7 +224,9 @@ getProductBySlug: async (slug: string) => {
         headers,
         body: JSON.stringify(data),
       });
-      return response.ok ? await response.json(): {success: false, order: null}
+      return response.ok
+        ? await response.json()
+        : { success: false, order: null };
     } catch (error) {
       console.error("Error creating bespoke order: ", error);
       return { success: false, order: null };
@@ -235,11 +239,11 @@ getProductBySlug: async (slug: string) => {
       if (!query || query.trim().length < 2) {
         return { success: true, suggestions: [] };
       }
-      const params = new URLSearchParams({q: query, limit: String(limit)});
+      const params = new URLSearchParams({ q: query, limit: String(limit) });
       const res = await fetch(
         `${SERVICES.product}/products/suggestions?${params.toString()}`,
       );
-      return res.ok ? await res.json(): {success: false, suggestions: []}
+      return res.ok ? await res.json() : { success: false, suggestions: [] };
     } catch (error) {
       console.log("Error fetching search suggestions: ", error);
       return { success: false, suggestions: [] };

@@ -1,6 +1,9 @@
 import { Hono } from "hono";
-import Stripe from "stripe";
-import { db, eq, shopOrder } from "@repo/db";
+import type Stripe from "stripe";
+import { stripe } from "../lib/stripe.js";
+import { db, eq, and, inArray, shopOrder, releaseOrderStock } from "@repo/db";
+import { formatCurrency } from "@repo/pricing";
+import { PAYABLE_STATUSES } from "./paymentRoutes.js";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
@@ -8,10 +11,6 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 if (!STRIPE_SECRET_KEY) {
   throw new Error("STRIPE_SECRET_KEY environment variable is required");
 }
-
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: "2024-11-20.acacia" as any,
-});
 
 /**
  * Stripe Webhook Handler
@@ -63,19 +62,27 @@ webhookRoutes.post("/", async (c) => {
     switch (event.type) {
       // ─── Payment Events ───────────────────────────────────────────────
       case "payment_intent.succeeded":
-        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
+        await handlePaymentIntentSucceeded(
+          event.data.object as Stripe.PaymentIntent,
+        );
         break;
 
       case "payment_intent.payment_failed":
-        await handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent);
+        await handlePaymentIntentFailed(
+          event.data.object as Stripe.PaymentIntent,
+        );
         break;
 
       case "payment_intent.canceled":
-        await handlePaymentIntentCanceled(event.data.object as Stripe.PaymentIntent);
+        await handlePaymentIntentCanceled(
+          event.data.object as Stripe.PaymentIntent,
+        );
         break;
 
       case "payment_intent.amount_capturable_updated":
-        await handlePaymentIntentCapturable(event.data.object as Stripe.PaymentIntent);
+        await handlePaymentIntentCapturable(
+          event.data.object as Stripe.PaymentIntent,
+        );
         break;
 
       // ─── Charge Events ────────────────────────────────────────────────
@@ -101,16 +108,22 @@ webhookRoutes.post("/", async (c) => {
 
       // ─── Checkout Session Events ──────────────────────────────────────
       case "checkout.session.completed":
-        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+        await handleCheckoutSessionCompleted(
+          event.data.object as Stripe.Checkout.Session,
+        );
         break;
 
       case "checkout.session.expired":
-        await handleCheckoutSessionExpired(event.data.object as Stripe.Checkout.Session);
+        await handleCheckoutSessionExpired(
+          event.data.object as Stripe.Checkout.Session,
+        );
         break;
 
       // ─── Invoice Events ───────────────────────────────────────────────
       case "invoice.payment_succeeded":
-        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+        await handleInvoicePaymentSucceeded(
+          event.data.object as Stripe.Invoice,
+        );
         break;
 
       case "invoice.payment_failed":
@@ -135,80 +148,185 @@ webhookRoutes.post("/", async (c) => {
 async function handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent) {
   const orderId = pi.metadata?.orderId;
   if (!orderId) {
-    console.log(`[Webhook] payment_intent.succeeded without orderId metadata. PI: ${pi.id}`);
+    console.log(
+      `[Webhook] payment_intent.succeeded without orderId metadata. PI: ${pi.id}`,
+    );
     return;
   }
 
-  const status = "paid";
-  await updateOrderStatus(Number(orderId), status, `Payment confirmed via Stripe (PI: ${pi.id})`);
-  console.log(`[Webhook] Order #${orderId} marked as ${status}`);
+  // The charge must match the order to the exact minor unit (both are
+  // integer pence) and in the same currency, or the order isn't paid.
+  const expected = await db.query.shopOrder.findFirst({
+    where: (o, { eq }) => eq(o.id, Number(orderId)),
+    columns: { total: true, currency: true },
+  });
+  if (!expected) {
+    console.error(
+      `[Webhook] payment_intent.succeeded for unknown order #${orderId} (PI: ${pi.id})`,
+    );
+    return;
+  }
+  const expectedCurrency = (expected.currency ?? "GBP").toLowerCase();
+  if (
+    pi.amount_received !== expected.total ||
+    pi.currency !== expectedCurrency
+  ) {
+    await db
+      .update(shopOrder)
+      .set({ status: "payment_review", stripePaymentIntentId: pi.id })
+      .where(
+        and(
+          eq(shopOrder.id, Number(orderId)),
+          inArray(shopOrder.status, PAYABLE_STATUSES),
+        ),
+      );
+    console.error(
+      `[Webhook] ALERT: order #${orderId} charged ${formatCurrency(pi.amount_received, pi.currency.toUpperCase())} ` +
+        `but expected ${formatCurrency(expected.total, expectedCurrency.toUpperCase())} (PI: ${pi.id}). Marked payment_review.`,
+    );
+    return;
+  }
+
+  // Stock was reserved when the order was created, so payment only confirms
+  // it. Guarded on status so a late webhook can't revive a cancelled order.
+  const [paid] = await db
+    .update(shopOrder)
+    .set({ status: "paid", stripePaymentIntentId: pi.id })
+    .where(
+      and(
+        eq(shopOrder.id, Number(orderId)),
+        inArray(shopOrder.status, PAYABLE_STATUSES),
+      ),
+    )
+    .returning({ id: shopOrder.id });
+
+  if (paid) {
+    console.log(`[Webhook] Order #${orderId} marked as paid (PI: ${pi.id})`);
+    return;
+  }
+
+  const order = await db.query.shopOrder.findFirst({
+    where: (o, { eq }) => eq(o.id, Number(orderId)),
+    columns: { status: true, stockReleasedAt: true },
+  });
+  if (order?.stockReleasedAt) {
+    // Payment captured after the reservation expired and stock was returned.
+    // Needs a human: either refund or re-allocate stock manually.
+    console.error(
+      `[Webhook] ALERT: payment succeeded for order #${orderId} whose stock reservation was already released (status: ${order.status}, PI: ${pi.id}). Refund or re-allocate stock manually.`,
+    );
+  } else {
+    console.log(
+      `[Webhook] Order #${orderId} already ${order?.status ?? "missing"}; ignoring duplicate success for PI ${pi.id}`,
+    );
+  }
 }
 
 async function handlePaymentIntentFailed(pi: Stripe.PaymentIntent) {
   const orderId = pi.metadata?.orderId;
   if (!orderId) {
-    console.log(`[Webhook] payment_intent.payment_failed without orderId metadata. PI: ${pi.id}`);
+    console.log(
+      `[Webhook] payment_intent.payment_failed without orderId metadata. PI: ${pi.id}`,
+    );
     return;
   }
 
-  const failureReason = pi.last_payment_error?.message || "Unknown payment failure";
+  const failureReason =
+    pi.last_payment_error?.message || "Unknown payment failure";
   await updateOrderStatus(
     Number(orderId),
     "payment_failed",
     `Payment failed: ${failureReason} (PI: ${pi.id})`,
   );
-  console.log(`[Webhook] Order #${orderId} marked as payment_failed: ${failureReason}`);
+  console.log(
+    `[Webhook] Order #${orderId} marked as payment_failed: ${failureReason}`,
+  );
 }
 
 async function handlePaymentIntentCanceled(pi: Stripe.PaymentIntent) {
   const orderId = pi.metadata?.orderId;
   if (!orderId) return;
 
-  await updateOrderStatus(
-    Number(orderId),
-    "cancelled",
-    `Payment intent cancelled (PI: ${pi.id})`,
+  const released = await cancelUnpaidOrder(Number(orderId));
+  console.log(
+    `[Webhook] PI ${pi.id} canceled; order #${orderId} ${released ? "cancelled and stock released" : "was not awaiting payment"}`,
   );
-  console.log(`[Webhook] Order #${orderId} marked as cancelled (PI canceled)`);
 }
 
 async function handlePaymentIntentCapturable(pi: Stripe.PaymentIntent) {
-  console.log(`[Webhook] payment_intent.amount_capturable_updated for PI: ${pi.id}. Amount: ${pi.amount_capturable}`);
+  console.log(
+    `[Webhook] payment_intent.amount_capturable_updated for PI: ${pi.id}. Amount: ${pi.amount_capturable}`,
+  );
 }
 
 async function handleChargeSucceeded(charge: Stripe.Charge) {
   const orderId = charge.metadata?.orderId;
   if (orderId) {
-    console.log(`[Webhook] Charge succeeded for Order #${orderId}. Charge: ${charge.id}`);
+    console.log(
+      `[Webhook] Charge succeeded for Order #${orderId}. Charge: ${charge.id}`,
+    );
   }
 }
 
 async function handleChargeFailed(charge: Stripe.Charge) {
   const orderId = charge.metadata?.orderId;
   if (orderId) {
-    console.log(`[Webhook] Charge failed for Order #${orderId}. Charge: ${charge.id}`);
+    console.log(
+      `[Webhook] Charge failed for Order #${orderId}. Charge: ${charge.id}`,
+    );
   }
 }
 
 async function handleChargeRefunded(charge: Stripe.Charge) {
-  const orderId = charge.metadata?.orderId;
-  if (!orderId) {
-    console.log(`[Webhook] charge.refunded without orderId metadata. Charge: ${charge.id}`);
+  // Charges don't carry the PaymentIntent's metadata, so find the order by
+  // its PaymentIntent id.
+  const paymentIntentId =
+    typeof charge.payment_intent === "string"
+      ? charge.payment_intent
+      : charge.payment_intent?.id;
+  const order = paymentIntentId
+    ? await db.query.shopOrder.findFirst({
+        where: (o, { eq }) => eq(o.stripePaymentIntentId, paymentIntentId),
+        columns: { id: true, total: true, currency: true },
+      })
+    : undefined;
+  if (!order) {
+    console.log(
+      `[Webhook] charge.refunded with no matching order. Charge: ${charge.id}`,
+    );
     return;
   }
 
-  const refundAmount = charge.amount_refunded / 100; // Convert from cents
-  await updateOrderStatus(
-    Number(orderId),
-    "refunded",
-    `Charge refunded: £${refundAmount.toFixed(2)} (Charge: ${charge.id})`,
+  const refunded = formatCurrency(
+    charge.amount_refunded,
+    charge.currency.toUpperCase(),
   );
-  console.log(`[Webhook] Order #${orderId} marked as refunded. Amount: £${refundAmount.toFixed(2)}`);
+  // Only a full refund (exact pence) closes the order and returns its stock;
+  // a partial refund leaves the order as it is.
+  if (!charge.refunded || charge.amount_refunded !== order.total) {
+    console.log(
+      `[Webhook] Order #${order.id} partially refunded: ${refunded} of ${formatCurrency(order.total, order.currency ?? undefined)}`,
+    );
+    return;
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(shopOrder)
+      .set({ status: "refunded" })
+      .where(eq(shopOrder.id, order.id));
+    // No-op if an admin refund approval already returned the stock
+    await releaseOrderStock(tx, order.id);
+  });
+  console.log(`[Webhook] Order #${order.id} fully refunded: ${refunded}`);
 }
 
 async function handleDisputeCreated(dispute: Stripe.Dispute) {
-  const orderId = dispute.metadata?.orderId || (dispute.payment_intent as string);
-  console.log(`[Webhook] Dispute created: ${dispute.id} for payment: ${dispute.payment_intent}`);
+  const orderId =
+    dispute.metadata?.orderId || (dispute.payment_intent as string);
+  console.log(
+    `[Webhook] Dispute created: ${dispute.id} for payment: ${dispute.payment_intent}`,
+  );
 
   // If we can find an order, mark it as disputed
   if (orderId) {
@@ -221,9 +339,12 @@ async function handleDisputeCreated(dispute: Stripe.Dispute) {
 }
 
 async function handleDisputeClosed(dispute: Stripe.Dispute) {
-  console.log(`[Webhook] Dispute closed: ${dispute.id}. Status: ${dispute.status}`);
+  console.log(
+    `[Webhook] Dispute closed: ${dispute.id}. Status: ${dispute.status}`,
+  );
 
-  const orderId = dispute.metadata?.orderId || (dispute.payment_intent as string);
+  const orderId =
+    dispute.metadata?.orderId || (dispute.payment_intent as string);
   if (orderId && dispute.status === "won") {
     await updateOrderStatus(
       Number(orderId),
@@ -239,7 +360,9 @@ async function handleDisputeClosed(dispute: Stripe.Dispute) {
   }
 }
 
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutSessionCompleted(
+  session: Stripe.Checkout.Session,
+) {
   const orderId = session.metadata?.orderId;
   if (orderId) {
     await updateOrderStatus(
@@ -247,15 +370,20 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       "paid",
       `Checkout session completed: ${session.id}`,
     );
-    console.log(`[Webhook] Order #${orderId} marked as paid via checkout session`);
+    console.log(
+      `[Webhook] Order #${orderId} marked as paid via checkout session`,
+    );
   }
 }
 
 async function handleCheckoutSessionExpired(session: Stripe.Checkout.Session) {
   const orderId = session.metadata?.orderId;
-  if (orderId) {
-    console.log(`[Webhook] Checkout session expired for Order #${orderId}. Session: ${session.id}`);
-  }
+  if (!orderId) return;
+
+  const released = await cancelUnpaidOrder(Number(orderId));
+  console.log(
+    `[Webhook] Checkout session ${session.id} expired; order #${orderId} ${released ? "cancelled and stock released" : "was not awaiting payment"}`,
+  );
 }
 
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
@@ -268,16 +396,43 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
 // ─── Helper Functions ────────────────────────────────────────────────────────
 
-async function updateOrderStatus(orderId: number, status: string, notes: string) {
-  try {
-    await db
+/**
+ * Cancel an order that is still awaiting payment and return its reserved
+ * stock. Returns false if the order was already paid, cancelled or missing.
+ */
+export async function cancelUnpaidOrder(orderId: number): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const [cancelled] = await tx
       .update(shopOrder)
-      .set({ status })
-      .where(eq(shopOrder.id, orderId));
+      .set({ status: "cancelled" })
+      .where(
+        and(
+          eq(shopOrder.id, orderId),
+          inArray(shopOrder.status, PAYABLE_STATUSES),
+        ),
+      )
+      .returning({ id: shopOrder.id });
+    if (!cancelled) return false;
+    await releaseOrderStock(tx, orderId);
+    return true;
+  });
+}
 
-    console.log(`[Webhook] Order #${orderId} status updated to "${status}". Notes: ${notes}`);
+async function updateOrderStatus(
+  orderId: number,
+  status: string,
+  notes: string,
+) {
+  try {
+    await db.update(shopOrder).set({ status }).where(eq(shopOrder.id, orderId));
+
+    console.log(
+      `[Webhook] Order #${orderId} status updated to "${status}". Notes: ${notes}`,
+    );
   } catch (err: any) {
-    console.error(`[Webhook] Failed to update order #${orderId}: ${err.message}`);
+    console.error(
+      `[Webhook] Failed to update order #${orderId}: ${err.message}`,
+    );
     throw err;
   }
 }

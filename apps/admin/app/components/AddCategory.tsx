@@ -1,61 +1,13 @@
 "use client";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "./ui/form";
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
-import {
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "./ui/sheet";
 
-const formSchema = z.object({
-  name: z.string().min(1, { message: "Name is Required!" }),
-});
+import type { ReactNode } from "react";
+import FormSheet from "./FormSheet";
+import CategoryForm from "./CategoryForm";
 
-const AddCategory = () => {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-  });
-  return (
-    <SheetContent>
-      <SheetHeader>
-        <SheetTitle className="mb-4">Add Category</SheetTitle>
-        <SheetDescription asChild>
-          <Form {...form}>
-            <form className="space-y-8">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>Enter category name.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit">Submit</Button>
-            </form>
-          </Form>
-        </SheetDescription>
-      </SheetHeader>
-    </SheetContent>
-  );
-};
+const AddCategory = ({ trigger }: { trigger: ReactNode }) => (
+  <FormSheet trigger={trigger} title="Add Category">
+    {(close) => <CategoryForm onSaved={close} />}
+  </FormSheet>
+);
 
 export default AddCategory;

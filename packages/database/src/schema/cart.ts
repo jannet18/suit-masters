@@ -5,7 +5,6 @@ import {
   uuid,
   timestamp,
   varchar,
-  numeric,
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./user.js";
 import { product, productConfiguration, productItem } from "./products.js";
@@ -28,15 +27,18 @@ export const shoppingCartItem = pgTable("shopping_cart_item", {
     .references(() => shoppingCart.id),
   productId: integer("product_id")
     .notNull()
-    .references(() => product.id),
+    .references(() => product.id, { onDelete: "cascade" }),
   // For STANDARD products: points to specific SKU
-  productItemId: integer("product_item_id").references(() => productItem.id),
+  productItemId: integer("product_item_id").references(() => productItem.id, {
+    onDelete: "set null",
+  }),
   // For CUSTOM products: points to configuration
   configurationId: integer("configuration_id").references(
     () => productConfiguration.id,
+    { onDelete: "cascade" },
   ),
   quantity: integer("qty").notNull().default(1),
-  price: numeric("price", { precision: 12, scale: 2 }).notNull(),
+  price: integer("price").notNull(), // pence
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -44,13 +46,14 @@ export const shoppingCartItem = pgTable("shopping_cart_item", {
 export const cartItem = pgTable("cart_item", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: uuid("user_id")
-    .references(() => usersTable.id, {onDelete: "cascade"})
+    .references(() => usersTable.id, { onDelete: "cascade" })
     .notNull(),
   productId: integer("product_id")
-    .references(() => product.id)
+    .references(() => product.id, { onDelete: "cascade" })
     .notNull(),
   configurationId: integer("configuration_id").references(
     () => productConfiguration.id,
+    { onDelete: "cascade" },
   ),
   measurementProfileId: uuid("measurement_profile_id"),
   quantity: integer("quantity").notNull().default(1),

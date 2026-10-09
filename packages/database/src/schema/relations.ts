@@ -5,6 +5,7 @@ import {
   customizationOption,
   product,
   productCategory,
+  productItem,
 } from "./products.js";
 import { promotionTable, promotionUsage } from "./promotions.js";
 import { refundRequest, refundTimeline } from "./refunds.js";
@@ -24,6 +25,14 @@ export const productRelations = relations(product, ({ one, many }) => ({
   productCollections: many(productCollection),
   // This links to your Hockerty-style customization groups
   customizationGroups: many(customizationGroup),
+  items: many(productItem),
+}));
+
+export const productItemRelations = relations(productItem, ({ one }) => ({
+  product: one(product, {
+    fields: [productItem.productId],
+    references: [product.id],
+  }),
 }));
 
 // 3. The Many-to-Many Bridge Logic
@@ -64,14 +73,17 @@ export const customizationOptionRelations = relations(
   }),
 );
 
-export const promotionRelations = relations(promotionTable, ({many}) => ({
-  usages: many(promotionUsage)
-}))
+export const promotionRelations = relations(promotionTable, ({ many }) => ({
+  usages: many(promotionUsage),
+}));
 
-export const refundRequestRelations = relations(refundRequest, ({many}) => ({
-  timeline: many(refundTimeline)
-}))
+export const refundRequestRelations = relations(refundRequest, ({ many }) => ({
+  timeline: many(refundTimeline),
+}));
 
-export const refundTimelineRelations = relations(refundTimeline, ({one}) => ({
-  request: one(refundRequest, {fields: [refundTimeline.refundRequestId], references: [refundRequest.id]})
-}))
+export const refundTimelineRelations = relations(refundTimeline, ({ one }) => ({
+  request: one(refundRequest, {
+    fields: [refundTimeline.refundRequestId],
+    references: [refundRequest.id],
+  }),
+}));

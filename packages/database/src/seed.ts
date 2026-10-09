@@ -53,48 +53,72 @@ async function seed() {
           "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&auto=format&fit=crop&q=60",
       },
     ])
-    .onConflictDoNothing()
-    // .returning();
+    .onConflictDoNothing();
+  // .returning();
 
   // Explicitly fetch the record to guarantee access to the true database ID
   const targetFabric = await db.query.fabric.findFirst({
-    where:eq(fabric.sku, "FAB-IT-120S"),
-  })  
+    where: eq(fabric.sku, "FAB-IT-120S"),
+  });
   const fabricId = targetFabric?.id ?? 1;
 
   // 2. Seed Main Categories
 
   const categoriesToSeed = [
-    {name: "Suits", slug: "suits"},
+    { name: "Suits", slug: "suits" },
     { name: "Shirts", slug: "shirts" },
     { name: "Blazers", slug: "blazers" },
     { name: "Pants", slug: "pants" },
-  ]
+  ];
 
-  for(const cat of categoriesToSeed){
-    await db.insert(productCategory).values(cat).onConflictDoNothing()
+  for (const cat of categoriesToSeed) {
+    await db.insert(productCategory).values(cat).onConflictDoNothing();
   }
   // Fetch verified category IDS
-const suitCat = await db.query.productCategory.findFirst({where: eq(productCategory.slug, "suits")})
-const shirtCat = await db.query.productCategory.findFirst({where: eq(productCategory.slug, "shirts")})
-const blazerCat = await db.query.productCategory.findFirst({where: eq(productCategory.slug, "blazers")})
-const pantsCat = await db.query.productCategory.findFirst({where: eq(productCategory.slug, "pants")})
+  const suitCat = await db.query.productCategory.findFirst({
+    where: eq(productCategory.slug, "suits"),
+  });
+  const shirtCat = await db.query.productCategory.findFirst({
+    where: eq(productCategory.slug, "shirts"),
+  });
+  const blazerCat = await db.query.productCategory.findFirst({
+    where: eq(productCategory.slug, "blazers"),
+  });
+  const pantsCat = await db.query.productCategory.findFirst({
+    where: eq(productCategory.slug, "pants"),
+  });
 
-if(suitCat){
-  await db.insert(productCategory).values([
-    {name: "Business Suits", slug: "business-suits", parentId: suitCat.id},
-    {name: "Wedding Suits", slug: "wedding-suits", parentId: suitCat.id}
-  ])
-}
-const businessSuitsCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "business-suits") });
-const weddingSuitsCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "wedding-suits") });
-const boardroomSuitsCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "boradroom-suits") });
-const casualSuitsCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "casual-suits") });
-const singleBreastedCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "single-breated") });
-const doubleBreastedCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "double-breasted") });
+  if (suitCat) {
+    await db.insert(productCategory).values([
+      { name: "Business Suits", slug: "business-suits", parentId: suitCat.id },
+      { name: "Wedding Suits", slug: "wedding-suits", parentId: suitCat.id },
+    ]);
+  }
+  const businessSuitsCat = await db.query.productCategory.findFirst({
+    where: eq(productCategory.slug, "business-suits"),
+  });
+  const weddingSuitsCat = await db.query.productCategory.findFirst({
+    where: eq(productCategory.slug, "wedding-suits"),
+  });
+  const boardroomSuitsCat = await db.query.productCategory.findFirst({
+    where: eq(productCategory.slug, "boradroom-suits"),
+  });
+  const casualSuitsCat = await db.query.productCategory.findFirst({
+    where: eq(productCategory.slug, "casual-suits"),
+  });
+  const singleBreastedCat = await db.query.productCategory.findFirst({
+    where: eq(productCategory.slug, "single-breated"),
+  });
+  const doubleBreastedCat = await db.query.productCategory.findFirst({
+    where: eq(productCategory.slug, "double-breasted"),
+  });
 
-const dressShirtCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "dress-shirt") });
-const chinosCat = await db.query.productCategory.findFirst({ where: eq(productCategory.slug, "chinos") });
+  const dressShirtCat = await db.query.productCategory.findFirst({
+    where: eq(productCategory.slug, "dress-shirt"),
+  });
+  const chinosCat = await db.query.productCategory.findFirst({
+    where: eq(productCategory.slug, "chinos"),
+  });
   // const mainCategories = await db
   //   .insert(productCategory)
   //   .values([
@@ -283,7 +307,7 @@ const chinosCat = await db.query.productCategory.findFirst({ where: eq(productCa
           description: "A timeless navy two-piece, cut for modern business.",
           mainImage:
             "https://media.istockphoto.com/id/1352080196/photo/portrait-of-friendly-mature-businessman.webp?a=1&b=1&s=612x612&w=0&k=20&c=Q0IU3lRhZqe7Cx-JxjKoKsQ548QwKd0wJrdqGBrqsq4=",
-          basePrice: "695.00",
+          basePrice: 69500,
           categoryId: businessSuitsCat?.id || 1,
           fabricId: 1,
           isActive: true,
@@ -295,7 +319,7 @@ const chinosCat = await db.query.productCategory.findFirst({ where: eq(productCa
           description: "Soft ivory cloth tailored for the ceremony.",
           mainImage:
             "https://media.istockphoto.com/id/1467795177/photo/groom-in-white-suit-with-dried-flower-boutonniere.webp?a=1&b=1&s=612x612&w=0&k=20&c=ZLLiNLhSITR5K8VKW05YOM-Pflq-LIZyuEQYiA3Pl2U=",
-          basePrice: "849.00",
+          basePrice: 84900,
           categoryId: weddingSuitsCat?.id || 1,
           fabricId: 1,
           isActive: true,
@@ -307,7 +331,7 @@ const chinosCat = await db.query.productCategory.findFirst({ where: eq(productCa
           description: "Black-tie ready with a sharp peak lapel silhouette.",
           mainImage:
             "https://images.unsplash.com/photo-1592878897400-43fb1f1cc324?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8bmFtZSUzQSUyMCUyMk1pZG5pZ2h0JTIwUGVhayUyMExhcGVsJTIwVHV4ZWRvJTIyJTJDfGVufDB8fDB8fHww",
-          basePrice: "899.00",
+          basePrice: 89900,
           categoryId: weddingSuitsCat?.id || 1,
           fabricId: 1,
           isActive: true,
@@ -319,7 +343,7 @@ const chinosCat = await db.query.productCategory.findFirst({ where: eq(productCa
           description: "Powerful charcoal suit for executive meetings.",
           mainImage:
             "https://images.unsplash.com/photo-1594938374181-4b7d72c4370c?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Qk9BUkRST09NJTIwU3VpdHxlbnwwfHwwfHx8MA%3D%3D",
-          basePrice: "725.00",
+          basePrice: 72500,
           categoryId: boardroomSuitsCat?.id || 1,
           fabricId: 1,
           isActive: true,
@@ -331,7 +355,7 @@ const chinosCat = await db.query.productCategory.findFirst({ where: eq(productCa
           description: "Breathable linen suit for smart casual occasions.",
           mainImage:
             "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Q0FTVUFMJTIwU3VpdHxlbnwwfHwwfHx8MA%3D%3D",
-          basePrice: "550.00",
+          basePrice: 55000,
           categoryId: casualSuitsCat?.id || 1,
           fabricId: 1,
           isActive: true,
@@ -343,7 +367,7 @@ const chinosCat = await db.query.productCategory.findFirst({ where: eq(productCa
           description: "Versatile navy blazer for any occasion.",
           mainImage:
             "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8QkxBWkVSU3xlbnwwfHwwfHx8MA%3D%3D",
-          basePrice: "425.00",
+          basePrice: 42500,
           categoryId: singleBreastedCat?.id || 2,
           fabricId: 1,
           isActive: true,
@@ -355,7 +379,7 @@ const chinosCat = await db.query.productCategory.findFirst({ where: eq(productCa
           description: "Classic tweed blazer with double-breasted design.",
           mainImage:
             "https://images.unsplash.com/photo-1592878897400-43fb1f1cc324?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8RE9VQkxFJTIwQlJFQVNURUQlMjBCbGF6ZXJ8ZW58MHx8MHx8fDA%3D",
-          basePrice: "475.00",
+          basePrice: 47500,
           categoryId: doubleBreastedCat?.id || 2,
           fabricId: 1,
           isActive: true,
@@ -367,7 +391,7 @@ const chinosCat = await db.query.productCategory.findFirst({ where: eq(productCa
           description: "Crisp white dress shirt for formal occasions.",
           mainImage:
             "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8U0hJUlRTfGVufDB8fDB8fHww",
-          basePrice: "125.00",
+          basePrice: 12500,
           categoryId: dressShirtCat?.id || 3,
           fabricId: 1,
           isActive: true,
@@ -379,7 +403,7 @@ const chinosCat = await db.query.productCategory.findFirst({ where: eq(productCa
           description: "Comfortable beige chinos for casual wear.",
           mainImage:
             "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Q0hJTk9TfGVufDB8fDB8fHww",
-          basePrice: "95.00",
+          basePrice: 9500,
           categoryId: chinosCat?.id || 4,
           fabricId: 1,
           isActive: true,
@@ -391,7 +415,7 @@ const chinosCat = await db.query.productCategory.findFirst({ where: eq(productCa
           description: "Slim-fit black trousers for formal occasions.",
           mainImage:
             "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=1600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8VFJPVVNFUlN8ZW58MHx8MHx8fDA%3D",
-          basePrice: "110.00",
+          basePrice: 11000,
           categoryId: chinosCat?.id || 4,
           fabricId: 1,
           isActive: true,

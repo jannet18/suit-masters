@@ -1,26 +1,21 @@
 "use client";
 
+import { formatCurrency } from "@repo/pricing";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, loginUrl, type CurrentUser } from "@/lib/auth";
 import Link from "next/link";
 
 interface Order {
   id: number;
-  total: string;
+  total: number; // pence
   status: string;
   orderedItems: number;
   createdAt: string;
   estimatedDeliveryDate?: string;
 }
 
-interface UserProfile {
-  id: string;
-  email: string;
-  name?: string;
-  phone?: string;
-  address?: string;
-}
+type UserProfile = CurrentUser;
 
 interface MeasurementProfile {
   id: string;
@@ -36,7 +31,13 @@ interface MeasurementProfile {
   createdAt: string;
 }
 
-const MEASUREMENT_FIELDS: { key: keyof Omit<MeasurementProfile, "id" | "profileName" | "unit" | "isDefault" | "createdAt">; label: string }[] = [
+const MEASUREMENT_FIELDS: {
+  key: keyof Omit<
+    MeasurementProfile,
+    "id" | "profileName" | "unit" | "isDefault" | "createdAt"
+  >;
+  label: string;
+}[] = [
   { key: "height", label: "Height" },
   { key: "chest", label: "Chest" },
   { key: "waist", label: "Waist" },
@@ -60,7 +61,9 @@ export default function AccountPage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   // Measurement profile state
-  const [measurementProfiles, setMeasurementProfiles] = useState<MeasurementProfile[]>([]);
+  const [measurementProfiles, setMeasurementProfiles] = useState<
+    MeasurementProfile[]
+  >([]);
   const [measLoading, setMeasLoading] = useState(false);
   const [showMeasForm, setShowMeasForm] = useState(false);
   const [editingMeasId, setEditingMeasId] = useState<string | null>(null);
@@ -81,7 +84,7 @@ export default function AccountPage() {
   useEffect(() => {
     getCurrentUser().then((userData) => {
       if (!userData) {
-        router.replace(`/api/auth/login?redirect=/account`);
+        router.replace(loginUrl("/account"));
       } else {
         setUser(userData);
         setProfileName(userData.name || "");
@@ -517,7 +520,9 @@ export default function AccountPage() {
                             >
                               {order.status}
                             </span>
-                            <p className="font-mono font-semibold">£{Number(order.total).toFixed(2)}</p>
+                            <p className="font-mono font-semibold">
+                              {formatCurrency(order.total)}
+                            </p>
                             <Link
                               href={`/account/orders/${order.id}`}
                               className="text-[#c9a96e] hover:underline text-sm"
@@ -605,7 +610,8 @@ export default function AccountPage() {
                             </div>
                             <p className="text-gray-400">
                               Placed on {formatDate(order.createdAt)} •{" "}
-                              {order.orderedItems} items • Total: £{Number(order.total).toFixed(2)}
+                              {order.orderedItems} items • Total:{" "}
+                              {formatCurrency(order.total)}
                             </p>
                             {order.estimatedDeliveryDate && (
                               <p className="text-sm text-gray-400 mt-1">
@@ -636,9 +642,7 @@ export default function AccountPage() {
             {activeTab === "measurements" && (
               <div className="bg-[#1a1a1a] rounded-lg p-6 border border-[#2e2e2e]">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold">
-                    Saved Measurements
-                  </h2>
+                  <h2 className="text-xl font-semibold">Saved Measurements</h2>
                   {!showMeasForm && (
                     <button
                       onClick={openNewMeasForm}
@@ -653,7 +657,9 @@ export default function AccountPage() {
                 {showMeasForm && (
                   <div className="mb-8 p-6 bg-[#2e2e2e] rounded-lg border border-[#3a3a3a]">
                     <h3 className="text-lg font-semibold mb-4">
-                      {editingMeasId ? "Edit Measurement Profile" : "New Measurement Profile"}
+                      {editingMeasId
+                        ? "Edit Measurement Profile"
+                        : "New Measurement Profile"}
                     </h3>
 
                     {measMessage && (
@@ -670,27 +676,41 @@ export default function AccountPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div className="md:col-span-2">
-                        <label className="block text-sm text-gray-400 mb-2">
+                        <label
+                          htmlFor="meas-profileName"
+                          className="block text-sm text-gray-400 mb-2"
+                        >
                           Profile Name
                         </label>
                         <input
+                          id="meas-profileName"
                           type="text"
                           value={measForm.profileName}
                           onChange={(e) =>
-                            setMeasForm({ ...measForm, profileName: e.target.value })
+                            setMeasForm({
+                              ...measForm,
+                              profileName: e.target.value,
+                            })
                           }
                           className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-[#c9a96e]"
                           placeholder="e.g. My Measurements, Slim Fit, etc."
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-gray-400 mb-2">
+                        <label
+                          htmlFor="meas-unit"
+                          className="block text-sm text-gray-400 mb-2"
+                        >
                           Unit
                         </label>
                         <select
+                          id="meas-unit"
                           value={measForm.unit}
                           onChange={(e) =>
-                            setMeasForm({ ...measForm, unit: e.target.value as "cm" | "in" })
+                            setMeasForm({
+                              ...measForm,
+                              unit: e.target.value as "cm" | "in",
+                            })
                           }
                           className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-[#c9a96e]"
                         >
@@ -700,14 +720,21 @@ export default function AccountPage() {
                       </div>
                       {MEASUREMENT_FIELDS.map((field) => (
                         <div key={field.key}>
-                          <label className="block text-sm text-gray-400 mb-2">
+                          <label
+                            htmlFor={`meas-${field.key}`}
+                            className="block text-sm text-gray-400 mb-2"
+                          >
                             {field.label} ({measForm.unit})
                           </label>
                           <input
+                            id={`meas-${field.key}`}
                             type="number"
                             value={measForm[field.key]}
                             onChange={(e) =>
-                              setMeasForm({ ...measForm, [field.key]: e.target.value })
+                              setMeasForm({
+                                ...measForm,
+                                [field.key]: e.target.value,
+                              })
                             }
                             className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-[#c9a96e]"
                             placeholder="0"
@@ -724,7 +751,10 @@ export default function AccountPage() {
                           type="checkbox"
                           checked={measForm.isDefault}
                           onChange={(e) =>
-                            setMeasForm({ ...measForm, isDefault: e.target.checked })
+                            setMeasForm({
+                              ...measForm,
+                              isDefault: e.target.checked,
+                            })
                           }
                           className="rounded border-gray-600 bg-[#1a1a1a] text-[#c9a96e]"
                         />

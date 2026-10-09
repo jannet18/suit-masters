@@ -1,4 +1,5 @@
 "use client";
+import { formatCurrency } from "@repo/pricing";
 import { Search, X, Tag, Package } from "lucide-react";
 import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -244,7 +245,7 @@ const SearchBarContent = () => {
                         {suggestion.type === "product" && suggestion.price && (
                           <>
                             <span>•</span>
-                            <span>£{suggestion.price}</span>
+                            <span>{formatCurrency(suggestion.price)}</span>
                           </>
                         )}
                       </div>
@@ -285,7 +286,7 @@ const SearchBarContent = () => {
         suggestions.length === 0 &&
         value.length >= 2 && (
           <div>
-          {/* // <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-md shadow-lg z-50 p-4 flex flex-col items-center justify-center text-center"> */}
+            {/* // <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-md shadow-lg z-50 p-4 flex flex-col items-center justify-center text-center"> */}
             <div className="text-center text-gray-500 dark:text-gray-400">
               No results found for "{value}"
             </div>

@@ -1,30 +1,27 @@
 "use client";
 
+import { formatCurrency } from "@repo/pricing";
 import { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
 import { Checkbox } from "../components/ui/checkbox";
-import Image from "next/image";
 import { Button } from "../components/ui/button";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
-import Link from "next/link";
+import { Badge } from "../components/ui/badge";
+import type { CatalogProduct } from "../../lib/api-client";
+import { ProductRowActions } from "./row-actions";
 
-export type Product = {
-  id: string | number;
-  price: number;
-  name: string;
-  shortDescription: string;
-  description: string;
-  sizes: string[];
-  colors: string[];
-  images: Record<string, string>;
-};
+export type Product = CatalogProduct;
+
+const sortableHeader =
+  (label: string): ColumnDef<Product>["header"] =>
+  ({ column }) => (
+    <Button
+      variant="ghost"
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+    >
+      {label}
+      <ArrowUpDown className="ml-2 h-4 w-4" />
+    </Button>
+  );
 
 export const columns: ColumnDef<Product>[] = [
   {
@@ -46,77 +43,67 @@ export const columns: ColumnDef<Product>[] = [
     ),
   },
   {
-    accessorKey: "image",
+    id: "image",
     header: "Image",
     cell: ({ row }) => {
-      const product = row.original;
-      return (
-        <div className="w-9 h-9 relative">
-          <Image
-            src={
-              (product.images as Record<string, string>)?.[
-                product.colors[0] || ""
-              ] || ""
-            }
-            alt={product.name}
-            fill
-            className="rounded-full object-cover"
-          />
-        </div>
+      const src = row.original.mainImage || row.original.productImage;
+      return src ? (
+        // Plain img: product images come from arbitrary hosts not configured
+        // for next/image.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt={row.original.name}
+          className="w-9 h-9 rounded-full object-cover"
+        />
+      ) : (
+        <div className="w-9 h-9 rounded-full bg-muted" />
       );
     },
   },
   {
     accessorKey: "name",
-    header: "Name",
+    header: sortableHeader("Name"),
+    cell: ({ row }) => (
+      <div>
+        <div className="font-medium">{row.original.name}</div>
+        <div className="text-xs text-muted-foreground">{row.original.slug}</div>
+      </div>
+    ),
   },
   {
-    accessorKey: "price",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Price
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
+    accessorKey: "categoryName",
+    header: "Category",
+  },
+  {
+    accessorKey: "basePrice",
+    header: sortableHeader("Price"),
+    cell: ({ row }) => formatCurrency(row.original.basePrice),
+  },
+  {
+    accessorKey: "stock",
+    header: sortableHeader("Stock"),
+    sortUndefined: "last",
+    cell: ({ row }) => {
+      const stock = row.original.stock;
+      if (stock === null)
+        return <span className="text-muted-foreground">Made to order</span>;
+      if (stock === 0) return <Badge variant="destructive">Out of stock</Badge>;
+      return stock;
     },
   },
   {
-    accessorKey: "shortDescription",
-    header: "Description",
+    accessorKey: "isActive",
+    header: "Status",
+    cell: ({ row }) =>
+      row.original.isActive ? (
+        <Badge variant="secondary">Active</Badge>
+      ) : (
+        <Badge variant="outline">Inactive</Badge>
+      ),
   },
   {
     id: "actions",
-    cell: ({ row }) => {
-      const product = row.original;
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() =>
-                navigator.clipboard.writeText(product.id.toString())
-              }
-            >
-              Copy product ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Link href={`/products/${product.id}`}>View customer</Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
+    cell: ({ row }) => <ProductRowActions product={row.original} />,
   },
 ];

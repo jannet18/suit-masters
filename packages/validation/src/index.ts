@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+/**
+ * Money in API payloads is an integer number of minor units (pence):
+ * £199.00 is 19900. Convert user input with toMinorUnits() from @repo/pricing.
+ */
+export const moneySchema = z
+  .number()
+  .int("Amounts must be whole pence (e.g. 19900 for £199.00)")
+  .nonnegative("Amount cannot be negative")
+  .max(99_999_999, "Amount exceeds maximum");
+
 // ─── Checkout / Shipping ─────────────────────────────────────────────────────
 
 export const shippingSchema = z.object({
@@ -34,6 +44,7 @@ export const shippingSchema = z.object({
     .string()
     .min(1, "Country is required")
     .max(64, "Country must be under 64 characters"),
+  // ISO code or name; order-service checks it against the countries we ship to
   addressLine2: z
     .string()
     .max(255, "Address line 2 must be under 255 characters")
@@ -48,17 +59,41 @@ export const shippingSchema = z.object({
 
 export type ShippingData = z.infer<typeof shippingSchema>;
 
-// ─── Order Creation ──────────────────────────────────────────────────────────
+// ─── Checkout ────────────────────────────────────────────────────────────────
+// The client sends only what the shopper chose; order-service prices every
+// line from the catalogue, so client-side prices are never trusted.
+
+export const checkoutItemSchema = z.object({
+  productId: z.number().int().positive(),
+  quantity: z
+    .number()
+    .int()
+    .min(1, "Quantity must be at least 1")
+    .max(10, "Maximum 10 per item"),
+  /** Chosen customisation values (e.g. "peak-lapel"); unknown values are kept as notes, unpriced. */
+  selections: z.array(z.string().min(1).max(128)).max(20).default([]),
+  size: z.string().max(16).optional(),
+  measurements: z
+    .record(z.string(), z.union([z.number(), z.string().max(16)]))
+    .optional(),
+});
+
+export type CheckoutItem = z.infer<typeof checkoutItemSchema>;
+
+const promoCodeSchema = z.string().trim().max(64).optional().or(z.literal(""));
+
+export const quoteRequestSchema = z.object({
+  items: z.array(checkoutItemSchema).min(1, "Your bag is empty").max(50),
+  country: z.string().min(2).max(64),
+  promoCode: promoCodeSchema,
+});
 
 export const createOrderSchema = z.object({
   shipping: shippingSchema,
-  cartItems: z
-    .array(z.any())
-    .min(1, "Cart must have at least one item"),
-  totalAmount: z
-    .number()
-    .positive("Total amount must be positive")
-    .max(999999.99, "Total amount exceeds maximum"),
+  items: z.array(checkoutItemSchema).min(1, "Your bag is empty").max(50),
+  promoCode: promoCodeSchema,
+  /** Total the shopper was shown (pence); the order is refused if it changed. */
+  expectedTotal: moneySchema.optional(),
 });
 
 // ─── Order Status Update ─────────────────────────────────────────────────────
@@ -66,6 +101,9 @@ export const createOrderSchema = z.object({
 export const orderStatusSchema = z.object({
   status: z.enum([
     "pending",
+    "payment_failed",
+    "payment_review",
+    "paid",
     "confirmed",
     "processing",
     "in_production",
@@ -74,6 +112,7 @@ export const orderStatusSchema = z.object({
     "delivered",
     "cancelled",
     "refunded",
+    "disputed",
   ]),
   trackingNumber: z
     .string()
@@ -193,14 +232,8 @@ export const addToCartSchema = z.object({
     .number()
     .int("Product ID must be an integer")
     .positive("Product ID must be positive"),
-  configurationId: z
-    .string()
-    .optional()
-    .or(z.literal("")),
-  measurementId: z
-    .string()
-    .optional()
-    .or(z.literal("")),
+  configurationId: z.string().optional().or(z.literal("")),
+  measurementId: z.string().optional().or(z.literal("")),
   qty: z
     .number()
     .int("Quantity must be an integer")
@@ -217,14 +250,157 @@ export const searchQuerySchema = z.object({
     .min(2, "Search query must be at least 2 characters")
     .max(100, "Search query must be under 100 characters")
     .regex(/^[a-zA-Z0-9\s\-'.]+$/, "Search query contains invalid characters"),
-  limit: z
-    .number()
-    .int()
-    .min(1)
-    .max(50)
-    .optional()
-    .default(5),
+  limit: z.number().int().min(1).max(50).optional().default(5),
 });
+
+// ─── Catalog Management (admin) ──────────────────────────────────────────────
+
+const slugSchema = z
+  .string()
+  .min(1, "Slug is required")
+  .max(128, "Slug must be under 128 characters")
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    "Slug must be lowercase words separated by hyphens",
+  );
+
+const priceSchema = moneySchema;
+
+const stockSchema = z
+  .number()
+  .int("Stock must be a whole number")
+  .min(0, "Stock cannot be negative")
+  .max(1_000_000, "Stock exceeds maximum");
+
+const imageUrlSchema = z
+  .string()
+  .url("Image must be a valid URL")
+  .max(255, "Image URL must be under 255 characters");
+
+export const createProductSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(128, "Name must be under 128 characters"),
+  slug: slugSchema,
+  categoryId: z.number().int().positive("Category is required"),
+  fabricId: z.number().int().positive("Fabric is required"),
+  productType: z.enum(["STANDARD", "CUSTOM"]).default("CUSTOM"),
+  basePrice: priceSchema,
+  description: z.string().max(5000).optional(),
+  mainImage: imageUrlSchema.optional().or(z.literal("")),
+  productImage: imageUrlSchema.optional().or(z.literal("")),
+  isActive: z.boolean().default(true),
+  collectionIds: z.array(z.number().int().positive()).optional(),
+  // Creates a default SKU holding this stock. Omit for made-to-order products,
+  // which are not stock-limited.
+  initialStock: stockSchema.optional(),
+});
+
+export const updateProductSchema = createProductSchema
+  .omit({ initialStock: true })
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, "No fields to update");
+
+export const updateStockSchema = z.union([
+  // Set an absolute stock level
+  z.object({
+    productItemId: z.number().int().positive().optional(),
+    stock: stockSchema,
+  }),
+  // Adjust stock relative to the current level (e.g. +5 received, -2 damaged)
+  z.object({
+    productItemId: z.number().int().positive().optional(),
+    delta: z
+      .number()
+      .int("Adjustment must be a whole number")
+      .refine((n) => n !== 0, "Adjustment cannot be zero"),
+  }),
+]);
+
+export const createCategorySchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(128, "Name must be under 128 characters"),
+  slug: slugSchema,
+  parentId: z.number().int().positive().nullable().optional(),
+});
+
+export const updateCategorySchema = createCategorySchema
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, "No fields to update");
+
+export const createCollectionSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(128, "Name must be under 128 characters"),
+  slug: slugSchema,
+  description: z
+    .string()
+    .max(255, "Description must be under 255 characters")
+    .optional(),
+  image: imageUrlSchema.optional().or(z.literal("")),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().int().min(0).max(10_000).optional(),
+  productIds: z.array(z.number().int().positive()).optional(),
+});
+
+export const updateCollectionSchema = createCollectionSchema
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, "No fields to update");
+
+const promotionBaseSchema = z.object({
+  name: z.string().min(1, "Name is required").max(128),
+  code: z
+    .string()
+    .min(3, "Code must be at least 3 characters")
+    .max(64)
+    .regex(/^[A-Za-z0-9_-]+$/, "Letters, numbers, - and _ only")
+    .transform((c) => c.toUpperCase()),
+  description: z.string().max(255).optional(),
+  minOrderAmount: moneySchema.nullable().optional(),
+  maxDiscountAmount: moneySchema.nullable().optional(),
+  usageLimit: z.number().int().positive().nullable().optional(),
+  perUserLimit: z.number().int().positive().nullable().optional(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  isActive: z.boolean().optional(),
+  categoryIds: z.array(z.number().int().positive()).optional(),
+});
+
+/** Discount is either a percentage or a fixed amount in pence, never both. */
+export const createPromotionSchema = z
+  .discriminatedUnion("type", [
+    promotionBaseSchema.extend({
+      type: z.literal("percentage"),
+      percentOff: z
+        .number()
+        .gt(0, "Must be above 0%")
+        .max(100, "Cannot exceed 100%"),
+    }),
+    promotionBaseSchema.extend({
+      type: z.literal("fixed_amount"),
+      amountOff: moneySchema.refine((v) => v > 0, "Must be above £0"),
+    }),
+    promotionBaseSchema.extend({ type: z.literal("free_shipping") }),
+  ])
+  .refine((p) => p.endDate > p.startDate, {
+    message: "End date must be after start date",
+    path: ["endDate"],
+  });
+
+export type CreatePromotionInput = z.input<typeof createPromotionSchema>;
+export type PromotionData = z.output<typeof createPromotionSchema>;
+
+export type CreateProductInput = z.input<typeof createProductSchema>;
+export type UpdateProductInput = z.input<typeof updateProductSchema>;
+export type UpdateStockInput = z.input<typeof updateStockSchema>;
+export type CreateCategoryInput = z.input<typeof createCategorySchema>;
+export type UpdateCategoryInput = z.input<typeof updateCategorySchema>;
+export type CreateCollectionInput = z.input<typeof createCollectionSchema>;
+export type UpdateCollectionInput = z.input<typeof updateCollectionSchema>;
 
 // ─── Validation Helper ───────────────────────────────────────────────────────
 

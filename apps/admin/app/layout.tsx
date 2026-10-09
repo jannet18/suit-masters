@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+// @ts-ignore: allow side-effect import of global CSS in this file
 import "./globals.css";
 import { ThemeProvider } from "./components/providers/ThemeProvider";
-import { SidebarProvider } from "./components/ui/sidebar";
-import AppSidebar from "./components/AppSidebar";
-import Navbar from "./components/Navbar";
+import AppShell from "./components/AppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,7 +25,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const defaultOpen = true;
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -38,13 +36,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider defaultOpen={defaultOpen}>
-            <AppSidebar />
-            <main className="w-full">
-              <Navbar />
-              <div className="px-4">{children}</div>
-            </main>
-          </SidebarProvider>
+          <AppShell>{children}</AppShell>
         </ThemeProvider>
       </body>
     </html>

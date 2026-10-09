@@ -1,0 +1,237 @@
+name: CI/CD
+
+# Unit/integration (Vitest) and e2e (Playwright) tests already run, against a
+# real Postgres service container, in .github/workflows/tests.yml. This
+# workflow intentionally does not duplicate that — it covers the parts tests.yml
+# doesn't: lint/typecheck, container builds, and the production deploy.
+# Require both workflows as status checks in branch protection.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
+jobs:
+  validate:
+    name: Lint, typecheck & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # apps/admin currently has a large pre-existing backlog of lint errors
+      # (unrelated to this pipeline) under its eslint-config-next ruleset, so
+      # lint is advisory here rather than a hard gate until that's paid down.
+      # check-types and build are real, clean gates and do fail the job.
+      - name: Lint (advisory)
+        run: npx turbo run lint
+        continue-on-error: true
+      - run: npx turbo run check-types build
+
+  # --- Container images -----------------------------------------------------
+  # Builds on every PR/push (catches a broken Dockerfile early) but only
+  # pushes to GHCR on main, where the deploy job can then use the images.
+  docker:
+    name: Build & push images
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: cart-service
+            dockerfile: services/Dockerfile.service
+            build-args: |
+              SERVICE=@repo/cart
+              SERVICE_DIR=cart-service
+              SERVICE_PORT=4001
+          - image: order-service
+            dockerfile: services/Dockerfile.service
+            build-args: |
+              SERVICE=@repo/orders
+              SERVICE_DIR=order-service
+              SERVICE_PORT=4003
+          - image: payment-service
+            dockerfile: services/Dockerfile.service
+            build-args: |
+              SERVICE=@repo/payment
+              SERVICE_DIR=payment-service
+              SERVICE_PORT=4002
+          - image: product-service
+            dockerfile: services/Dockerfile.service
+            build-args: |
+              SERVICE=@repo/products
+              SERVICE_DIR=product-service
+              SERVICE_PORT=4000
+          - image: frontend
+            dockerfile: apps/Dockerfile.next
+            build-args: |
+              APP=frontend
+              APP_DIR=apps/frontend
+              NEXT_DIST_DIR=dist
+              APP_PORT=3000
+              DATABASE_URL=${{ secrets.DATABASE_URL }}
+              BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}
+              BETTER_AUTH_URL=${{ secrets.BETTER_AUTH_URL }}
+              NEXT_PUBLIC_AUTH_URL=${{ secrets.BETTER_AUTH_URL }}
+              BETTER_AUTH_TRUSTED_ORIGINS=${{ secrets.BETTER_AUTH_TRUSTED_ORIGINS }}
+              NEXT_PUBLIC_PRODUCT_SERVICE_URL=${{ secrets.NEXT_PUBLIC_PRODUCT_SERVICE_URL }}
+              NEXT_PUBLIC_CART_SERVICE_URL=${{ secrets.NEXT_PUBLIC_CART_SERVICE_URL }}
+              NEXT_PUBLIC_ORDER_SERVICE_URL=${{ secrets.NEXT_PUBLIC_ORDER_SERVICE_URL }}
+              NEXT_PUBLIC_PAYMENT_SERVICE_URL=${{ secrets.NEXT_PUBLIC_PAYMENT_SERVICE_URL }}
+              NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+              NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+              SENTRY_ORG=${{ secrets.SENTRY_ORG }}
+              SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT }}
+              SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
+          - image: admin
+            dockerfile: apps/Dockerfile.next
+            build-args: |
+              APP=admin
+              APP_DIR=apps/admin
+              NEXT_DIST_DIR=.next
+              APP_PORT=3002
+              DATABASE_URL=${{ secrets.DATABASE_URL }}
+              BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}
+              BETTER_AUTH_URL=${{ secrets.ADMIN_URL }}
+              NEXT_PUBLIC_AUTH_URL=${{ secrets.ADMIN_URL }}
+              BETTER_AUTH_TRUSTED_ORIGINS=${{ secrets.BETTER_AUTH_TRUSTED_ORIGINS }}
+              NEXT_PUBLIC_PRODUCT_SERVICE_URL=${{ secrets.NEXT_PUBLIC_PRODUCT_SERVICE_URL }}
+              NEXT_PUBLIC_CART_SERVICE_URL=${{ secrets.NEXT_PUBLIC_CART_SERVICE_URL }}
+              NEXT_PUBLIC_ORDER_SERVICE_URL=${{ secrets.NEXT_PUBLIC_ORDER_SERVICE_URL }}
+              NEXT_PUBLIC_PAYMENT_SERVICE_URL=${{ secrets.NEXT_PUBLIC_PAYMENT_SERVICE_URL }}
+              NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+              SENTRY_ORG=${{ secrets.SENTRY_ORG }}
+              SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT }}
+              SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase image repo
+        run: echo "IMAGE_REPO=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: ${{ github.event_name == 'push' }}
+          build-args: ${{ matrix.build-args }}
+          tags: |
+            ${{ env.IMAGE_REPO }}-${{ matrix.image }}:latest
+            ${{ env.IMAGE_REPO }}-${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  # --- Database migrations ---------------------------------------------------
+  # Runs before the service deploys are triggered, so the new code never sees
+  # a schema it doesn't expect. Migrations in this repo are additive-by-design
+  # (see packages/database/drizzle), which is what keeps this safe to run
+  # ahead of a rolling/zero-downtime deploy rather than during it.
+  migrate:
+    name: Run database migrations
+    if: github.event_name == 'push'
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply pending Drizzle migrations
+        working-directory: packages/database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx drizzle-kit migrate
+
+  # --- Deploy ------------------------------------------------------------
+  deploy-services:
+    name: Deploy services to Render
+    if: github.event_name == 'push'
+    needs: [docker, migrate]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - {
+              name: cart-service,
+              hook: RENDER_DEPLOY_HOOK_CART,
+              url: NEXT_PUBLIC_CART_SERVICE_URL,
+            }
+          - {
+              name: order-service,
+              hook: RENDER_DEPLOY_HOOK_ORDER,
+              url: NEXT_PUBLIC_ORDER_SERVICE_URL,
+            }
+          - {
+              name: payment-service,
+              hook: RENDER_DEPLOY_HOOK_PAYMENT,
+              url: NEXT_PUBLIC_PAYMENT_SERVICE_URL,
+            }
+          - {
+              name: product-service,
+              hook: RENDER_DEPLOY_HOOK_PRODUCT,
+              url: NEXT_PUBLIC_PRODUCT_SERVICE_URL,
+            }
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          HOOK_URL: ${{ secrets[matrix.service.hook] }}
+        run: |
+          if [ -z "$HOOK_URL" ]; then
+            echo "::error::Secret ${{ matrix.service.hook }} is not set — add it in repo Settings > Secrets before this can deploy ${{ matrix.service.name }}."
+            exit 1
+          fi
+          curl --fail -sS -X POST "$HOOK_URL"
+
+      - name: Wait for the new deploy to come up healthy
+        env:
+          SERVICE_URL: ${{ secrets[matrix.service.url] }}
+        run: |
+          if [ -z "$SERVICE_URL" ]; then
+            echo "::warning::Secret ${{ matrix.service.url }} is not set — skipping health check for ${{ matrix.service.name }}."
+            exit 0
+          fi
+          echo "Polling $SERVICE_URL/health for up to 5 minutes..."
+          for i in $(seq 1 30); do
+            if curl --fail -sS "$SERVICE_URL/health" > /dev/null; then
+              echo "${{ matrix.service.name }} is healthy."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::${{ matrix.service.name }} did not become healthy after deploy."
+          exit 1
+
+  # apps/frontend and apps/admin deploy via Vercel's own GitHub integration,
+  # which already redeploys on every push to main — no extra step needed here.
+  # If you'd rather trigger them explicitly from this pipeline instead (e.g.
+  # to deploy the exact commit this workflow validated), add a step here
+  # using the Vercel CLI (`vercel deploy --prod --token=$VERCEL_TOKEN`) with a
+  # VERCEL_TOKEN secret.

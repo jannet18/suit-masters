@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@repo/pricing";
 import Link from "next/link";
 import { useCartStore } from "@/app/stores/useCartStore";
 import { ShoppingBag, Check } from "lucide-react";
@@ -42,8 +43,8 @@ export default function Page({ product, id }: CollectionProps) {
       productId: product.id,
       name: productName,
       base_price: price,
-      basePrice: price.toString(),
-      totalPrice: price.toString(),
+      basePrice: price, // pence
+      totalPrice: price,
       quantity: 1,
       productType: "STANDARD" as const,
       image_url: imageUrl,
@@ -94,7 +95,7 @@ export default function Page({ product, id }: CollectionProps) {
             disabled={isInCart || isAdded}
             className={`flex items-center gap-2 px-6 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors hover:bg-[#c9a96e] ${
               isInCart || isAdded
-                ? "bg-green-600 text-white"
+                ? "bg-green-600 text-white p-1"
                 : "bg-[#c9a96e] text-black hover:bg-white"
             }`}
           >
@@ -121,7 +122,9 @@ export default function Page({ product, id }: CollectionProps) {
 
       {/* Price Tag */}
       <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 border border-white/10">
-        <p className="text-[#c9a96e] text-[10px] font-mono">From £{price}</p>
+        <p className="text-[#c9a96e] text-[10px] font-mono">
+          From {formatCurrency(price)}
+        </p>
       </div>
 
       {/* Product Info */}

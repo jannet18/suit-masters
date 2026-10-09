@@ -1,3 +1,4 @@
+import { formatCurrency } from "@repo/pricing";
 import { api } from "@/lib/api/api-client";
 import {
   ArrowRightIcon,
@@ -9,7 +10,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Metadata } from "next";
-// import Sidebar from "@/app/components/Sidebar";
 
 export async function generateMetadata({
   params,
@@ -53,13 +53,16 @@ export default async function CollectionPage({
 
   if (!collectionRes || !collectionRes.success || !collectionRes.collection) {
     return (
-        <div className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center text-center p-8">
-        <h1 className="font-serif text-3xl text-[#f5f0eb] mb-4">Collection Not Found</h1>
+      <div className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center text-center p-8">
+        <h1 className="font-serif text-3xl text-[#f5f0eb] mb-4">
+          Collection Not Found
+        </h1>
         <p className="text-[#9a9490] max-w-sm mb-8">
-          The requested luxury collection "{slug}" does not exist or has been curated out of seasonal availability.
+          The requested luxury collection "{slug}" does not exist or has been
+          curated out of seasonal availability.
         </p>
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           className="px-6 py-3 bg-[#c9a96e] text-black font-semibold text-xs tracking-widest uppercase hover:bg-[#dfc08a] transition-all duration-300"
         >
           Return Home
@@ -83,18 +86,26 @@ export default async function CollectionPage({
   return (
     <main className="bg-[#0f0f0f] min-h-screen text-[#f5f0eb] pb-24">
       {/* Breadcrumbs */}
-        <nav className="border-b border-[#1f1f1f] bg-[#0c0c0c]">
+      <nav className="border-b border-[#1f1f1f] bg-[#0c0c0c]">
         <div className="max-w-7xl mx-auto py-30 px-32 lg:px-10 flex items-center text-xs tracking-wider uppercase text-[#9a9490]">
-          <Link href="/" className="flex items-center hover:text-[#c9a96e] transition-colors">
+          <Link
+            href="/"
+            className="flex items-center hover:text-[#c9a96e] transition-colors"
+          >
             <Home className="w-3.5 h-3.5 mr-1.5" />
             Home
           </Link>
           <ChevronRight className="w-3.5 h-3.5 mx-2 text-[#2e2e2e]" />
-          <Link href="/collections" className="hover:text-[#c9a96e] transition-colors">
+          <Link
+            href="/collections"
+            className="hover:text-[#c9a96e] transition-colors"
+          >
             Collections
           </Link>
           <ChevronRight className="w-3.5 h-3.5 mx-2 text-[#2e2e2e]" />
-          <span className="text-[#c9a96e] font-semibold">{collection.name}</span>
+          <span className="text-[#c9a96e] font-semibold">
+            {collection.name}
+          </span>
         </div>
       </nav>
 
@@ -118,12 +129,14 @@ export default async function CollectionPage({
             {collection.name}
           </h1>
           <div className="w-16 h-0.5 bg-[#c9a96e] mb-4" />
-          <p className="max-w-2xl text-[#9a9490] text-sm md:text-base font-light leading-relaxed">{collection.description}</p>
+          <p className="max-w-2xl text-[#9a9490] text-sm md:text-base font-light leading-relaxed">
+            {collection.description}
+          </p>
         </div>
       </section>
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-12 flex flex-col lg:flex-row gap-12 items-start">
         {/* Collection Navigator Sidebar */}
-            <aside className="w-full lg:w-1/4 shrink-0 bg-[#141414] border border-[#232323] p-6 rounded-lg sticky top-28">
+        <aside className="w-full lg:w-1/4 shrink-0 bg-[#141414] border border-[#232323] p-6 rounded-lg sticky top-28">
           <h2 className="text-xs uppercase tracking-[0.25em] font-bold text-[#c9a96e] mb-5 pb-3 border-b border-[#232323] flex items-center gap-2">
             <Layers className="w-3.5 h-3.5 text-[#c9a96e]" />
             Collections
@@ -132,84 +145,104 @@ export default async function CollectionPage({
             {collections.map((item: any) => {
               const isActive = item.slug === slug;
               return (
-               
                 <Link
                   key={item.id}
                   href={`/collections/${item.slug}`}
                   className={`flex-none lg:w-full inline-flex items-center justify-between px-4 py-3 text-xs tracking-wider uppercase font-medium rounded transition-all duration-300 
                     ${
-                    isActive
-                      ? "bg-[#c9a96e] text-[#0f0f0f] font-semibold shadow-md"
-                      : "text-[#9a9490] hover:text-[#f5f0eb] hover:bg-[#1f1f1f]/60"}`
-                }
+                      isActive
+                        ? "bg-[#c9a96e] text-[#0f0f0f] font-semibold shadow-md"
+                        : "text-[#9a9490] hover:text-[#f5f0eb] hover:bg-[#1f1f1f]/60"
+                    }`}
                 >
                   <span className="">{item?.name}</span>
-                  <ChevronRight className={`hidden lg:block w-3.5 h-3.5 ${isActive ? "text-[#0f0f0f]" : "text-[#2e2e2e]"}`} />
+                  <ChevronRight
+                    className={`hidden lg:block w-3.5 h-3.5 ${isActive ? "text-[#0f0f0f]" : "text-[#2e2e2e]"}`}
+                  />
                 </Link>
-               
               );
             })}
           </div>
         </aside>
         <section className="flex-1 w-full">
-           <div className="mb-10 bg-[#141414] border border-[#232323]/50 p-6 rounded-lg flex items-start gap-4">
+          <div className="mb-10 bg-[#141414] border border-[#232323]/50 p-6 rounded-lg flex items-start gap-4">
             <Sparkles className="w-5 h-5 text-[#c9a96e] shrink-0 mt-0.5" />
             <p className="text-sm text-[#9a9490] leading-relaxed">
-              Explore our premium <strong className="text-[#f5f0eb] font-medium">{collection.name.toLowerCase()}</strong> suite selections, each customizable to your dynamic physiological profile. Crafted from standard-setting weavers including Loro Piana & Vitale Barberis Canonico.
+              Explore our premium{" "}
+              <strong className="text-[#f5f0eb] font-medium">
+                {collection.name.toLowerCase()}
+              </strong>{" "}
+              suite selections, each customizable to your dynamic physiological
+              profile. Crafted from standard-setting weavers including Loro
+              Piana & Vitale Barberis Canonico.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 md:gap-10 lg:gap-10">
             {products.map((product: any) => {
-              const isCustom = product.productType === "CUSTOM" || product.product_type === "CUSTOM";
+              const isCustom =
+                product.productType === "CUSTOM" ||
+                product.product_type === "CUSTOM";
               const rawPrice = product.basePrice || product.base_price || 0;
-              const formattedPrice = Number(rawPrice).toFixed(2);
-              const productImage = product.productImage || product.product_image || product.mainImage || "https://images.unsplash.com/photo-1594938298603-c8148c4b4f5a?w=600";
+              const formattedPrice = formatCurrency(Number(rawPrice));
+              const productImage =
+                product.productImage ||
+                product.product_image ||
+                product.mainImage ||
+                "https://images.unsplash.com/photo-1594938298603-c8148c4b4f5a?w=600";
               return (
-              <Link
-                key={product?.id}
-                href={getProductLink(product)}
-                className="group flex flex-col justify-between"
-              >
-              <div className="relative">
-                <div className="aspect-3/4 overflow-hidden bg-[#1a1a1a] border border-[#232323]/50 mb-3 relative rounded-md ">
-                  <img
-                    src={productImage}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 select-none rounded-md"
-                    alt={product.name}
-                    loading="lazy"
-                  />
-                  {isCustom ? (
-                    <span className="absolute top-4 right-4 bg-[#c9a96e] text-[#0f0f0f] text-[9px] px-2.5 py-1 font-semibold uppercase tracking-widest shadow-md">
-                      Bespoke Configurable
-                    </span>
-                  ): (
-                    <span className="absolute top-4 right-4 bg-[#2c2c2c] text-[#f5f0eb] text-[9px] px-2.5 py-1 font-semibold uppercase tracking-widest shadow-md">
-                      Ready-to-Wear
-                    </span>)}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-all duration-300" />
-                </div>
-                <div className="mt-4">
-                  <div className="flex items-start justify-between gap-5">
-                    <h3 className="font-serif text-md font-medium text-[#f5f0eb] group-hover:text-[#c9a96e] transition-colors leading-tight">
-                      {product.name}
-                    </h3>
-                    <div/>
-                    <span className="text-sm font-mono text-[#9a9490]">
-                      From £ {formattedPrice}
-                    </span>
+                <Link
+                  key={product?.id}
+                  href={getProductLink(product)}
+                  className="group flex flex-col justify-between"
+                >
+                  <div className="relative">
+                    <div className="aspect-3/4 overflow-hidden bg-[#1a1a1a] border border-[#232323]/50 mb-3 relative rounded-md ">
+                      <img
+                        src={productImage}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 select-none rounded-md"
+                        alt={product.name}
+                        loading="lazy"
+                      />
+                      {isCustom ? (
+                        <span className="absolute top-4 right-4 bg-[#c9a96e] text-[#0f0f0f] text-[9px] px-2.5 py-1 font-semibold uppercase tracking-widest shadow-md">
+                          Bespoke Configurable
+                        </span>
+                      ) : (
+                        <span className="absolute top-4 right-4 bg-[#2c2c2c] text-[#f5f0eb] text-[9px] px-2.5 py-1 font-semibold uppercase tracking-widest shadow-md">
+                          Ready-to-Wear
+                        </span>
+                      )}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-all duration-300" />
+                    </div>
+                    <div className="mt-4">
+                      <div className="flex items-start justify-between gap-5">
+                        <h3 className="font-serif text-md font-medium text-[#f5f0eb] group-hover:text-[#c9a96e] transition-colors leading-tight">
+                          {product.name}
+                        </h3>
+                        <div />
+                        <span className="text-sm font-mono text-[#9a9490]">
+                          From {formattedPrice}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-[#1f1f1f] flex items-center justify-between text-xs text-[#9a9490]">
+                      <span className="inline-flex items-center gap-1.5 font-light">
+                        <Tag className="w-3 h-3 text-[#c9a96e]" />
+                        {isCustom ? "Custom Tailored" : "Standard Sizing"}
+                      </span>
+                      <Link
+                        href={
+                          isCustom
+                            ? `/products/${product.slug}/configure`
+                            : `/products/${product.slug}`
+                        }
+                        className="inline-flex items-center gap-1 text-[#f5f0eb] group-hover:text-[#c9a96e] transition-colors"
+                      >
+                        {isCustom ? "Design Now" : "View Sizing"}
+                        <ArrowRightIcon className="w-3 h-3 ml-0.5 group-hover:translate-x-1 transition-transform duration-300" />
+                      </Link>
+                    </div>
                   </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-[#1f1f1f] flex items-center justify-between text-xs text-[#9a9490]">
-                    <span className="inline-flex items-center gap-1.5 font-light">
-                      <Tag className="w-3 h-3 text-[#c9a96e]" />
-                      {isCustom ? "Custom Tailored" : "Standard Sizing"}
-                    </span>
-                    <Link href={isCustom ? "/configure" : "/sizing"} className="inline-flex items-center gap-1 text-[#f5f0eb] group-hover:text-[#c9a96e] transition-colors">
-                      {isCustom ? "Design Now" : "View Sizing"}
-                      <ArrowRightIcon className="w-3 h-3 ml-0.5 group-hover:translate-x-1 transition-transform duration-300" />
-                    </Link>
-                  </div>
-                </div>
                 </Link>
               );
             })}
@@ -233,111 +266,3 @@ export default async function CollectionPage({
     </main>
   );
 }
-
-// apps/frontend/app/collections/[slug]/page.tsx
-// import { ProductCard } from "@/app/components/ProductCard";
-// import { api } from "@/lib/api/api-client";
-// import Link from "next/link";
-// import { notFound } from "next/navigation";
-
-// export default async function CollectionPage({
-//   params,
-// }: {
-//   params: Promise<{ slug: string }>;
-// }) {
-//   const { slug } = await params;
-//   const res = await api.getProductsInCollection(slug);
-//   if (!res?.success || !res.collection) return notFound();
-//   const [collectionRes, allColsRes] = await Promise.all([
-//     api.getProductsInCollection(slug),
-//     api.getCollections(),
-//   ]);
-
-//   if (!collectionRes?.success) return notFound();
-
-//   const { collection, products } = collectionRes;
-//   const allCollections = allColsRes.success ? allColsRes.collections : [];
-
-//   return (
-//     <>
-//       <div className="flex flex-col lg:flex-row gap-10 max-w-7xl mx-auto px-6 py-20">
-//         {/* Sidebar Navigation */}
-//         <aside className="lg:w-1/4 sticky top-24 h-fit">
-//           <h3 className="text-[#f5f0eb] font-serif text-xl mb-6">
-//             Explore Styles
-//           </h3>
-//           <nav className="flex flex-col gap-2">
-//             {allCollections.map((col: any) => (
-//               <Link
-//                 key={col.id}
-//                 href={`/collections/${col.slug}`}
-//                 className={`p-3 rounded transition ${col.slug === slug ? "bg-[#c9a96e] text-black" : "text-[#9a9490] hover:bg-white/5"}`}
-//               >
-//                 {col.name}
-//               </Link>
-//             ))}
-//           </nav>
-//         </aside>
-
-//         {/* The Product Mixture Grid */}
-//         <section className="lg:w-3/4 grid grid-cols-1 md:grid-cols-2 gap-8">
-//           {products.map((product: any) => (
-//             <Link
-//               key={product.id}
-//               href={
-//                 product.product_type === "CUSTOM"
-//                   ? `/products/${product.slug}/configure`
-//                   : `/products/${product.slug}`
-//               }
-//               className="group"
-//             >
-//               <div className="aspect-3/4 overflow-hidden bg-[#1a1a1a] relative">
-//                 <img
-//                   src={product.product_image}
-//                   className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-//                 />
-//                 <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md text-[#c9a96e] px-3 py-1 text-xs tracking-widest">
-//                   {product.product_type}
-//                 </div>
-//               </div>
-//               <h4 className="mt-4 text-[#f5f0eb] font-medium">
-//                 {product.name}
-//               </h4>
-//               <p className="text-[#c9a96e]">£{product.base_price}</p>
-//             </Link>
-//           ))}
-
-//           <main className="min-h-screen bg-[#0f0f0f]">
-//             {/* Editorial Header */}
-//             <header className="relative h-[60vh] flex items-end pb-16 px-6 lg:px-10">
-//               <img
-//                 src={res.collection.image}
-//                 className="absolute inset-0 w-full h-full object-cover opacity-40"
-//                 alt=""
-//               />
-//               <div className="absolute inset-0 bg-linear-to-t from-[#0f0f0f] via-transparent to-transparent" />
-
-//               <div className="relative z-10 max-w-7xl mx-auto w-full">
-//                 <h1 className="text-6xl md:text-8xl font-serif text-[#f5f0eb] uppercase mb-4">
-//                   {res.collection.name}
-//                 </h1>
-//                 <p className="text-[#9a9490] max-w-xl text-lg italic">
-//                   {res.collection.description}
-//                 </p>
-//               </div>
-//             </header>
-
-//             {/* The Product Grid */}
-//             <section className="max-w-7xl mx-auto px-6 lg:px-10 py-20">
-//               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-//                 {res.products.map((product: any) => (
-//                   <ProductCard key={product.id} product={product} />
-//                 ))}
-//               </div>
-//             </section>
-//           </main>
-//         </section>
-//       </div>
-//     </>
-//   );
-// }

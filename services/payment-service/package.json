@@ -6,24 +6,28 @@
   "types": "dist/index.d.ts",
   "type": "module",
   "devDependencies": {
+    "@repo/testing": "*",
     "@repo/types": "*",
-    "@repo/typescript-config": "*"
+    "@repo/typescript-config": "*",
+    "vitest": "~3.2.4"
   },
   "scripts": {
     "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
     "start": "node dist/index.js",
     "build": "tsc",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@hono/node-server": "^1.19.9",
-    "stripe": "^20.3.1",
-    "hono": "^4.12.2",
-    "@repo/db": "*",
     "@repo/auth": "*",
-    "@repo/error-handling": "*"
+    "@repo/db": "*",
+    "@repo/error-handling": "*",
+    "@repo/pricing": "*",
+    "hono": "^4.12.2",
+    "stripe": "^20.3.1"
   }
 }

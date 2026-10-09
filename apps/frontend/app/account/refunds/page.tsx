@@ -1,14 +1,21 @@
 "use client";
 
+import { formatCurrency } from "@repo/pricing";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, loginUrl } from "@/lib/auth";
 import Link from "next/link";
-import { ArrowLeft, AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  XCircle,
+} from "lucide-react";
 
 interface Order {
   id: number;
-  total: string;
+  total: number; // pence
   status: string;
   createdAt: string;
 }
@@ -19,7 +26,7 @@ interface RefundRequest {
   status: string;
   reason: string;
   description?: string;
-  refundAmount: string;
+  refundAmount: number | null; // pence
   createdAt: string;
 }
 
@@ -39,7 +46,9 @@ export default function RefundRequestPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [messageType, setMessageType] = useState<"success" | "error">("success");
+  const [messageType, setMessageType] = useState<"success" | "error">(
+    "success",
+  );
 
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [reason, setReason] = useState("");
@@ -49,7 +58,7 @@ export default function RefundRequestPage() {
   useEffect(() => {
     getCurrentUser().then((userData) => {
       if (!userData) {
-        router.replace("/api/auth/login?redirect=/account/refunds");
+        router.replace(loginUrl("/account/refunds"));
       } else {
         fetchData();
       }
@@ -157,7 +166,7 @@ export default function RefundRequestPage() {
   };
 
   const refundableOrders = orders.filter(
-    (o) => o.status === "delivered" || o.status === "shipped"
+    (o) => o.status === "delivered" || o.status === "shipped",
   );
 
   if (loading) {
@@ -172,22 +181,29 @@ export default function RefundRequestPage() {
     <div className="min-h-screen bg-[#0f0f0f] text-[#f5f0eb]">
       <header className="border-b border-[#2e2e2e]">
         <div className="max-w-3xl mx-auto px-6 py-6">
-          <Link href="/account" className="text-[#c9a96e] hover:text-white text-sm flex items-center gap-2 mb-4">
+          <Link
+            href="/account"
+            className="text-[#c9a96e] hover:text-white text-sm flex items-center gap-2 mb-4"
+          >
             <ArrowLeft size={14} />
             Back to Account
           </Link>
           <h1 className="font-serif text-3xl font-bold">Refund and Returns</h1>
-          <p className="text-[#9a9490] mt-2">Request a refund or return for your order</p>
+          <p className="text-[#9a9490] mt-2">
+            Request a refund or return for your order
+          </p>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-8 space-y-8">
         {message && (
-          <div className={`p-4 rounded-lg border ${
-            messageType === "success"
-              ? "bg-green-900/30 border-green-700 text-green-300"
-              : "bg-red-900/30 border-red-700 text-red-300"
-          }`}>
+          <div
+            className={`p-4 rounded-lg border ${
+              messageType === "success"
+                ? "bg-green-900/30 border-green-700 text-green-300"
+                : "bg-red-900/30 border-red-700 text-red-300"
+            }`}
+          >
             {message}
           </div>
         )}
@@ -195,7 +211,9 @@ export default function RefundRequestPage() {
         {/* Request New Refund */}
         <div className="bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="font-serif text-xl font-semibold">Request a Refund</h2>
+            <h2 className="font-serif text-xl font-semibold">
+              Request a Refund
+            </h2>
             {!showForm && (
               <button
                 onClick={() => setShowForm(true)}
@@ -209,10 +227,13 @@ export default function RefundRequestPage() {
           {showForm ? (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm text-[#9a9490] mb-2">Select Order</label>
+                <label className="block text-sm text-[#9a9490] mb-2">
+                  Select Order
+                </label>
                 {refundableOrders.length === 0 ? (
                   <p className="text-[#6b6560] text-sm">
-                    No orders eligible for refund. Only shipped or delivered orders can be refunded.
+                    No orders eligible for refund. Only shipped or delivered
+                    orders can be refunded.
                   </p>
                 ) : (
                   <select
@@ -223,7 +244,8 @@ export default function RefundRequestPage() {
                     <option value="">Select an order...</option>
                     {refundableOrders.map((order) => (
                       <option key={order.id} value={order.id}>
-                        Order #{order.id} - {parseFloat(order.total).toFixed(2)} ({order.status})
+                        Order #{order.id} - {formatCurrency(order.total)} (
+                        {order.status})
                       </option>
                     ))}
                   </select>
@@ -231,7 +253,9 @@ export default function RefundRequestPage() {
               </div>
 
               <div>
-                <label className="block text-sm text-[#9a9490] mb-2">Reason for Refund</label>
+                <label className="block text-sm text-[#9a9490] mb-2">
+                  Reason for Refund
+                </label>
                 <select
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
@@ -239,13 +263,17 @@ export default function RefundRequestPage() {
                 >
                   <option value="">Select a reason...</option>
                   {REFUND_REASONS.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm text-[#9a9490] mb-2">Additional Details (optional)</label>
+                <label className="block text-sm text-[#9a9490] mb-2">
+                  Additional Details (optional)
+                </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -256,7 +284,13 @@ export default function RefundRequestPage() {
 
               <div className="flex justify-end gap-4">
                 <button
-                  onClick={() => { setShowForm(false); setSelectedOrderId(null); setReason(""); setDescription(""); setMessage(null); }}
+                  onClick={() => {
+                    setShowForm(false);
+                    setSelectedOrderId(null);
+                    setReason("");
+                    setDescription("");
+                    setMessage(null);
+                  }}
                   className="px-6 py-3 border border-[#2e2e2e] text-[#f5f0eb] rounded-lg hover:bg-[#1a1a1a] transition-colors"
                 >
                   Cancel
@@ -272,16 +306,21 @@ export default function RefundRequestPage() {
             </div>
           ) : (
             <p className="text-[#6b6560] text-sm">
-              Select an order to request a refund. Only shipped or delivered orders are eligible.
+              Select an order to request a refund. Only shipped or delivered
+              orders are eligible.
             </p>
           )}
         </div>
 
         {/* Existing Refund Requests */}
         <div className="bg-[#1a1a1a] border border-[#2e2e2e] rounded-lg p-6">
-          <h2 className="font-serif text-xl font-semibold mb-6">Your Refund Requests</h2>
+          <h2 className="font-serif text-xl font-semibold mb-6">
+            Your Refund Requests
+          </h2>
           {refunds.length === 0 ? (
-            <p className="text-[#6b6560] text-center py-8">No refund requests yet.</p>
+            <p className="text-[#6b6560] text-center py-8">
+              No refund requests yet.
+            </p>
           ) : (
             <div className="space-y-4">
               {refunds.map((refund) => (
@@ -290,22 +329,32 @@ export default function RefundRequestPage() {
                     <div>
                       <div className="flex items-center gap-3 mb-2">
                         <span className="font-medium">Refund #{refund.id}</span>
-                        <span className="text-[#9a9490] text-sm">Order #{refund.orderId}</span>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(refund.status)}`}>
+                        <span className="text-[#9a9490] text-sm">
+                          Order #{refund.orderId}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(refund.status)}`}
+                        >
                           {getStatusIcon(refund.status)}
-                          {refund.status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                          {refund.status
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase())}
                         </span>
                       </div>
                       <p className="text-sm text-[#9a9490]">
-                        Reason: {REFUND_REASONS.find((r) => r.value === refund.reason)?.label || refund.reason}
+                        Reason:{" "}
+                        {REFUND_REASONS.find((r) => r.value === refund.reason)
+                          ?.label || refund.reason}
                       </p>
                       {refund.description && (
-                        <p className="text-sm text-[#6b6560] mt-1">{refund.description}</p>
+                        <p className="text-sm text-[#6b6560] mt-1">
+                          {refund.description}
+                        </p>
                       )}
                     </div>
                     <div className="text-right">
                       <p className="font-mono text-[#c9a96e]">
-                        {parseFloat(refund.refundAmount || "0").toFixed(2)}
+                        {formatCurrency(refund.refundAmount ?? 0)}
                       </p>
                       <p className="text-xs text-[#6b6560] mt-1">
                         {new Date(refund.createdAt).toLocaleDateString("en-GB")}

@@ -19,6 +19,26 @@ declare const process: {
   };
 };
 
+export {
+  createLogger,
+  requestLogger,
+  getRequestId,
+  type Logger,
+} from "./logging.js";
+export {
+  createHealthRoutes,
+  type HealthCheck,
+  type HealthRoutesOptions,
+} from "./health.js";
+export {
+  initSentry,
+  isSentryEnabled,
+  captureException,
+  Sentry,
+} from "./sentry.js";
+import { captureException as captureSentryException } from "./sentry.js";
+import { getRequestId } from "./logging.js";
+
 export enum ErrorSeverity {
   LOW = "low",
   MEDIUM = "medium",
@@ -45,7 +65,10 @@ export interface ErrorReport {
 export function reportError(report: ErrorReport): void {
   const prefix = `[${report.severity.toUpperCase()}][${report.service}]`;
 
-  if (report.severity === ErrorSeverity.CRITICAL || report.severity === ErrorSeverity.HIGH) {
+  if (
+    report.severity === ErrorSeverity.CRITICAL ||
+    report.severity === ErrorSeverity.HIGH
+  ) {
     console.error(`${prefix} ${report.message}`, {
       path: report.path,
       method: report.method,
@@ -71,6 +94,7 @@ export function errorHandler(err: Error, c: any) {
   const service = process.env.SERVICE_NAME || "unknown";
   const url = c.req?.url || "unknown";
   const method = c.req?.method || "UNKNOWN";
+  const requestId = getRequestId(c) || crypto.randomUUID();
 
   reportError({
     message: err.message,
@@ -82,8 +106,11 @@ export function errorHandler(err: Error, c: any) {
     timestamp: new Date().toISOString(),
     metadata: {
       statusCode: 500,
+      requestId,
     },
   });
+
+  captureSentryException(err, { requestId, path: url, method });
 
   return c.json(
     {
@@ -92,7 +119,7 @@ export function errorHandler(err: Error, c: any) {
         process.env.NODE_ENV === "production"
           ? "An unexpected error occurred"
           : err.message,
-      requestId: crypto.randomUUID(),
+      requestId,
     },
     500,
   );

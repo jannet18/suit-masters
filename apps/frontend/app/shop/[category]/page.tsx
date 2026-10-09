@@ -1,3 +1,4 @@
+import { formatCurrency } from "@repo/pricing";
 import { api } from "@/lib/api/api-client";
 
 export default async function CategoryPage({
@@ -43,7 +44,7 @@ export default async function CategoryPage({
                 />
               </div>
               <h3 className="font-medium text-[#f5f0eb]">{p.name}</h3>
-              <p className="text-[#c9a96e]">£{p.base_price}</p>
+              <p className="text-[#c9a96e]">{formatCurrency(p.base_price)}</p>
             </a>
           ))}
         </div>

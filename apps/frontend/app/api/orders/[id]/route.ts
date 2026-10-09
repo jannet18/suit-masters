@@ -13,12 +13,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const authHeader = request.headers.get("authorization") || "";
+    const cookieHeader = request.headers.get("cookie") || "";
 
     const res = await fetch(`${ORDER_SERVICE_URL}/orders/${id}`, {
       headers: {
         "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
     });
 
@@ -52,14 +52,14 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const authHeader = request.headers.get("authorization") || "";
+    const cookieHeader = request.headers.get("cookie") || "";
     const body = await request.json();
 
     const res = await fetch(`${ORDER_SERVICE_URL}/orders/${id}/status`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       },
       body: JSON.stringify(body),
     });

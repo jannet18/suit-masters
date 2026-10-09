@@ -136,13 +136,13 @@ export function Navbar({
 
             {/* Right Actions */}
             <div className="flex items-center gap-5">
-              <button
-                aria-label="Account"
-                className="hidden lg:flex text-[#9a9490] hover:text-[#c9a96e] transition-colors duration-200"
-              >
+              {/* A container, not a button: it holds the link or the user
+                  menu's own button, and interactive elements can't nest */}
+              <div className="hidden lg:flex text-[#9a9490] hover:text-[#c9a96e] transition-colors duration-200">
                 {!user ? (
                   <Link
-                    href="/api/auth/login"
+                    href="/login"
+                    aria-label="Sign in"
                     className="text-gray-400 hover:text-white "
                   >
                     <User size={18} />
@@ -150,7 +150,7 @@ export function Navbar({
                 ) : (
                   <UserButton user={user} />
                 )}
-              </button>
+              </div>
               <Link
                 href="/cart"
                 className="relative text-[#9a9490] hover:text-[#c9a96e] transition-colors duration-200"

@@ -1,32 +1,18 @@
 import { Hono } from "hono";
-import type { AuthContext } from "@repo/auth";
+import { getUser, requireRole, type AuthContext } from "@repo/auth";
 import {
   db,
   shopOrder,
   refundRequest,
   refundTimeline,
+  releaseOrderStock,
 } from "@repo/db";
 import { eq, desc } from "@repo/db";
-import Stripe from "stripe";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2024-11-20.acacia" as any,
-});
+import { stripe } from "../lib/stripe.js";
 
 export const refundRoutes = new Hono<AuthContext>();
-/**
- * custom admin authorisation
- */
-const isAdmin = async (c:any, next: () => Promise<void>) => {
-  const user = c.get("user")
-  if(!user || user.role !== "ADMIN"){
-    return c.json({
-      error: "Access Denied: Unauthorised"
-    })
-  }
-    await next()
-}
-
+refundRoutes.use(getUser);
+const requireAdmin = requireRole("ADMIN");
 
 /**
  * POST /refunds
@@ -49,25 +35,33 @@ refundRoutes.post("/", async (c) => {
     if (!orderId || !reason) {
       return c.json({ error: "Order ID and reason are required" }, 400);
     }
-const order = await db.query.shopOrder.findFirst({
-  where: (table, {and: and, eq: e}) => and(eq(table.id, orderId), eq(table.userId, userId))
-})
+    const order = await db.query.shopOrder.findFirst({
+      where: (table, { and: and, eq: e }) =>
+        and(eq(table.id, orderId), eq(table.userId, userId)),
+    });
 
-if(!order) return c.json({error: "Order record not found"}, 404)
-  if(!["delivered", "shipped"].includes(order.status)){
-    return c.json({error: `Order ineligible for return in status: ${order.status}`}, 400)
-  }
-    // const validReasons = [
-    //   "wrong_size",
-    //   "defective",
-    //   "not_as_described",
-    //   "changed_mind",
-    //   "late_delivery",
-    //   "other",
-    // ];
-    // if (!validReasons.includes(reason)) {
-    //   return c.json({ error: `Invalid reason. Must be one of: ${validReasons.join(", ")}` }, 400);
-    // }
+    if (!order) return c.json({ error: "Order record not found" }, 404);
+    if (!["delivered", "shipped"].includes(order.status)) {
+      return c.json(
+        { error: `Order ineligible for return in status: ${order.status}` },
+        400,
+      );
+    }
+    const validReasons = [
+      "wrong_size",
+      "defective",
+      "not_as_described",
+      "changed_mind",
+      "late_delivery",
+      "other",
+    ] as const;
+    if (!validReasons.includes(reason as (typeof validReasons)[number])) {
+      return c.json(
+        { error: `Invalid reason. Must be one of: ${validReasons.join(", ")}` },
+        400,
+      );
+    }
+    const validatedReason = reason as (typeof validReasons)[number];
 
     // // Verify the order belongs to this user and is in a refundable state
     // const order = await db.query.shopOrder.findFirst({
@@ -106,26 +100,32 @@ if(!order) return c.json({error: "Order record not found"}, 404)
     // // Calculate refund amount
     // const refundAmount = order.total;
 
-// Database insertion wrapped alongside timeline tracking inside a unified transaction
- const result = await db.transaction(async (tx) => {
-  const [newRefund] = await tx.insert(refundRequest).values({
-    orderId, userId, status: "Requested",
-    reason, description: description || null,
-    quantity: quantity || 1,
-    refundAmount: order.total
-  }).returning()
-  if (!newRefund || !newRefund.id) {
-    throw new Error("Failed to create refund request")
-  }
+    // Database insertion wrapped alongside timeline tracking inside a unified transaction
+    const result = await db.transaction(async (tx) => {
+      const [newRefund] = await tx
+        .insert(refundRequest)
+        .values({
+          orderId,
+          userId,
+          status: "requested",
+          reason: validatedReason,
+          description: description || null,
+          quantity: quantity || 1,
+          refundAmount: order.total,
+        })
+        .returning();
+      if (!newRefund || !newRefund.id) {
+        throw new Error("Failed to create refund request");
+      }
 
-  await tx.insert(refundTimeline).values({
-    refundRequestId: newRefund.id,
-    action: "Created",
-    notes: `Refund initialized for reason code: ${reason}`,
-    performedBy: userId
-  })
-  return newRefund
- })    
+      await tx.insert(refundTimeline).values({
+        refundRequestId: newRefund.id,
+        action: "Created",
+        notes: `Refund initialized for reason code: ${reason}`,
+        performedBy: userId,
+      });
+      return newRefund;
+    });
     // const [newRefund] = await db
     //   .insert(refundRequest)
     //   .values({
@@ -151,12 +151,16 @@ if(!order) return c.json({error: "Order record not found"}, 404)
     //   performedBy: userId,
     // });
 
-    return c.json({
-      success: true,
-      refundRequest: {
-       result},
-      message: "Refund request submitted successfully",
-    }, 201);
+    return c.json(
+      {
+        success: true,
+        refundRequest: {
+          result,
+        },
+        message: "Refund request submitted successfully",
+      },
+      201,
+    );
   } catch (error) {
     console.error("Failed to create refund request:", error);
     return c.json({ error: "Failed to create refund request" }, 500);
@@ -182,7 +186,31 @@ refundRoutes.get("/", async (c) => {
     return c.json({ success: true, refunds });
   } catch (error) {
     console.error("Failed to fetch refunds:", error);
-    return c.json({ success: false, refunds: [], error: "Failed to fetch refunds" }, 500);
+    return c.json(
+      { success: false, refunds: [], error: "Failed to fetch refunds" },
+      500,
+    );
+  }
+});
+
+/**
+ * GET /refunds/admin/all
+ * Admin fetches all refund requests.
+ */
+refundRoutes.get("/admin/all", requireAdmin, async (c) => {
+  try {
+    const refunds = await db.query.refundRequest.findMany({
+      orderBy: [desc(refundRequest.id)],
+      limit: 100,
+    });
+
+    return c.json({ success: true, refunds });
+  } catch (error) {
+    console.error("Failed to fetch all refunds:", error);
+    return c.json(
+      { success: false, refunds: [], error: "Failed to fetch refunds" },
+      500,
+    );
   }
 });
 
@@ -222,7 +250,7 @@ refundRoutes.get("/:id", async (c) => {
  * PUT /refunds/:id/approve
  * Secure Admin approves a refund request and processes Stripe refund.
  */
-refundRoutes.put("/:id/approve", async (c) => {
+refundRoutes.put("/:id/approve", requireAdmin, async (c) => {
   try {
     const refundId = Number(c.req.param("id"));
     const user = c.get("user");
@@ -244,20 +272,33 @@ refundRoutes.put("/:id/approve", async (c) => {
       return c.json({ error: "Order not found" }, 404);
     }
 
-    const paymentIntentId = (order as any).stripePaymentId;
+    const paymentIntentId = order.stripePaymentIntentId;
     if (!paymentIntentId) {
       return c.json({ error: "No valid payment for this order" }, 400);
     }
 
+    // Stored amounts are already integer pence, which is what Stripe expects
+    const amount = refund.refundAmount;
+    if (
+      amount == null ||
+      !Number.isSafeInteger(amount) ||
+      amount <= 0 ||
+      amount > order.total
+    ) {
+      return c.json({ error: "Refund amount is invalid for this order" }, 400);
+    }
+
     try {
-      // Process payment reversal on gateway before changing database state
-      const refundResult = await stripe.refunds.create({
-        payment_intent: paymentIntentId,
-        amount: Math.round(Number(refund.refundAmount) * 100),
-      });
+      // Process payment reversal on gateway before changing database state.
+      // The idempotency key stops a retried approval from refunding twice.
+      const refundResult = await stripe.refunds.create(
+        { payment_intent: paymentIntentId, amount },
+        { idempotencyKey: `refund-request-${refundId}` },
+      );
 
       await db.transaction(async (tx) => {
-        await tx.update(refundRequest)
+        await tx
+          .update(refundRequest)
           .set({
             status: "processing",
             adminNotes: adminNotes || "Approved",
@@ -272,6 +313,9 @@ refundRoutes.put("/:id/approve", async (c) => {
           notes: adminNotes || "Refund processed successfully",
           performedBy: user?.id,
         });
+
+        // Refunds cover the whole order, so return all of its reserved stock.
+        await releaseOrderStock(tx, order.id);
       });
 
       return c.json({
@@ -292,7 +336,7 @@ refundRoutes.put("/:id/approve", async (c) => {
  * PUT /refunds/:id/reject
  * Admin rejects a refund request.
  */
-refundRoutes.put("/:id/reject", async (c) => {
+refundRoutes.put("/:id/reject", requireAdmin, async (c) => {
   try {
     const refundId = Number(c.req.param("id"));
     const user = c.get("user");
@@ -307,7 +351,10 @@ refundRoutes.put("/:id/reject", async (c) => {
     }
 
     if (refund.status !== "requested") {
-      return c.json({ error: `Cannot reject refund in status: ${refund.status}` }, 400);
+      return c.json(
+        { error: `Cannot reject refund in status: ${refund.status}` },
+        400,
+      );
     }
 
     await db
@@ -328,12 +375,6 @@ refundRoutes.put("/:id/reject", async (c) => {
       performedBy: user?.id || "admin",
     });
 
-    // Update order status to refunded
-    await db
-      .update(shopOrder)
-      .set({ status: "refunded" })
-      .where(eq(shopOrder.id, refund.orderId));
-
     return c.json({
       success: true,
       message: "Refund request rejected",
@@ -348,7 +389,7 @@ refundRoutes.put("/:id/reject", async (c) => {
  * PUT /refunds/:id/complete
  * Admin marks a refund as completed (after confirming money was returned).
  */
-refundRoutes.put("/:id/complete", async (c) => {
+refundRoutes.put("/:id/complete", requireAdmin, async (c) => {
   try {
     const refundId = Number(c.req.param("id"));
     const user = c.get("user");
@@ -362,7 +403,10 @@ refundRoutes.put("/:id/complete", async (c) => {
     }
 
     if (refund.status !== "processing") {
-      return c.json({ error: `Cannot complete refund in status: ${refund.status}` }, 400);
+      return c.json(
+        { error: `Cannot complete refund in status: ${refund.status}` },
+        400,
+      );
     }
 
     await db
@@ -374,11 +418,15 @@ refundRoutes.put("/:id/complete", async (c) => {
       })
       .where(eq(refundRequest.id, refundId));
 
-    // Update order status
-    await db
-      .update(shopOrder)
-      .set({ status: "refunded" })
-      .where(eq(shopOrder.id, refund.orderId));
+    // Update order status; stock was normally returned at approval, and
+    // releaseOrderStock is a no-op if so.
+    await db.transaction(async (tx) => {
+      await tx
+        .update(shopOrder)
+        .set({ status: "refunded" })
+        .where(eq(shopOrder.id, refund.orderId));
+      await releaseOrderStock(tx, refund.orderId);
+    });
 
     // Create timeline entry
     await db.insert(refundTimeline).values({
@@ -395,23 +443,5 @@ refundRoutes.put("/:id/complete", async (c) => {
   } catch (error) {
     console.error("Failed to complete refund:", error);
     return c.json({ error: "Failed to complete refund" }, 500);
-  }
-});
-
-/**
- * GET /refunds/admin/all
- * Admin fetches all refund requests.
- */
-refundRoutes.get("/admin/all", async (c) => {
-  try {
-    const refunds = await db.query.refundRequest.findMany({
-      orderBy: [desc(refundRequest.id)],
-      limit: 100,
-    });
-
-    return c.json({ success: true, refunds });
-  } catch (error) {
-    console.error("Failed to fetch all refunds:", error);
-    return c.json({ success: false, refunds: [], error: "Failed to fetch refunds" }, 500);
   }
 });
