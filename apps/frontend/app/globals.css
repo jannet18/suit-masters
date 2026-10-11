@@ -88,8 +88,18 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: "Inter", sans-serif;
+  min-width: 320px;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
 }
 h1,
 h2,

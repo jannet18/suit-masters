@@ -83,7 +83,7 @@ function AdminLoginPageForm() {
       title="Sign in"
       description="Sign in with your administrator account."
       footer={
-        <p className="text-sm text-muted-foreground text-center">
+        <p className="text-sm text-muted-foreground text-center flex items-center gap-1">
           Need access?{" "}
           <Link href="/register" className="text-foreground underline underline-offset-4">
             Request an account

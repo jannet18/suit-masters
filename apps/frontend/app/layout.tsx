@@ -34,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth" className="scroll-smooth" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-svh flex-col`}
       >
         <Header />
         <ErrorBoundary>
@@ -46,7 +46,7 @@ export default function RootLayout({
         >
           <AuthProvider>
             {/* <div className="mx-auto px-2 sm:px-0 sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-7xl"> */}
-              <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[80vh]">{children}</main>
+              <main className="min-h-[80vh] w-full min-w-0 flex-1 pt-36">{children}</main>
             {/* </div> */}
           </AuthProvider>
         </ThemeProvider>

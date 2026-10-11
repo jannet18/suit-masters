@@ -23,7 +23,7 @@ export function HeroSection({ onOpenFitting }: HeroSectionProps) {
       ref={ref}
       className="relative h-screen min-h-175 overflow-hidden bg-[#0f0f0f]"
     >
-      {}
+      { }
       {/* Parallax Background */}
       <motion.div
         style={{
@@ -40,7 +40,7 @@ export function HeroSection({ onOpenFitting }: HeroSectionProps) {
         <div className="absolute inset-0 bg-linear-to-r from-[#0f0f0f]/95 via-[#0f0f0f]/60 to-[#0f0f0f]/20" />
         <div className="absolute inset-0 bg-linear-to-t from-[#0f0f0f]/80 via-transparent to-transparent" />
       </motion.div>
-      {}
+      { }
       {/* Content */}
       <motion.div
         style={{
@@ -130,7 +130,7 @@ export function HeroSection({ onOpenFitting }: HeroSectionProps) {
               className="flex flex-col sm:flex-row gap-4"
             >
               <Link
-                href="/collections"
+                href="/"
                 className="group inline-flex items-center gap-3 bg-[#c9a96e] text-[#0f0f0f] px-8 py-4 text-xs tracking-[0.2em] uppercase font-semibold hover:bg-[#dfc08a] transition-colors duration-300"
               >
                 Shop Collection
@@ -140,24 +140,24 @@ export function HeroSection({ onOpenFitting }: HeroSectionProps) {
                 />
               </Link>
               {onOpenFitting ? (
-                  <button
+                <button
                   onClick={onOpenFitting}
                   type="button"
                   className="inline-flex items-center justify-center gap-3 border border-[#f5f0eb]/30 bg-transparent text-[#f5f0eb] px-8 py-4 text-xs tracking-[0.2em] uppercase font-semibold hover:border-[#c9a96e] hover:text-[#c9a96e] transition-all duration-300 cursor-pointer"
                 >Book a Fitting</button>
               ) : (
-              <Link
-                href="/lifestyle"
-                className="inline-flex items-center gap-3 border border-[#f5f0eb]/30 text-[#f5f0eb] px-8 py-4 text-xs tracking-[0.2em] uppercase font-semibold hover:border-[#c9a96e] hover:text-[#c9a96e] transition-all duration-300"
-              >
-                Book a Fitting
-              </Link>
-            )}
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-3 border border-[#f5f0eb]/30 text-[#f5f0eb] px-8 py-4 text-xs tracking-[0.2em] uppercase font-semibold hover:border-[#c9a96e] hover:text-[#c9a96e] transition-all duration-300"
+                >
+                  Book a Fitting
+                </Link>
+              )}
             </motion.div>
           </div>
         </div>
       </motion.div>
-{}
+      { }
       {/* Bottom Scroll Indicator */}
       <motion.div
         initial={{

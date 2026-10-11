@@ -25,8 +25,6 @@ export function CollectionGrid({ currentSlug }: CollectionGridProps) {
     }
     load();
   }, []);
-  console.log(collections);
-
   const handleCollectionClick = (slug: string): void => {
     router.push(`/collections/${slug}/`);
   };
@@ -34,7 +32,7 @@ export function CollectionGrid({ currentSlug }: CollectionGridProps) {
   // if (loading) setLoading(true);
   return (
     <section id="collection" className="relative py-24 bg-[#0f0f0f]" ref={ref}>
-      <div className="max-w-7xl mx-auto px-6 lg:px-10">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -56,9 +54,18 @@ export function CollectionGrid({ currentSlug }: CollectionGridProps) {
 
         {/* Grid */}
         <div
-          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 auto-rows-[450px] lg:grid-rows-2 gap-6`}
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:auto-rows-[minmax(20rem,28rem)]"
+          aria-busy={loading}
+          aria-label={loading ? "Loading collections" : "Collections"}
         >
-          {collections?.map((col, i) => (
+          {loading
+            ? Array.from({ length: 6 }, (_, index) => (
+                <div
+                  key={`collection-skeleton-${index}`}
+                  className="min-h-80 animate-pulse rounded-lg bg-[#1a1a1a] sm:min-h-96"
+                />
+              ))
+            : collections?.map((col, i) => (
             <motion.button
               key={col.id || i}
               onClick={(e) => {
@@ -68,7 +75,7 @@ export function CollectionGrid({ currentSlug }: CollectionGridProps) {
               initial={{ opacity: 0, y: 40 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.7, delay: i * 0.15 }}
-              className={`relative overflow-hidden rounded-lg group cursor-pointer min-h-114 w-full ${
+              className={`relative min-w-0 overflow-hidden rounded-lg group cursor-pointer min-h-80 w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] sm:min-h-96 ${
                 // col.span ?? "lg:col-span-1 lg:row-span-1"
                 col.span === "wide"
                   ? "md:col-span-2"
@@ -112,7 +119,7 @@ export function CollectionGrid({ currentSlug }: CollectionGridProps) {
                 </div>
               </div>
             </motion.button>
-          ))}
+              ))}
         </div>
       </div>
       <RelatedCollections collections={collections} currentSlug={currentSlug} />

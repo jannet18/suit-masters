@@ -59,15 +59,26 @@ export function ProductGrid({ limit }: { limit?: number }) {
 
   if (loading)
     return (
-      <div className="grid grid-cols-4 gap-8 animate-pulse">
-        {/* Skeletons */}
+      <div
+        className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 py-12 sm:grid-cols-2 sm:gap-6 sm:px-6 md:grid-cols-3 lg:grid-cols-4 lg:px-8"
+        role="status"
+        aria-label="Loading products"
+      >
+        {Array.from({ length: limit ?? 8 }, (_, index) => (
+          <div key={index} className="min-w-0 animate-pulse">
+            <div className="aspect-[3/4] rounded-md bg-[#2a2a2a]" />
+            <div className="mt-4 h-4 w-3/4 rounded bg-[#2a2a2a]" />
+            <div className="mt-2 h-3 w-1/2 rounded bg-[#2a2a2a]" />
+          </div>
+        ))}
+        <span className="sr-only">Loading products…</span>
       </div>
     );
 
   return (
     <>
       <section className="relative py-24 bg-[#1a1a1a]" ref={ref}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-6">
             <div>
@@ -79,12 +90,12 @@ export function ProductGrid({ limit }: { limit?: number }) {
               </h2>
             </div>
             {/* Filter Tabs */}
-            <div className="flex gap-1 bg-[#0f0f0f] p-1">
+            <div className="flex max-w-full gap-1 overflow-x-auto bg-[#0f0f0f] p-1">
               {["All", "Suits", "Blazers", "Shirts", "Trousers"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => handleTabClick(tab)}
-                  className={`px-4 py-2 text-[10px] tracking-[0.2em] uppercase font-medium transition-all duration-200 cursor-pointer ${
+                  className={`shrink-0 px-4 py-2 text-[10px] tracking-[0.2em] uppercase font-medium transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] ${
                     activeTab === tab
                       ? "text-[#c9a96e] border-b border-[#c9a96e]"
                       : "text-[#9a9490]"
@@ -97,7 +108,7 @@ export function ProductGrid({ limit }: { limit?: number }) {
           </div>
 
           {/* Product Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
             {displayItems.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}

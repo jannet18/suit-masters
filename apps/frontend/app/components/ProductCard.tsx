@@ -69,7 +69,7 @@ export function ProductCard({ product, id }: ProductCardProps) {
     <div className="flex flex-col">
       <div className="group relative overflow-hidden rounded-md w-full">
         {/* Product Image */}
-        <div className="aspect-3/4 overflow-hidden bg-[#151515]">
+        <div className="aspect-[3/4] overflow-hidden bg-[#151515]">
           <img
             src={imageUrl}
             alt={productName}
@@ -82,7 +82,7 @@ export function ProductCard({ product, id }: ProductCardProps) {
           {productType === "CUSTOM" ? (
             <Link
               href={`/products/${slug}/configure`}
-              className="bg-[#c9a96e] text-black px-6 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-white transition-colors"
+              className="bg-[#c9a96e] text-black px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] sm:px-6"
             >
               Customise This Suit
             </Link>
@@ -90,7 +90,7 @@ export function ProductCard({ product, id }: ProductCardProps) {
             <button
               onClick={handleAddToCart}
               disabled={isInCart || isAdded}
-              className={`flex items-center gap-2 px-6 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors hover:bg-[#c9a96e] ${
+              className={`flex items-center gap-2 px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors hover:bg-[#c9a96e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] sm:px-6 ${
                 isInCart || isAdded
                   ? "bg-green-600 text-white"
                   : "bg-[#c9a96e] text-black hover:bg-white"
@@ -111,7 +111,7 @@ export function ProductCard({ product, id }: ProductCardProps) {
           )}
           <Link
             href={`/products/${slug}`}
-            className="bg-white/10 backdrop-blur-sm text-white px-6 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-white/20 transition-colors border border-white/20"
+            className="bg-white/10 backdrop-blur-sm text-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-white/20 transition-colors border border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] sm:px-6"
           >
             View Details
           </Link>
@@ -138,7 +138,7 @@ export function ProductCard({ product, id }: ProductCardProps) {
       <button
         onClick={handleAddToCart}
         disabled={isInCart || isAdded}
-        className={`flex items-center justify-center gap-2 px-6 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors hover:bg-[#c9a96e] ${
+        className={`flex items-center justify-center gap-2 px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-colors hover:bg-[#c9a96e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] ${
           isInCart || isAdded
             ? "bg-green-600 text-white"
             : "bg-[#c9a96e] text-black hover:bg-white"

@@ -87,7 +87,7 @@ export default async function CollectionPage({
     <main className="bg-[#0f0f0f] min-h-screen text-[#f5f0eb] pb-24">
       {/* Breadcrumbs */}
       <nav className="border-b border-[#1f1f1f] bg-[#0c0c0c]">
-        <div className="max-w-7xl mx-auto py-30 px-32 lg:px-10 flex items-center text-xs tracking-wider uppercase text-[#9a9490]">
+        <div className="mx-auto flex max-w-7xl items-center px-4 py-8 text-xs tracking-wider uppercase text-[#9a9490] sm:px-6 sm:py-10 lg:px-8">
           <Link
             href="/"
             className="flex items-center hover:text-[#c9a96e] transition-colors"
@@ -134,9 +134,9 @@ export default async function CollectionPage({
           </p>
         </div>
       </section>
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-12 flex flex-col lg:flex-row gap-12 items-start">
+      <div className="mx-auto flex max-w-7xl min-w-0 flex-col items-start gap-8 px-4 py-8 sm:px-6 sm:py-12 lg:flex-row lg:gap-12 lg:px-8">
         {/* Collection Navigator Sidebar */}
-        <aside className="w-full lg:w-1/4 shrink-0 bg-[#141414] border border-[#232323] p-6 rounded-lg sticky top-28">
+        <aside className="w-full shrink-0 rounded-lg border border-[#232323] bg-[#141414] p-4 sm:p-6 lg:sticky lg:top-28 lg:w-1/4">
           <h2 className="text-xs uppercase tracking-[0.25em] font-bold text-[#c9a96e] mb-5 pb-3 border-b border-[#232323] flex items-center gap-2">
             <Layers className="w-3.5 h-3.5 text-[#c9a96e]" />
             Collections
@@ -164,7 +164,7 @@ export default async function CollectionPage({
             })}
           </div>
         </aside>
-        <section className="flex-1 w-full">
+        <section className="min-w-0 w-full flex-1">
           <div className="mb-10 bg-[#141414] border border-[#232323]/50 p-6 rounded-lg flex items-start gap-4">
             <Sparkles className="w-5 h-5 text-[#c9a96e] shrink-0 mt-0.5" />
             <p className="text-sm text-[#9a9490] leading-relaxed">
@@ -177,7 +177,7 @@ export default async function CollectionPage({
               Piana & Vitale Barberis Canonico.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 md:gap-10 lg:gap-10">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3">
             {products.map((product: any) => {
               const isCustom =
                 product.productType === "CUSTOM" ||
@@ -196,7 +196,7 @@ export default async function CollectionPage({
                   className="group flex flex-col justify-between"
                 >
                   <div className="relative">
-                    <div className="aspect-3/4 overflow-hidden bg-[#1a1a1a] border border-[#232323]/50 mb-3 relative rounded-md ">
+                    <div className="aspect-[3/4] overflow-hidden bg-[#1a1a1a] border border-[#232323]/50 mb-3 relative rounded-md">
                       <img
                         src={productImage}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 select-none rounded-md"

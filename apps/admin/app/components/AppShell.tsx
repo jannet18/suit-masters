@@ -5,7 +5,7 @@ import { SidebarProvider } from "./ui/sidebar";
 import AppSidebar from "./AppSidebar";
 import Navbar from "./Navbar";
 
-const CHROMELESS_ROUTES = ["/login"];
+const CHROMELESS_ROUTES = ["/login", "/register"];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -17,9 +17,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider defaultOpen>
       <AppSidebar />
-      <main className="w-full">
+      <main className="min-w-0 w-full flex-1 overflow-y-auto">
         <Navbar />
-        <div className="px-4">{children}</div>
+        <div className="min-w-0 p-4 md:p-8">{children}</div>
       </main>
     </SidebarProvider>
   );

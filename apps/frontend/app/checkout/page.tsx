@@ -273,7 +273,7 @@ function CheckoutClient() {
 
   if (isLoading || isAuthenticated === null) {
     return (
-      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center m-26">
+      <div className="flex min-h-[60svh] items-center justify-center bg-[#0f0f0f]">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-[#c9a96e] mx-auto mb-4" />
           <p className="text-[#f5f0eb]">Loading...</p>
@@ -317,15 +317,15 @@ function CheckoutClient() {
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-[#f5f0eb]">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-12">
-        <h1 className="font-serif text-4xl font-bold mb-8">Checkout</h1>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <h1 className="mb-8 font-serif text-3xl font-bold sm:text-4xl">Checkout</h1>
 
-        <div className="flex flex-col lg:flex-row gap-12">
+        <div className="flex min-w-0 flex-col gap-8 lg:flex-row lg:gap-12">
           {/* Left Column - Forms */}
-          <div className="lg:w-2/3">
+          <div className="min-w-0 lg:w-2/3">
             {/* Progress Steps */}
-            <div className="flex items-center justify-between mb-12">
-              <div className="flex items-center gap-4">
+            <div className="mb-8 flex items-center justify-between gap-2 sm:mb-12 sm:gap-4">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-4">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center ${step === "shipping" ? "bg-[#c9a96e] text-black" : "bg-white/10"}`}
                 >
@@ -335,13 +335,13 @@ function CheckoutClient() {
                   <p className="text-xs uppercase tracking-widest text-[#9a9490]">
                     Step 1
                   </p>
-                  <p className="font-medium">Shipping Details</p>
+                  <p className="text-xs font-medium sm:text-base">Shipping Details</p>
                 </div>
               </div>
 
-              <div className="h-px w-12 bg-white/10" />
+              <div className="h-px min-w-3 flex-1 bg-white/10 sm:max-w-12" />
 
-              <div className="flex items-center gap-4">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-4">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center ${step === "payment" ? "bg-[#c9a96e] text-black" : "bg-white/10"}`}
                 >
@@ -351,7 +351,7 @@ function CheckoutClient() {
                   <p className="text-xs uppercase tracking-widest text-[#9a9490]">
                     Step 2
                   </p>
-                  <p className="font-medium">Payment</p>
+                  <p className="text-xs font-medium sm:text-base">Payment</p>
                 </div>
               </div>
             </div>
@@ -564,7 +564,7 @@ function CheckoutClient() {
                   </div>
                 </div>
 
-                <div className="flex justify-between pt-6">
+                <div className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
                   <button
                     type="button"
                     onClick={() => router.push("/cart")}
@@ -689,8 +689,8 @@ function CheckoutClient() {
           </div>
 
           {/* Right Column - Order Summary */}
-          <div className="lg:w-1/3">
-            <div className="bg-white/5 border border-white/10 p-6 sticky top-6">
+          <div className="min-w-0 lg:w-1/3">
+            <div className="bg-white/5 border border-white/10 p-4 sm:p-6 lg:sticky lg:top-6">
               <h2 className="text-xl font-serif font-bold mb-6">
                 Order Summary
               </h2>
@@ -703,8 +703,8 @@ function CheckoutClient() {
                       key={`${item.id}-${index}`}
                       className="flex justify-between items-start"
                     >
-                      <div>
-                        <p className="font-medium">{item.name}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words font-medium">{item.name}</p>
                         <p className="text-sm text-[#9a9490]">
                           {item.productType === "CUSTOM"
                             ? "Custom Suit"
@@ -712,7 +712,7 @@ function CheckoutClient() {
                           {item.quantity > 1 && ` × ${item.quantity}`}
                         </p>
                       </div>
-                      <p className="font-mono">
+                      <p className="shrink-0 font-mono">
                         {priced ? formatCurrency(priced.lineTotal) : "—"}
                       </p>
                     </div>

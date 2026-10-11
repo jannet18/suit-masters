@@ -72,7 +72,7 @@ export default function Page({ product, id }: CollectionProps) {
   return (
     <div className="group relative overflow-hidden rounded-md w-full">
       {/* Product Image */}
-      <div className="aspect-3/4 overflow-hidden bg-[#151515]">
+      <div className="aspect-[3/4] overflow-hidden bg-[#151515]">
         <img
           src={imageUrl}
           alt={productName}

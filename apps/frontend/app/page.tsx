@@ -12,7 +12,7 @@ export default function Home() {
   const [fittingOpen, setFittingOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
+    <div className="-mt-36 min-h-screen bg-[#0f0f0f]">
       <main className="relative">
         <HeroSection onOpenFitting={() => setFittingOpen(true)} />
         <CollectionGrid currentSlug="" />

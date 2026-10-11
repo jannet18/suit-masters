@@ -18,7 +18,7 @@ interface AuthCardProps {
 /** Centered card shell shared by the admin login/register pages. */
 export function AuthCard({ title, description, children, footer }: AuthCardProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-muted/30">
+    <div className="min-h-screen w-full flex items-center justify-center px-4 bg-muted/30">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <span className="text-lg font-semibold tracking-tight">Suit Masters</span>

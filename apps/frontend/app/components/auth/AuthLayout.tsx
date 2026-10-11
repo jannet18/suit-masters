@@ -37,19 +37,6 @@ export function AuthLayout({
         }}
       >
         <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <span className="font-serif text-2xl font-bold tracking-[0.15em] text-[#f5f0eb]">
-            Suit Masters
-          </span>
-          <p className="text-[10px] tracking-[0.4em] text-[#c9a96e] uppercase mt-1">
-            Bespoke Tailoring
-          </p>
-        </motion.div>
-
-        <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15 }}

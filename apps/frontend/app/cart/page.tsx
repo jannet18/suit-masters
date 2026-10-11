@@ -17,7 +17,7 @@ export default function CartPage() {
   // Hydration fallback skeleton loader matching your premium custom tailoring palette
   if (!hydrated) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mt-10">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-8 px-4 py-8 sm:px-6 lg:grid-cols-12 lg:px-8">
         <div className="lg:col-span-8 space-y-6 w-full">
           {[1, 2].map((n) => (
             <div
@@ -49,7 +49,7 @@ export default function CartPage() {
 
   if (cart.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-24 flex flex-col items-center justify-center text-center mt-14">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-center px-4 py-16 text-center">
         <div className="w-16 h-16 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-6 border border-[#2e2e2e]">
           <ShoppingBag className="w-8 h-8 text-[#c9a96e]" />
         </div>
@@ -71,7 +71,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mt-24">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <h1 className="text-3xl font-serif font-bold text-[#f5f0eb] mb-8 tracking-wide text-center">
         Shopping Cart
       </h1>

@@ -195,7 +195,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
           {/* Left Column: Image Gallery */}
           <div className="lg:col-span-7 space-y-4 lg:sticky lg:top-28">
-            <div className="relative aspect-3/4 overflow-hidden rounded-md bg-[#161616] border border-[#232323] group">
+            <div className="relative aspect-[3/4] overflow-hidden rounded-md bg-[#161616] border border-[#232323] group">
               <img
                 src={
                   productImages[activeImageIdx] ||
@@ -235,7 +235,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                   <button
                     key={idx}
                     onClick={() => setActiveImageIdx(idx)}
-                    className={`aspect-3/4 rounded-sm overflow-hidden bg-[#161616] border transition-all ${
+                    className={`aspect-[3/4] rounded-sm overflow-hidden bg-[#161616] border transition-all ${
                       idx === activeImageIdx
                         ? "border-[#c9a96e] opacity-100"
                         : "border-white/5 opacity-50 hover:opacity-80"

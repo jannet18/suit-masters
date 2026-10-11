@@ -19,15 +19,15 @@ const Navbar = () => {
   const { theme, setTheme } = useTheme();
   const { toggleSidebar } = useSidebar();
   return (
-    <nav className="p-4 flex items-center justify-between sticky top-0 bg-background z-10">
+    <nav className="sticky top-0 z-10 flex min-w-0 items-center justify-between bg-background p-3 sm:p-4">
       {/* LEFT */}
       <SidebarTrigger />
       {/* <Button variant="outline" onClick={toggleSidebar}>
         Custom Button
       </Button> */}
       {/* RIGHT */}
-      <div className="flex items-center gap-4">
-        <Link href="/">Dashboard</Link>
+      <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+        <Link href="/" className="hidden sm:inline">Dashboard</Link>
         {/* THEME MENU */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

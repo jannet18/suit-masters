@@ -1075,9 +1075,9 @@ export function BespokeConfigurator({ slug }: ConfigureProps) {
   return (
     <div className="fixed inset-0 z-50 bg-[#0f0f0f] flex flex-col font-sans text-[#f5f0eb] select-none">
       {/* Top Header Panel */}
-      <header className="shrink-0 border-b border-white/5 h-20 flex items-center justify-between px-6 lg:px-10 bg-[#0d0d0d]">
+      <header className="h-16 shrink-0 border-b border-white/5 bg-[#0d0d0d] flex items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-10">
         <div className="flex flex-col">
-          <span className="font-serif tracking-widest text-lg font-bold text-[#f5f0eb]">
+          <span className="font-serif tracking-widest text-base font-bold text-[#f5f0eb] sm:text-lg">
             SUIT MASTERS
           </span>
           <span className="text-[9px] text-[#c9a96e] uppercase tracking-[0.3em] font-light mt-0.5">
@@ -1120,11 +1120,14 @@ export function BespokeConfigurator({ slug }: ConfigureProps) {
       </header>
 
       {/* Main Studio Splitted Viewport */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Side: Curated Editorial Presets Panel (Hockerty) */}
-        <section className="hidden lg:flex w-[35%] flex-col bg-[#0b0b0b] border-r border-white/5 overflow-y-auto">
+      <div className="min-h-0 flex-1 grid grid-cols-1 grid-rows-[minmax(12rem,30svh)_minmax(0,1fr)] overflow-hidden lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:grid-rows-1">
+        <section className="contents lg:flex lg:min-h-0 lg:flex-col lg:overflow-y-auto lg:border-r lg:border-white/5 lg:bg-[#0b0b0b]">
+          <div className="h-full min-h-0 overflow-hidden border-b border-white/5 lg:h-[48vh] lg:max-h-[620px] lg:min-h-[360px] lg:shrink-0">
+            <SuitViewer />
+          </div>
+
           {/* Parallax Ambience */}
-          <div className="relative h-48 shrink-0 overflow-hidden border-b border-white/5">
+          <div className="relative hidden h-48 shrink-0 overflow-hidden border-b border-white/5 lg:block">
             <img
               src="https://images.unsplash.com/photo-1594938298603-c8148c4b4f5a?w=600&q=80"
               className="w-full h-full object-cover opacity-25 filter grayscale"
@@ -1141,7 +1144,7 @@ export function BespokeConfigurator({ slug }: ConfigureProps) {
             </div>
           </div>
 
-          <div className="p-6 flex-1 space-y-4">
+          <div className="hidden flex-1 space-y-4 p-6 lg:block">
             <p className="text-xs text-zinc-500 leading-relaxed">
               Skip configuring from scratch. Choose a master style below crafted
               by our tailoring directors to automatically pre-fill details.
@@ -1195,26 +1198,20 @@ export function BespokeConfigurator({ slug }: ConfigureProps) {
         </section>
 
         {/* Right Side: Step customizer panel (Indochino) */}
-        <section className="flex-1 flex flex-col bg-[#0f0f0f]">
-          <div className="flex-1 overflow-y-auto px-6 lg:px-16 py-10">
+        <section className="flex min-h-0 min-w-0 flex-col bg-[#0f0f0f]">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-12 lg:py-10">
             <div className="max-w-2xl mx-auto">
-              <header className="mb-10">
+              <header className="mb-6 sm:mb-10">
                 <span className="text-[#c9a96e] text-[9px] tracking-[0.4em] uppercase font-semibold">
                   Step {currentStep + 1} of {STEPS.length}
                 </span>
-                <h2 className="text-3xl font-serif font-bold text-[#f5f0eb] mt-1">
+                <h2 className="mt-1 text-2xl font-serif font-bold text-[#f5f0eb] sm:text-3xl">
                   {STEPS[currentStep].title}
                 </h2>
                 <p className="text-zinc-500 text-xs mt-1.5 leading-relaxed">
                   {STEPS[currentStep].subtitle}
                 </p>
               </header>
-
-              {currentStep <= 2 && (
-                <div className="h-80 lg:h-96 mb-10 border border-white/5 rounded-lg overflow-hidden">
-                  <SuitViewer />
-                </div>
-              )}
 
               <AnimatePresence mode="wait">
                 <motion.div
@@ -1242,7 +1239,7 @@ export function BespokeConfigurator({ slug }: ConfigureProps) {
           <div className="border-t border-white/5 bg-[#0d0d0d]/40">
             <button
               onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
-              className="w-full py-4 px-6 lg:px-16 flex items-center justify-between hover:bg-white/5 transition-colors border-b border-white/5"
+              className="w-full border-b border-white/5 px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors sm:px-6 lg:px-12"
             >
               <div className="flex items-center gap-3">
                 <span className="w-5 h-5 rounded-full bg-[#c9a96e]/10 flex items-center justify-center text-[#c9a96e] text-xs">
@@ -1307,7 +1304,7 @@ export function BespokeConfigurator({ slug }: ConfigureProps) {
           </div>
 
           {/* Stepper Footer Controllers */}
-          <footer className="shrink-0 h-24 border-t border-white/5 flex items-center justify-between px-6 lg:px-16 bg-[#0a0a0a]">
+          <footer className="h-20 shrink-0 border-t border-white/5 bg-[#0a0a0a] px-3 flex items-center justify-between sm:h-24 sm:px-6 lg:px-12">
             <button
               type="button"
               disabled={currentStep === 0}
@@ -1317,11 +1314,11 @@ export function BespokeConfigurator({ slug }: ConfigureProps) {
               <ArrowLeftIcon size={14} /> Back
             </button>
 
-            <div className="text-right mr-4 hidden md:block">
-              <span className="text-[9px] uppercase tracking-widest text-zinc-600 block">
+            <div className="mr-2 text-right sm:mr-4">
+              <span className="hidden text-[9px] uppercase tracking-widest text-zinc-600 sm:block">
                 Active Price Est.
               </span>
-              <span className="font-mono text-lg font-bold text-[#c9a96e]">
+              <span className="font-mono text-sm font-bold text-[#c9a96e] sm:text-lg">
                 {formatCurrency(totalPrice)}
               </span>
             </div>
@@ -1335,7 +1332,7 @@ export function BespokeConfigurator({ slug }: ConfigureProps) {
                   setCurrentStep(currentStep + 1);
                 }
               }}
-              className="bg-[#c9a96e] hover:bg-[#dfc08a] text-black px-10 h-12 rounded font-bold text-[10px] tracking-[0.25em] uppercase flex items-center gap-2 transition-all"
+              className="h-11 rounded bg-[#c9a96e] px-4 text-[9px] font-bold uppercase tracking-[0.15em] text-black transition-all hover:bg-[#dfc08a] flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] sm:h-12 sm:px-8 sm:text-[10px] sm:tracking-[0.25em] lg:px-10"
             >
               {currentStep === STEPS.length - 1 ? "Add to Cart" : "Continue"}
               <ArrowRightIcon size={14} />
