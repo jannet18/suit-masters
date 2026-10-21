@@ -23,6 +23,16 @@ This is an **MVP focused on correctness and clarity**, not full production featu
 
 ---
 
+## 📖 Documentation
+
+- **[WORKFLOWS.md](./WORKFLOWS.md)** — complete end-to-end workflows: the
+  customer purchase journey (browse → configure → cart → checkout → payment),
+  the order state machine, Stripe webhooks & reservation expiry, refunds,
+  the admin back office, pricing/VAT/inventory rules, and dev/ops runbooks
+  (local dev, Docker, testing, CI/CD).
+
+---
+
 ## 🧠 Core Concepts
 
 ### Products vs Configurations
