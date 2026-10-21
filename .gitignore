@@ -25,7 +25,10 @@ coverage
 .next/
 out/
 build
-dist
+# NOTE: dist/ is committed on purpose — Render's start command runs
+# `node services/order-service/dist/index.js` and the dashboard build
+# command does not compile it. Remove this note + re-ignore dist once
+# the build command is fixed (or a render.yaml is in place).
 
 
 # Debug
