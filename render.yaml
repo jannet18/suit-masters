@@ -1,0 +1,24 @@
+# Render services, defined as code.
+# Docs: https://render.com/docs/yaml
+#
+# NOTE: this file does NOT modify services that were created in the
+# Render dashboard. To move a service under yaml management, delete the
+# dashboard-created service first, then let Render create it from this
+# file (on deploy, or via `render services create`).
+
+services:
+  - type: web
+    name: order-service
+    runtime: node
+    # Build from the repo root; the service lives in the
+    # services/order-service workspace of this npm monorepo.
+    rootDir: .
+    # The old dashboard build command never compiled the workspace, so the
+    # start command crashed with MODULE_NOT_FOUND (dist/ didn't exist).
+    # Turbo builds the service AND its @repo/* workspace dependencies
+    # (@repo/db, @repo/auth, @repo/pricing, ...) in the right order.
+    buildCommand: npm install && npx turbo run build --filter=@repo/orders...
+    startCommand: node services/order-service/dist/index.js
+    # The service binds to the PORT env var that Render injects, and
+    # exposes /health (includes a database check).
+    healthCheckPath: /health
